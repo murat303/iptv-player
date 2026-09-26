@@ -80,6 +80,9 @@ int main(int argc, char* argv[]) {
     if (isAppMode) {
         brls::Logger::info("Opening MainActivity (main interface)");
         Intent::openMain();
+        // The first start brought TsVitch's settings over: say so once the home screen is up
+        if (ProgramConfig::instance().importedLegacy)
+            brls::delay(2000, []() { brls::Application::notify(brls::getStr("tsvitch/setting/imported")); });
     } else {
         brls::Logger::info("Opening HintActivity (hint interface)");
         Intent::openHint();

@@ -241,6 +241,7 @@ std::unordered_map<SettingItem, ProgramOption> ProgramConfig::SETTING_MAP = {
     {SettingItem::PLAYER_SUB_POSITION, {"player_sub_position", {}, {}, 0}},
     {SettingItem::PLAYER_AUTO_NEXT, {"player_auto_next", {}, {}, 1}},
     {SettingItem::XTREAM_ACCOUNT_CHECKED, {"xtream_account_checked", {}, {}, 0}},
+    {SettingItem::XTREAM_AUTO_REFRESH, {"xtream_auto_refresh", {}, {}, 0}},
 };
 
 ProgramConfig::ProgramConfig() = default;
@@ -831,12 +832,22 @@ void ProgramConfig::importLegacyConfig() {
     brls::Logger::info("Importing the settings of {}", from.string());
     fs::create_directories(to, ec);
     size_t copied = 0;
-    for (const auto& entry : fs::directory_iterator(from, ec)) {
+    // The names are read first: one folder is moved away below, which must not happen during the listing
+    std::vector<fs::directory_entry> entries;
+    for (const auto& entry : fs::directory_iterator(from, ec)) entries.push_back(entry);
+    for (const auto& entry : entries) {
         std::error_code entryError;
         const std::string name = entry.path().filename().string();
         if (entry.is_directory(entryError)) {
-            // the provider's lists (downloading them again takes minutes) and custom themes
-            if (name == "xtream" || name == "theme") copied += copyTree(entry.path(), to / name);
+            // The provider's lists (downloading them again takes minutes) belong to this app's earlier builds only,
+            // so they move (instantly) instead of being copied (MBs on the SD card, before the screen shows).
+            if (name == "xtream") {
+                fs::rename(entry.path(), to / name, entryError);
+                if (entryError) copied += copyTree(entry.path(), to / name);
+                else copied++;
+            } else if (name == "theme") {
+                copied += copyTree(entry.path(), to / name);
+            }
         } else if (name == "tsvitch_config.json") {
             nlohmann::json content;
             {
@@ -859,7 +870,10 @@ void ProgramConfig::importLegacyConfig() {
             }
             std::ofstream out(to / CONFIG_FILE, std::ios::trunc);
             out << content.dump(2);
-            if (out.good()) copied++;
+            if (out.good()) {
+                copied++;
+                importedLegacy = true;
+            }
         } else if (name != "subfont.ttf" && !fs::exists(to / name, entryError)) {
             // subfont.ttf is made again from the system font when a subtitle needs it
             if (copyFileContents(entry.path(), to / name)) copied++;

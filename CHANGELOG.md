@@ -9,13 +9,15 @@ Changes by muratgokce:
 - Detail pages for movies and series: poster, backdrop, plot, cast, director, rating, duration, and resume or start over.
 - Seasons and episodes with stills and progress; L and R change the season.
 - The next episode starts after a 10-second countdown (can be turned off in the settings).
-- Poster grids with ratings, a "Recently added" group, sorting (server order, recently added, rating, name, year) and search that ignores case and accents.
-- The lists of the provider are kept on the SD card for 24 hours and refreshed in the background; busy providers are retried with pauses.
-- While a list comes from the provider, a card shows what is happening: waiting, downloading (with the size), retries of a busy provider and preparing.
+- Poster grids with ratings and years, a "Recently added" group, sorting (server order, recently added, rating, name, year) and search that ignores case and accents.
+- The lists of the provider are kept on the SD card and refreshed in the background every day, every week or only with the refresh button (a setting); busy providers are retried with pauses.
+- While a list comes from the provider, a card shows what is happening: waiting, downloading with a progress bar, retries of a busy provider and preparing. When the provider does not tell the size, the bar uses the size of the last download.
+- Back leaves a download running; opening the list again shows its card again. The home screen shows the state of each list and the number of channels, movies and series.
 
 ### Live TV
 - Now / next programme guide (EPG) on the player, refreshed when a programme ends.
 - The progress bar no longer runs on live channels.
+- Channel cards no longer show running numbers.
 
 ### Player
 - Audio and subtitle track pickers; the choice is remembered.
@@ -30,7 +32,7 @@ Changes by muratgokce:
 ### Other
 - History: remove one video or clear everything.
 - Account info: status, end date, connections, and a reminder before the subscription ends.
-- Own name and data folder (`/switch/iptv-player`); the settings of TsVitch are copied at the first start.
+- Own name and data folder (`/switch/iptv-player`); the settings, favorites and history of TsVitch are copied at the first start, and the app says so.
 - The home screen no longer shows the buttons of the last list (search, favorite, download, refresh, sort).
 - Turkish translation; Italian and Brazilian Portuguese completed; English is the default language.
 - The password is hidden in the settings.

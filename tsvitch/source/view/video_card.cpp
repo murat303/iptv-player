@@ -37,7 +37,8 @@ void RecyclingGridItemLiveVideoCard::setChannel(tsvitch::LiveM3u8 liveData, bool
             this->boxHint->setVisibility(brls::Visibility::GONE);
         }
     } else {
-        this->labelChno->setText(liveData.chno);
+        // No running number on channels either: it is the server's order, not a channel number people use
+        this->labelChno->setText("");
         this->labelGroup->setText(liveData.groupTitle);
         this->boxHint->setVisibility(showGroup ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
     }

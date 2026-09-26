@@ -385,6 +385,8 @@ void HomeLive::showContentHub() {
     for (auto button : {brls::BUTTON_Y, brls::BUTTON_X, brls::BUTTON_RT, brls::BUTTON_RB, brls::BUTTON_LB})
         this->registerAction("", button, [](brls::View*) { return true; }, true);
     sortActionId = -1;
+    for (int type = 0; type <= 2; type++) this->updateHubStatus(type);
+    this->registerBackAction();
 
     leftColumn->setVisibility(brls::Visibility::GONE);
     recyclingGrid->setVisibility(brls::Visibility::GONE);
@@ -400,6 +402,7 @@ void HomeLive::showContentHub() {
 void HomeLive::enterContentType(int contentType, int groupIndex) {
     brls::Logger::info("HomeLive: entering Xtream content type {}", contentType);
     this->hideLoading();
+    this->registerBackAction();
     inHubMode        = false;
     inSeriesEpisodes = false;
     ProgramConfig::instance().setXtreamContentType(contentType);
@@ -445,6 +448,14 @@ void HomeLive::enterContentType(int contentType, int groupIndex) {
 
 void HomeLive::loadXtreamContent(int contentType, bool forceNetwork) {
     int serial = ++xtreamLoadSerial;
+    // A download the user started (first load, refresh) still runs: wait for it with the card instead of
+    // showing the older list from the SD card
+    if (!forceNetwork && fetchingTypes.count(contentType) && foregroundFetches.count(contentType)) {
+        recyclingGrid->showSkeleton();
+        upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+        this->fetchXtreamContent(contentType, serial, false);
+        return;
+    }
     if (!forceNetwork) {
         auto cached = contentCache.find(contentType);
         if (cached != contentCache.end() && !cached->second.empty()) {
@@ -486,13 +497,19 @@ void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) 
         if (!background) {
             waitingType   = contentType;
             waitingSerial = serial;
+            foregroundFetches.insert(contentType);
             this->showLoading(contentType);
         }
         return;
     }
     fetchingTypes.insert(contentType);
+    failedTypes.erase(contentType);
     lastLoadState.erase(contentType);
-    if (!background) this->showLoading(contentType);
+    if (!background) {
+        foregroundFetches.insert(contentType);
+        this->showLoading(contentType);
+    }
+    this->updateHubStatus(contentType);
 
     auto isValid = validityFlag;
     // Whether the screen still shows this content type and asked for this download (or waits for it)
@@ -505,6 +522,7 @@ void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) 
     auto onDone = [this, contentType, wanted, isValid](tsvitch::LiveM3u8ListResult result) {
         if (!isValid->load()) return;
         fetchingTypes.erase(contentType);
+        foregroundFetches.erase(contentType);
         lastLoadState.erase(contentType);
         if (loadingType == contentType) this->hideLoading();
         if (!result.empty()) {
@@ -514,15 +532,20 @@ void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) 
         if (!wanted()) {
             // Not on screen (or a background download): keep it for the next visit
             if (!result.empty()) contentCache[contentType] = std::move(result);
+            this->updateHubStatus(contentType);
             return;
         }
         this->onLiveList(std::move(result), false);
+        this->updateHubStatus(contentType);
     };
     auto onFail = [this, contentType, wanted, isValid](const std::string& error, int) {
         if (!isValid->load()) return;
         fetchingTypes.erase(contentType);
+        foregroundFetches.erase(contentType);
         lastLoadState.erase(contentType);
+        failedTypes.insert(contentType);
         if (loadingType == contentType) this->hideLoading();
+        this->updateHubStatus(contentType);
         if (wanted()) this->onError(error);
     };
 
@@ -545,7 +568,8 @@ void HomeLive::showLoading(int contentType) {
         this->applyLoadState(known->second);
     } else {
         loadingDetail->setText("tsvitch/xtream/loading/connecting"_i18n);
-        loadingBar->setVisibility(brls::Visibility::GONE);
+        loadingBar->setProgress(-1);
+        loadingBar->setVisibility(brls::Visibility::VISIBLE);
     }
     loadingBox->setVisibility(brls::Visibility::VISIBLE);
 }
@@ -558,42 +582,154 @@ void HomeLive::hideLoading() {
 void HomeLive::onXtreamLoad(const tsvitch::XtreamLoadState& state) {
     // Remembered also for lists downloading in the background: opening one shows where it is
     lastLoadState[state.contentType] = state;
+    if (state.phase == tsvitch::XtreamLoadState::PREPARING && state.bytes > 0) {
+        XtreamStore::rememberDownloadSize(state.contentType, state.bytes);
+        sizeEstimates[state.contentType] = state.bytes;
+    }
     if (state.contentType == loadingType) this->applyLoadState(state);
+    this->updateHubStatus(state.contentType);
+}
+
+std::string HomeLive::downloadText(int contentType, const tsvitch::XtreamLoadState& state, float& fraction) {
+    double received = state.bytes / 1048576.0;
+    int64_t total   = state.total;
+    bool estimated  = false;
+    if (total <= 0) {
+        auto known = sizeEstimates.find(contentType);
+        if (known == sizeEstimates.end())
+            known = sizeEstimates.emplace(contentType, XtreamStore::lastDownloadSize(contentType)).first;
+        total     = known->second;
+        estimated = true;
+    }
+    // Nothing tells the size (first download from a server that does not say it), or the list grew
+    if (total <= 0 || (estimated && state.bytes > total)) {
+        fraction = -1;
+        return fmt::format("{:.1f} MB", received);
+    }
+    fraction = std::min(estimated ? 0.99f : 1.0f, static_cast<float>(state.bytes) / static_cast<float>(total));
+    return fmt::format(estimated ? "{:.1f} / ~{:.1f} MB" : "{:.1f} / {:.1f} MB", received, total / 1048576.0);
+}
+
+namespace {
+// 38305 -> "38,305" in English, "38.305" in the other languages of the app
+std::string groupDigits(size_t number) {
+    std::string digits = std::to_string(number);
+    std::string separator = brls::Application::getLocale() == brls::LOCALE_EN_US ? "," : ".";
+    for (int i = static_cast<int>(digits.size()) - 3; i > 0; i -= 3) digits.insert(i, separator);
+    return digits;
+}
+}  // namespace
+
+void HomeLive::updateHubStatus(int contentType) {
+    if (!isXtreamMode) return;
+    brls::Label* label = contentType == 2 ? hubSeriesStatus : contentType == 1 ? hubMoviesStatus : hubLiveStatus;
+    ProgressLine* bar  = contentType == 2 ? hubSeriesBar : contentType == 1 ? hubMoviesBar : hubLiveBar;
+    std::string text;
+    float fraction = -1;
+    bool showBar   = false;
+    if (fetchingTypes.count(contentType)) {
+        auto known = lastLoadState.find(contentType);
+        if (known == lastLoadState.end() || known->second.phase == tsvitch::XtreamLoadState::QUEUED) {
+            text = "tsvitch/xtream/hub/waiting"_i18n;
+        } else {
+            const auto& state = known->second;
+            showBar           = true;
+            switch (state.phase) {
+                case tsvitch::XtreamLoadState::DOWNLOADING:
+                    text = state.bytes > 0 ? brls::getStr("tsvitch/xtream/hub/downloading",
+                                                          this->downloadText(contentType, state, fraction))
+                                           : "tsvitch/xtream/hub/connecting"_i18n;
+                    break;
+                case tsvitch::XtreamLoadState::RETRY:
+                    text    = brls::getStr("tsvitch/xtream/hub/retry", state.retryInSeconds);
+                    showBar = false;
+                    break;
+                case tsvitch::XtreamLoadState::PREPARING:
+                    text     = "tsvitch/xtream/hub/preparing"_i18n;
+                    fraction = 1;
+                    break;
+                default:
+                    text = "tsvitch/xtream/hub/connecting"_i18n;
+                    break;
+            }
+        }
+    } else if (failedTypes.count(contentType)) {
+        text = "tsvitch/xtream/hub/failed"_i18n;
+    } else {
+        size_t count = 0;
+        auto cached  = contentCache.find(contentType);
+        if (cached != contentCache.end()) {
+            count = cached->second.size();
+        } else {
+            int64_t savedAt = 0;
+            uint32_t items  = 0;
+            if (XtreamStore::header(contentType, savedAt, items)) count = items;
+        }
+        if (count > 0) {
+            const char* key = contentType == 2   ? "tsvitch/xtream/hub/count/series"
+                              : contentType == 1 ? "tsvitch/xtream/hub/count/movies"
+                                                 : "tsvitch/xtream/hub/count/live";
+            text = brls::getStr(key, groupDigits(count));
+        }
+    }
+    label->setText(text);
+    label->setVisibility(text.empty() ? brls::Visibility::GONE : brls::Visibility::VISIBLE);
+    bar->setProgress(fraction);
+    bar->setVisibility(showBar ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
 }
 
 void HomeLive::applyLoadState(const tsvitch::XtreamLoadState& state) {
-    bool bar = false;
+    // The bar: the part downloaded when the size is known (or estimated), otherwise a sliding segment
+    bool bar       = true;
+    float fraction = -1;
     switch (state.phase) {
         case tsvitch::XtreamLoadState::QUEUED:
             loadingDetail->setText("tsvitch/xtream/loading/queued"_i18n);
+            bar = false;
             break;
         case tsvitch::XtreamLoadState::CATEGORIES:
             loadingDetail->setText("tsvitch/xtream/loading/categories"_i18n);
             break;
-        case tsvitch::XtreamLoadState::DOWNLOADING: {
-            if (state.bytes <= 0) {
+        case tsvitch::XtreamLoadState::DOWNLOADING:
+            if (state.bytes <= 0)
                 loadingDetail->setText("tsvitch/xtream/loading/connecting"_i18n);
-                break;
-            }
-            double received = state.bytes / 1048576.0;
-            std::string size = state.total > 0 ? fmt::format("{:.1f} / {:.1f} MB", received, state.total / 1048576.0)
-                                               : fmt::format("{:.1f} MB", received);
-            loadingDetail->setText(brls::getStr("tsvitch/xtream/loading/downloading", size));
-            if (state.total > 0) {
-                bar = true;
-                loadingBarFill->setWidthPercentage(std::min(100.0f, 100.0f * state.bytes / state.total));
-            }
+            else
+                loadingDetail->setText(brls::getStr("tsvitch/xtream/loading/downloading",
+                                                    this->downloadText(state.contentType, state, fraction)));
             break;
-        }
         case tsvitch::XtreamLoadState::RETRY:
             loadingDetail->setText(
                 brls::getStr("tsvitch/xtream/loading/retry", state.retryInSeconds, state.attempt, state.attempts));
+            bar = false;
             break;
         case tsvitch::XtreamLoadState::PREPARING:
             loadingDetail->setText("tsvitch/xtream/loading/preparing"_i18n);
+            fraction = 1;
             break;
     }
+    loadingBar->setProgress(fraction);
     loadingBar->setVisibility(bar ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+}
+
+void HomeLive::registerBackAction() {
+    this->registerAction("hints/back"_i18n, brls::BUTTON_B, [this](...) {
+        if (this->goBack()) return true;
+
+        // A running download is paused when the app closes; it continues from the downloads screen later
+        DownloadItem active;
+        if (DownloadManager::instance().getActiveDownload(active)) {
+            auto dialog = new brls::Dialog("tsvitch/download/exit_warning"_i18n);
+            dialog->addButton("hints/cancel"_i18n, []() {});
+            dialog->addButton("hints/ok"_i18n, []() { brls::Application::quit(); });
+            dialog->open();
+        } else {
+            auto dialog = new brls::Dialog("hints/exit_hint"_i18n);
+            dialog->addButton("hints/cancel"_i18n, []() {});
+            dialog->addButton("hints/ok"_i18n, []() { brls::Application::quit(); });
+            dialog->open();
+        }
+        return true;
+    });
 }
 
 void HomeLive::prefetchMissingLists() {
@@ -894,24 +1030,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return;
     }
 
-    this->registerAction("hints/back"_i18n, brls::BUTTON_B, [this](...) {
-        if (this->goBack()) return true;
-
-        // A running download is paused when the app closes; it continues from the downloads screen later
-        DownloadItem active;
-        if (DownloadManager::instance().getActiveDownload(active)) {
-            auto dialog = new brls::Dialog("tsvitch/download/exit_warning"_i18n);
-            dialog->addButton("hints/cancel"_i18n, []() {});
-            dialog->addButton("hints/ok"_i18n, []() { brls::Application::quit(); });
-            dialog->open();
-        } else {
-            auto dialog = new brls::Dialog("hints/exit_hint"_i18n);
-            dialog->addButton("hints/cancel"_i18n, []() {});
-            dialog->addButton("hints/ok"_i18n, []() { brls::Application::quit(); });
-            dialog->open();
-        }
-        return true;
-    });
+    this->registerBackAction();
 
     this->registerAction("hints/search"_i18n, brls::BUTTON_Y, [this](...) {
         this->search();

@@ -643,7 +643,7 @@ static bool keepXtreamStreamKey(const std::string& key) {
     static const std::unordered_set<std::string> keys = {
         "series_id", "cover",       "stream_id",           "stream_icon", "num",   "name",
         "category_name", "category_id", "container_extension", "rating",      "added", "last_modified",
-        "releaseDate",   "release_date"};
+        "releaseDate",   "release_date",  "year"};
     return keys.count(key) > 0;
 }
 
@@ -666,7 +666,9 @@ static void xtreamFetchContent(const std::function<void(LiveM3u8ListResult)>& ca
             };
             if (r.error) return fail("Network error: " + r.error.message, -1);
             if (r.status_code != 200) return fail("HTTP error " + std::to_string(r.status_code), r.status_code);
-            notifyXtreamLoad({kind.contentType, XtreamLoadState::PREPARING});
+            XtreamLoadState prepared{kind.contentType, XtreamLoadState::PREPARING};
+            prepared.bytes = static_cast<int64_t>(r.downloaded_bytes);  // the whole download, for the next time
+            notifyXtreamLoad(prepared);
 
             auto parseStart = std::chrono::steady_clock::now();
             nlohmann::json json;
@@ -706,6 +708,8 @@ static void xtreamFetchContent(const std::function<void(LiveM3u8ListResult)>& ca
                     live.year = yearFromText(safeGetString(item, "releaseDate"));
                     if (!live.year) live.year = yearFromText(safeGetString(item, "release_date"));
                 }
+                // Movies: some servers send the year in its own field, others only in the title
+                if (!live.year && kind.contentType == 1) live.year = yearFromText(safeGetIdString(item, "year"));
                 if (!live.year && kind.contentType != 0) live.year = yearFromText(live.title);
 
                 // get_*_streams only exposes category_id: the name comes from the category list

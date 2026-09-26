@@ -15,10 +15,12 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
 ## Features
 
 - **Live TV:** categories, channel logos, favorites, a now / next programme guide in the player, L and R to change the channel.
-- **Movies and series:** poster grids with ratings, sorting (recently added, rating, name, year), search, and detail pages with the plot, cast, backdrop and a resume button.
+- **Movies and series:** poster grids with ratings and years, sorting (recently added, rating, name, year), search, and detail pages with the plot, cast, backdrop and a resume button.
 - **Series:** seasons and episodes with stills and progress, L and R to change the season, and the next episode after a 10-second countdown.
 - **Player:** audio and subtitle tracks, subtitle size / color / background / position / delay, 10-second skips with the D-pad, and playback resumes where you left off.
 - **Downloads:** save movies and episodes to the SD card, pause and continue them, and watch them without internet.
+- **Saved lists:** the lists of the provider are kept on the SD card and open at once. They are refreshed in the
+  background every day, every week or only with the refresh button, and a card shows how the download goes.
 - **History and favorites**, a PIN lock for adult categories, and the account status (end date, connections).
 - **Languages:** English, Turkish, Italian and Brazilian Portuguese.
 
@@ -64,7 +66,7 @@ The screenshots show the open movies of the Blender Foundation: *Big Buck Bunny*
 (© Blender Foundation / Blender Studio, [studio.blender.org](https://studio.blender.org), licensed
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) and [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/);
 posters from Wikimedia Commons, resized, and the Caminandes cover made from an episode picture).
-The channel names and logos are made up.
+The channel names and logos are made up, and the ratings are sample values.
 
 ## Installation
 
@@ -158,5 +160,8 @@ SD kartta `/switch/iptv-player/` klasörüne kopyala. Homebrew menüsünden ya d
 
 **İlk açılış:** Ayarlar → IPTV bölümünden Xtream Codes ya da M3U8 seç ve hesap bilgilerini gir.
 Arayüzü Türkçe yapmak için: Settings → UI → Language → Türkçe.
+
+**Listeler:** Sağlayıcının listeleri SD karta kaydedilir ve hemen açılır. Arka planda her gün yenilenir;
+bunu Ayarlar → IPTV bölümünden haftada bire çekebilir ya da kapatabilirsin.
 
 TsVitch'i kullandıysan ayarların, favorilerin ve geçmişin ilk açılışta kendiliğinden gelir.

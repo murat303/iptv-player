@@ -210,6 +210,9 @@
                                                                         id="setting/iptv/account"
                                                                         title="@i18n/tsvitch/setting/iptv/account" />
 
+                                                                <SelectorCell
+                                                                        id="setting/iptv/auto_refresh" />
+
                                                                 <brls:BooleanCell
                                                                         id="setting/iptv/parental_enabled"
                                                                         title="@i18n/tsvitch/parental/enabled" />

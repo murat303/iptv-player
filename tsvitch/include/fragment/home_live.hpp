@@ -5,6 +5,7 @@
 #include "view/auto_tab_frame.hpp"
 #include "presenter/home_live.hpp"
 #include "api/tsvitch.h"
+#include "view/progress_line.hpp"
 
 #include <map>
 #include <mutex>
@@ -25,6 +26,9 @@ public:
     HomeLive();
 
     void onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) override;
+
+    // B: back to the hub (or out of a search / the episodes); on the hub it asks before quitting
+    void registerBackAction();
 
     ~HomeLive() override;
 
@@ -168,8 +172,13 @@ private:
     BRLS_BIND(brls::Box, loadingBox, "home/live/loading");
     BRLS_BIND(brls::Label, loadingTitle, "home/live/loading/title");
     BRLS_BIND(brls::Label, loadingDetail, "home/live/loading/detail");
-    BRLS_BIND(brls::Box, loadingBar, "home/live/loading/bar");
-    BRLS_BIND(brls::Box, loadingBarFill, "home/live/loading/bar/fill");
+    BRLS_BIND(ProgressLine, loadingBar, "home/live/loading/bar");
+    BRLS_BIND(brls::Label, hubLiveStatus, "xtream/hub/live/status");
+    BRLS_BIND(brls::Label, hubMoviesStatus, "xtream/hub/movies/status");
+    BRLS_BIND(brls::Label, hubSeriesStatus, "xtream/hub/series/status");
+    BRLS_BIND(ProgressLine, hubLiveBar, "xtream/hub/live/bar");
+    BRLS_BIND(ProgressLine, hubMoviesBar, "xtream/hub/movies/bar");
+    BRLS_BIND(ProgressLine, hubSeriesBar, "xtream/hub/series/bar");
 
     // The card over the grid while a list comes from the provider (-1: hidden)
     int loadingType = -1;
@@ -178,4 +187,12 @@ private:
     void hideLoading();
     void onXtreamLoad(const tsvitch::XtreamLoadState& state);
     void applyLoadState(const tsvitch::XtreamLoadState& state);
+    // Downloads the user waits for (first load, refresh): coming back to the list waits for them again
+    std::set<int> foregroundFetches;
+    std::set<int> failedTypes;
+    std::map<int, int64_t> sizeEstimates;
+    // "5.2 MB", "5.2 / 12.9 MB" or "5.2 / ~12.9 MB" (size of the last download); fraction -1 when unknown
+    std::string downloadText(int contentType, const tsvitch::XtreamLoadState& state, float& fraction);
+    // The line under a hub card: download state, or the number of items of a saved list
+    void updateHubStatus(int contentType);
 };

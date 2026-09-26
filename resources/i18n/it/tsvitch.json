@@ -202,8 +202,13 @@
       "header": "Impostazioni IPTV",
       "server_hint": "Inserisci l'indirizzo del server Xtream Codes",
       "username_hint": "Inserisci il nome utente",
-      "password_hint": "Inserisci la password"
-    }
+      "password_hint": "Inserisci la password",
+      "auto_refresh": "Aggiornamento automatico degli elenchi",
+      "auto_refresh_daily": "Ogni giorno",
+      "auto_refresh_weekly": "Ogni settimana",
+      "auto_refresh_off": "Disattivato (solo pulsante Aggiorna)"
+    },
+    "imported": "Impostazioni, preferiti e cronologia sono stati importati da TsVitch."
   },
   "hints": {
     "hint1": "Seleziona un gioco dalla schermata home",
@@ -587,6 +592,19 @@
       "retry": "Il provider è occupato. Nuovo tentativo tra {} s ({}/{})",
       "preparing": "Preparazione dell'elenco",
       "hint": "Gli elenchi grandi possono richiedere un minuto. Vengono salvati sulla scheda SD, così la prossima volta si aprono subito."
+    },
+    "hub": {
+      "waiting": "In attesa…",
+      "connecting": "Connessione…",
+      "downloading": "Download · {}",
+      "retry": "Nuovo tentativo tra {} s",
+      "preparing": "Preparazione…",
+      "failed": "Caricamento non riuscito",
+      "count": {
+        "live": "{} canali",
+        "movies": "{} film",
+        "series": "{} serie"
+      }
     }
   },
   "download": {

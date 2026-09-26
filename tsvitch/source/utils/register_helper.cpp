@@ -17,6 +17,7 @@
 
 #include "view/recycling_grid.hpp"
 #include "view/loading_ring.hpp"
+#include "view/progress_line.hpp"
 #include "view/grid_dropdown.hpp"
 
 #include "view/video_progress_slider.hpp"
@@ -36,6 +37,7 @@ void Register::initCustomView() {
     brls::Application::registerXMLView("AutoTabFrame", AutoTabFrame::create);
     brls::Application::registerXMLView("RecyclingGrid", RecyclingGrid::create);
     brls::Application::registerXMLView("LoadingRing", LoadingRing::create);
+    brls::Application::registerXMLView("ProgressLine", ProgressLine::create);
     brls::Application::registerXMLView("VideoView", VideoView::create);
     brls::Application::registerXMLView("VideoProfile", VideoProfile::create);
     brls::Application::registerXMLView("QRImage", QRImage::create);

@@ -202,8 +202,13 @@
       "header": "IPTV ayarları",
       "server_hint": "Xtream Codes sunucu adresini gir",
       "username_hint": "Kullanıcı adını gir",
-      "password_hint": "Şifreni gir"
-    }
+      "password_hint": "Şifreni gir",
+      "auto_refresh": "Listeleri kendiliğinden yenile",
+      "auto_refresh_daily": "Her gün",
+      "auto_refresh_weekly": "Her hafta",
+      "auto_refresh_off": "Kapalı (yalnızca yenile tuşu)"
+    },
+    "imported": "Ayarların, favorilerin ve geçmişin TsVitch'ten aktarıldı."
   },
   "hints": {
     "hint1": "Ana ekrandan bir oyun seç",
@@ -575,6 +580,19 @@
       "retry": "Sağlayıcı meşgul. {} sn sonra yeniden denenecek ({}/{})",
       "preparing": "Liste hazırlanıyor",
       "hint": "Büyük listeler bir dakika kadar sürebilir. Liste karta kaydedilir; bir dahaki sefere hemen açılır."
+    },
+    "hub": {
+      "waiting": "Sırada…",
+      "connecting": "Bağlanılıyor…",
+      "downloading": "İniyor · {}",
+      "retry": "{} sn sonra yeniden denenecek",
+      "preparing": "Hazırlanıyor…",
+      "failed": "Yüklenemedi",
+      "count": {
+        "live": "{} kanal",
+        "movies": "{} film",
+        "series": "{} dizi"
+      }
     }
   },
   "download": {

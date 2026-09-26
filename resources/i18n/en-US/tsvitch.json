@@ -202,8 +202,13 @@
       "header": "IPTV settings",
       "server_hint": "Enter the Xtream Codes server address",
       "username_hint": "Enter your username",
-      "password_hint": "Enter your password"
-    }
+      "password_hint": "Enter your password",
+      "auto_refresh": "Refresh lists automatically",
+      "auto_refresh_daily": "Every day",
+      "auto_refresh_weekly": "Every week",
+      "auto_refresh_off": "Off (refresh button only)"
+    },
+    "imported": "Your settings, favorites and history were brought over from TsVitch."
   },
   "hints": {
     "hint1": "Select a game from the home screen",
@@ -575,6 +580,19 @@
       "retry": "The provider is busy. Trying again in {} s ({}/{})",
       "preparing": "Preparing the list",
       "hint": "Big lists can take a minute. They are saved on the SD card, so next time they open at once."
+    },
+    "hub": {
+      "waiting": "Waiting…",
+      "connecting": "Connecting…",
+      "downloading": "Downloading · {}",
+      "retry": "Trying again in {} s",
+      "preparing": "Preparing…",
+      "failed": "Could not load",
+      "count": {
+        "live": "{} channels",
+        "movies": "{} movies",
+        "series": "{} series"
+      }
     }
   },
   "download": {

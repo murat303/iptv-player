@@ -116,6 +116,8 @@ enum class SettingItem {
     PLAYER_AUTO_NEXT,
     // Unix time of the last daily subscription check (the reminder before it ends)
     XTREAM_ACCOUNT_CHECKED,
+    // Background refresh of the saved lists: 0 every day, 1 every week, 2 only with the refresh button
+    XTREAM_AUTO_REFRESH,
 
     GROUP_SELECTED_INDEX,
 };
@@ -236,6 +238,9 @@ public:
     void importLegacyConfig();
 
     static inline const std::string CONFIG_FILE = "config.json";
+
+    // The first start took TsVitch's settings over (the home screen says so)
+    bool importedLegacy = false;
 
     std::string getHomePath();
 

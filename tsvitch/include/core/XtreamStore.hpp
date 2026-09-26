@@ -19,7 +19,17 @@ public:
     /// Removes every cached list (e.g. when the Xtream account changes)
     static void clear();
 
+    /// Whether a list saved at savedAt is refreshed in the background (Settings > IPTV: every day, every week,
+    /// or never)
     static bool isStale(int64_t savedAt);
+
+    /// Saved time and number of items of a cached list, from the file's header only
+    static bool header(int contentType, int64_t& savedAt, uint32_t& count);
+
+    /// Bytes of the last download of a list (0: unknown). Servers that do not tell the size of a list get a
+    /// progress bar against it.
+    static int64_t lastDownloadSize(int contentType);
+    static void rememberDownloadSize(int contentType, int64_t bytes);
 
     /// True when a list of the content type was saved before (without reading it)
     static bool exists(int contentType);

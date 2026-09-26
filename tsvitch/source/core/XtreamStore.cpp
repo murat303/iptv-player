@@ -163,4 +163,39 @@ bool XtreamStore::exists(int contentType) {
     return std::filesystem::exists(storeFile(contentType), ec);
 }
 
-bool XtreamStore::isStale(int64_t savedAt) { return savedAt <= 0 || nowSeconds() - savedAt > MAX_AGE_SECONDS; }
+bool XtreamStore::isStale(int64_t savedAt) {
+    if (savedAt <= 0) return true;
+    int mode = ProgramConfig::instance().getSettingItem(SettingItem::XTREAM_AUTO_REFRESH, 0);
+    if (mode == 2) return false;  // only with the refresh button
+    return nowSeconds() - savedAt > (mode == 1 ? 7 : 1) * MAX_AGE_SECONDS;
+}
+
+bool XtreamStore::header(int contentType, int64_t& savedAt, uint32_t& count) {
+    std::ifstream in(storeFile(contentType), std::ios::binary);
+    char data[16];
+    if (!in.read(data, sizeof(data))) return false;
+    if (std::memcmp(data, MAGIC, 4) != 0 && std::memcmp(data, MAGIC_V1, 4) != 0) return false;
+    std::memcpy(&savedAt, data + 4, sizeof(savedAt));
+    std::memcpy(&count, data + 12, sizeof(count));
+    return count <= MAX_ITEMS;
+}
+
+namespace {
+std::filesystem::path sizeFile(int contentType) {
+    return storeDir() / (contentType == 2 ? "series.size" : contentType == 1 ? "movies.size" : "live.size");
+}
+}  // namespace
+
+int64_t XtreamStore::lastDownloadSize(int contentType) {
+    std::ifstream in(sizeFile(contentType));
+    int64_t bytes = 0;
+    if (!(in >> bytes) || bytes < 0) return 0;
+    return bytes;
+}
+
+void XtreamStore::rememberDownloadSize(int contentType, int64_t bytes) {
+    std::error_code ec;
+    std::filesystem::create_directories(storeDir(), ec);
+    std::ofstream out(sizeFile(contentType), std::ios::trunc);
+    out << bytes;
+}

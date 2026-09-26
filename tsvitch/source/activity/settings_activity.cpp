@@ -582,6 +582,14 @@ void SettingsActivity::onContentAvailable() {
         tsvitch::showXtreamAccountInfo();
         return true;
     });
+    selectorAutoRefresh->init(
+        "tsvitch/setting/iptv/auto_refresh"_i18n,
+        {"tsvitch/setting/iptv/auto_refresh_daily"_i18n, "tsvitch/setting/iptv/auto_refresh_weekly"_i18n,
+         "tsvitch/setting/iptv/auto_refresh_off"_i18n},
+        std::clamp(conf.getSettingItem(SettingItem::XTREAM_AUTO_REFRESH, 0), 0, 2), [](int data) {
+            ProgramConfig::instance().setSettingItem(SettingItem::XTREAM_AUTO_REFRESH, data);
+            return true;
+        });
     btnQuality->init("tsvitch/setting/app/playback/low_quality"_i18n,
                      conf.getBoolOption(SettingItem::PLAYER_LOW_QUALITY), [](bool value) {
                          ProgramConfig::instance().setSettingItem(SettingItem::PLAYER_LOW_QUALITY, value);
