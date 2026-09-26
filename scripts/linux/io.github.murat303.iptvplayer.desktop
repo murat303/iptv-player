@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=IPTV Player
+Comment=Live TV, movies and series from your IPTV provider
+Exec=iptv_player
+Icon=io.github.murat303.iptvplayer
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Video;

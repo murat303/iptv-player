@@ -28,8 +28,7 @@
             grow="1"
             width="auto"
             height="auto"
-            singleLine="true"
-            fontSize="18"
+            fontSize="15"
             text="title"/>
 
 </brls:Box>

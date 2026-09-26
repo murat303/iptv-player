@@ -11,10 +11,12 @@
 #include "view/custom_button.hpp"
 #include "utils/image_helper.hpp"
 #include "utils/activity_helper.hpp"
+#include "activity/live_player_activity.hpp"
 #include "fragment/home_favorites.hpp"
 #include "core/FavoriteManager.hpp"
 #include "core/HistoryManager.hpp"
 #include "core/DownloadManager.hpp"
+#include "utils/video_download.hpp"
 #include "api/tsvitch/result/home_live_result.h"
 
 using namespace brls::literals;
@@ -35,10 +37,22 @@ public:
     size_t getItemCount() override { return favoriteChannels.size(); }
 
     void onItemSelected(RecyclingGrid* recycler, size_t index) override {
-        HistoryManager::get()->add(favoriteChannels[index]);
-        Intent::openLive(favoriteChannels, index, [recycler]() {
+        const auto& item = favoriteChannels[index];
+        // Movies and series open their information screen (a series item is not a playable url)
+        if (item.type == 1 || item.url.rfind("xtream-series://", 0) == 0) {
+            Intent::openXtreamDetail(item);
+            return;
+        }
+        HistoryManager::get()->add(item);
+        size_t start  = 0;
+        auto playlist = sameKindPlaylist(favoriteChannels, index, start);
+        Intent::openLive(playlist, start, [recycler, playlist]() {
+            // The favorite that played last (next/previous buttons) gets the focus
             auto favorites = FavoriteManager::get()->getFavorites();
-            recycler->setDataSource(new DataSourceFavoriteChannels(favorites));
+            size_t last    = LiveActivity::lastPlayedIndex(), focus = 0;
+            for (size_t i = 0; last < playlist.size() && i < favorites.size(); i++)
+                if (favorites[i].url == playlist[last].url) focus = i;
+            recycler->reloadWithFocus(focus, new DataSourceFavoriteChannels(favorites));
         });
     }
 
@@ -127,71 +141,7 @@ void HomeFavorites::downloadVideo() {
 
     // Ottieni il canale
     tsvitch::LiveM3u8 channel = item->getChannel();
-    
-    // Controlla se è una live stream in corso
-    std::string url = channel.url;
-    std::string title = channel.title;
-    
-    // Converte tutto in minuscolo per confronto case-insensitive
-    std::string urlLower = url;
-    std::string titleLower = title;
-    std::transform(urlLower.begin(), urlLower.end(), urlLower.begin(), ::tolower);
-    std::transform(titleLower.begin(), titleLower.end(), titleLower.begin(), ::tolower);
-    
-    // Determina se è una live stream
-    bool isLiveStream = false;
-    
-    // Indicatori di live stream negli URL e titoli
-    if (urlLower.find("live") != std::string::npos || 
-        urlLower.find("stream") != std::string::npos ||
-        urlLower.find(".m3u8") != std::string::npos ||
-        urlLower.find(".ts") != std::string::npos ||
-        titleLower.find("live") != std::string::npos ||
-        titleLower.find("diretta") != std::string::npos) {
-        isLiveStream = true;
-    }
-    
-    // Se è una live stream, mostra errore e blocca il download
-    if (isLiveStream) {
-        brls::Logger::warning("HomeFavorites: Cannot download live streams");
-        brls::Dialog* dialog = new brls::Dialog("tsvitch/download/live_error"_i18n);
-        dialog->addButton("OK", []() {});
-        dialog->open();
-        return;
-    }
-    
-    // Avvia il download
-    std::string downloadId = DownloadManager::instance().startDownload(
-        channel.title, 
-        channel.url, 
-        channel.logo,  // URL dell'immagine
-        [](const std::string& id, float progress, size_t downloaded, size_t total) {
-            // Callback di progresso
-            brls::Logger::debug("Download {}: {:.1f}% ({}/{} bytes)", id, progress, downloaded, total);
-        },
-        [](const std::string& id, const std::string& filePath) {
-            // Callback di completamento
-            brls::Logger::info("Download {} completed: {}", id, filePath);
-            brls::sync([]() {
-                brls::Application::notify("tsvitch/download/completed"_i18n);
-            });
-        },
-        [](const std::string& id, const std::string& error) {
-            // Callback di errore
-            brls::Logger::error("Download {} failed: {}", id, error);
-            brls::sync([error]() {
-                brls::Application::notify("tsvitch/download/error"_i18n + std::string(": ") + error);
-            });
-        }
-    );
-    
-    if (!downloadId.empty()) {
-        brls::Application::notify("tsvitch/download/started"_i18n + std::string(": ") + channel.title);
-        brls::Logger::info("HomeFavorites: Started download {} for {}", downloadId, channel.title);
-    } else {
-        brls::Application::notify("tsvitch/download/start_error"_i18n);
-        brls::Logger::error("HomeFavorites: Failed to start download for {}", channel.title);
-    }
+    tsvitch::startVideoDownload(channel);
 }
 
 brls::View* HomeFavorites::create() { return new HomeFavorites(); }

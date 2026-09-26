@@ -1,5 +1,11 @@
 
 
+#include <algorithm>
+#include <cstdio>
+#include <unistd.h>
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
 #include <cstdlib>
 #include <clocale>
 #include <pystring.h>
@@ -267,6 +273,9 @@ MPVCore::MPVCore() {
     this->init();
 
     exitDoneEventSubscription = brls::Application::getExitDoneEvent()->subscribe([this]() {
+        // The event is iterating over its callbacks right now: clean() must not erase this one
+        // (erasing the running callback corrupted the list and crashed the app on exit now and then)
+        hasExitDoneSubscription = false;
         this->clean();
 #ifdef MPV_SW_RENDER
         if (pixels) {
@@ -279,7 +288,35 @@ MPVCore::MPVCore() {
     hasExitDoneSubscription = true;
 }
 
+#ifdef __SWITCH__
+// libass has no system fonts on the Switch, so text subtitles stayed invisible. mpv uses
+// <config dir>/subfont.ttf as its fallback subtitle font: the console's Standard font is written there once.
+static void ensureSubtitleFont() {
+    std::string path = ProgramConfig::instance().getConfigDir() + "/subfont.ttf";
+    if (access(path.c_str(), F_OK) != -1) return;
+    bool started = R_SUCCEEDED(plInitialize(PlServiceType_User));
+    PlFontData font;
+    if (R_SUCCEEDED(plGetSharedFontByType(&font, PlSharedFontType_Standard))) {
+        std::string temp = path + ".tmp";
+        FILE* file       = fopen(temp.c_str(), "wb");
+        if (file) {
+            bool written = fwrite(font.address, 1, font.size, file) == font.size;
+            fclose(file);
+            if (written)
+                rename(temp.c_str(), path.c_str());
+            else
+                remove(temp.c_str());
+            brls::Logger::info("Subtitle font written: {} ({} bytes)", path, font.size);
+        }
+    }
+    if (started) plExit();
+}
+#endif
+
 void MPVCore::init() {
+#ifdef __SWITCH__
+    ensureSubtitleFont();
+#endif
     setlocale(LC_NUMERIC, "C");
     this->mpv = mpvCreate();
     if (!mpv) {
@@ -289,6 +326,20 @@ void MPVCore::init() {
     mpvSetOptionString(mpv, "config", "yes");
     mpvSetOptionString(mpv, "config-dir", ProgramConfig::instance().getConfigDir().c_str());
     mpvSetOptionString(mpv, "ytdl", "no");
+    // IPTV servers drop connections now and then: let FFmpeg reconnect instead of ending the stream
+    mpvSetOptionString(mpv, "stream-lavf-o",
+                       "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=5");
+    // Audio/subtitle language the user picked last time
+    {
+        std::string audioLang = ProgramConfig::instance().getSettingItem(SettingItem::PLAYER_LANGUAGE, std::string{});
+        std::string subLang = ProgramConfig::instance().getSettingItem(SettingItem::PLAYER_SUB_LANGUAGE, std::string{});
+        if (!audioLang.empty()) mpvSetOptionString(mpv, "alang", audioLang.c_str());
+        if (subLang == "no")
+            mpvSetOptionString(mpv, "sid", "no");
+        else if (!subLang.empty())
+            mpvSetOptionString(mpv, "slang", subLang.c_str());
+    }
+    for (const auto &option : subtitleStyleOptions()) mpvSetOptionString(mpv, option.first.c_str(), option.second.c_str());
     mpvSetOptionString(mpv, "audio-channels", "stereo");
     mpvSetOptionString(mpv, "idle", "yes");
     mpvSetOptionString(mpv, "loop-file", "no");
@@ -731,6 +782,14 @@ void MPVCore::draw(brls::Rect area, float alpha) {
 #endif
         mpvRenderContextReportSwap(this->mpv_context);
 
+        if (!videoFrameReady) {
+            auto *vg = brls::Application::getNVGContext();
+            nvgBeginPath(vg);
+            nvgFillColor(vg, nvgRGB(0, 0, 0));
+            nvgRect(vg, rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
+            nvgFill(vg);
+        }
+
         if (rect.getWidth() < brls::Application::contentWidth) {
             auto *vg = brls::Application::getNVGContext();
             nvgBeginPath(vg);
@@ -745,6 +804,16 @@ void MPVCore::draw(brls::Rect area, float alpha) {
         }
     }
 #else
+
+    // A new video is loading: its area stays black instead of showing the last picture of the previous one
+    if (!videoFrameReady) {
+        auto *vg = brls::Application::getNVGContext();
+        nvgBeginPath(vg);
+        nvgFillColor(vg, nvgRGBA(0, 0, 0, static_cast<unsigned char>(255 * alpha)));
+        nvgRect(vg, rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
+        nvgFill(vg);
+        return;
+    }
 
     glUseProgram(shader.prog);
     glBindTexture(GL_TEXTURE_2D, this->media_texture);
@@ -832,6 +901,7 @@ void MPVCore::eventMainLoop() {
             case MPV_EVENT_START_FILE:
 
                 brls::Logger::info("========> MPV_EVENT_START_FILE");
+                videoFrameReady = false;
 
                 mpvCoreEvent.fire(MpvEventEnum::START_FILE);
 
@@ -840,7 +910,8 @@ void MPVCore::eventMainLoop() {
             case MPV_EVENT_PLAYBACK_RESTART:
 
                 brls::Logger::info("========> MPV_EVENT_PLAYBACK_RESTART");
-                video_stopped = false;
+                video_stopped   = false;
+                videoFrameReady = true;
                 mpvCoreEvent.fire(MpvEventEnum::LOADING_END);
                 break;
             case MPV_EVENT_END_FILE: {
@@ -1048,7 +1119,12 @@ void MPVCore::reset() {
 }
 
 void MPVCore::setUrl(const std::string &url, const std::string &extra, const std::string &method) {
-    brls::Logger::debug("{} Url: {}, extra: {}", method, url, extra);
+    // A track picked by hand belongs to its video: the next one chooses by the preferred languages again
+    std::string subLang = ProgramConfig::instance().getSettingItem(SettingItem::PLAYER_SUB_LANGUAGE, std::string{});
+    command_async("set", "aid", "auto");
+    command_async("set", "sid", subLang == "no" ? "no" : "auto");
+    command_async("set", "sub-delay", "0");
+    videoFrameReady = false;
     if (extra.empty()) {
         command_async("loadfile", url, method);
     } else {
@@ -1076,7 +1152,10 @@ void MPVCore::resume() { command_async("set", "pause", "no"); }
 
 void MPVCore::pause() { command_async("set", "pause", "yes"); }
 
-void MPVCore::stop() { command_async("stop"); }
+void MPVCore::stop() {
+    videoFrameReady = false;
+    command_async("stop");
+}
 
 void MPVCore::seek(int64_t p) { command_async("seek", p, "absolute"); }
 
@@ -1185,6 +1264,52 @@ int64_t MPVCore::getInt(const std::string &key) {
     int64_t value = 0;
     mpvGetProperty(mpv, key.c_str(), MPV_FORMAT_INT64, &value);
     return value;
+}
+
+std::vector<MPVCore::Track> MPVCore::getTracks(const std::string &type) {
+    std::vector<Track> tracks;
+    int64_t count = getInt("track-list/count");
+    for (int64_t i = 0; i < count; i++) {
+        std::string prefix = "track-list/" + std::to_string(i) + "/";
+        if (getString(prefix + "type") != type) continue;
+        Track track;
+        track.id       = getInt(prefix + "id");
+        track.title    = getString(prefix + "title");
+        track.lang     = getString(prefix + "lang");
+        track.codec    = getString(prefix + "codec");
+        track.channels = getInt(prefix + "demux-channel-count");
+        track.selected = getString(prefix + "selected") == "yes";
+        tracks.push_back(std::move(track));
+    }
+    return tracks;
+}
+
+void MPVCore::setPreferredLanguages(const std::string &audio, const std::string &subtitle) {
+    // Setting "sid" or "aid" here would switch the track of the playing video (to none for "auto")
+    if (!audio.empty()) command_async("set", "alang", audio);
+    if (!subtitle.empty() && subtitle != "no") command_async("set", "slang", subtitle);
+}
+
+std::vector<std::pair<std::string, std::string>> MPVCore::subtitleStyleOptions() {
+    auto &config   = ProgramConfig::instance();
+    int size       = std::clamp(config.getSettingItem(SettingItem::PLAYER_SUB_SIZE, 1), 0, 3);
+    int color      = std::clamp(config.getSettingItem(SettingItem::PLAYER_SUB_COLOR, 0), 0, 1);
+    int background = std::clamp(config.getSettingItem(SettingItem::PLAYER_SUB_BACKGROUND, 0), 0, 2);
+    int position   = std::clamp(config.getSettingItem(SettingItem::PLAYER_SUB_POSITION, 0), 0, 2);
+    static const char *scales[]    = {"0.8", "1.0", "1.25", "1.5"};
+    static const char *colors[]    = {"#FFFFFF", "#FFE500"};
+    // "#AARRGGBB": a visible background color puts a box behind the text, the shadow offset is its margin
+    static const char *boxes[]     = {"#00000000", "#A0000000", "#FF000000"};
+    static const char *positions[] = {"100", "94", "88"};
+    return {{"sub-scale", scales[size]},
+            {"sub-color", colors[color]},
+            {"sub-back-color", boxes[background]},
+            {"sub-shadow-offset", background ? "4" : "0"},
+            {"sub-pos", positions[position]}};
+}
+
+void MPVCore::applySubtitleStyle() {
+    for (const auto &option : subtitleStyleOptions()) command_async("set", option.first, option.second);
 }
 
 std::unordered_map<std::string, mpv_node> MPVCore::getNodeMap(const std::string &key) {

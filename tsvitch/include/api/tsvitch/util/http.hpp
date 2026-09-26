@@ -32,7 +32,7 @@ class HTTP {
 public:
     static inline cpr::Cookies COOKIES = {false};
     static inline cpr::Header HEADERS  = {
-        {"User-Agent", "tsvitch"},
+        {"User-Agent", "IPTVPlayer/1.0"},
     };
     static inline int TIMEOUT = 10000;
     static inline cpr::Proxies PROXIES = {};

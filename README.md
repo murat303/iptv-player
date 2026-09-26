@@ -1,159 +1,161 @@
 <p align="center">
-    <img src="resources/icon/icon.png" alt="logo" height="128" width="128"/>
+  <img src="resources/icon/icon.png" alt="IPTV Player" width="128" height="128"/>
 </p>
+<h1 align="center">IPTV Player</h1>
+<p align="center">Live TV, movies and series from your own IPTV subscription, on a Nintendo Switch running homebrew.</p>
+
 <p align="center">
-  TV finally on Switch
+  <img src="docs/screenshots/movies.jpg" width="49%" alt="Movies"/>
+  <img src="docs/screenshots/live-player.jpg" width="49%" alt="Live TV with the programme guide"/>
 </p>
 
-- - -
-<div align="center">
-<img src="https://img.shields.io/github/v/release/giovannimirulla/TsVitch"/>
-<img src="https://img.shields.io/endpoint?url=https://giovannimirulla.github.io/TsVitch/downloads.json">
-<img src="https://img.shields.io/github/stars/giovannimirulla/TsVitch?style=flat"/>
-<img src="https://img.shields.io/github/forks/giovannimirulla/TsVitch"/>
-</div>
+IPTV Player plays the channels, movies and series of an IPTV service that you already have. It works with
+**Xtream Codes API** accounts and **M3U / M3U8** playlists. It does not come with any channels, playlists or accounts.
 
+## Features
 
-<div align="center"><img src="https://img.shields.io/badge/-Nintendo%20Switch-e4000f?style=flat&logo=Nintendo%20Switch"/>
-<img src="https://img.shields.io/badge/-macOS%2010.11+-black?style=flat&logo=Apple">
-</div>
-<br>
+- **Live TV:** categories, channel logos, favorites, a now / next programme guide in the player, L and R to change the channel.
+- **Movies and series:** poster grids with ratings, sorting (recently added, rating, name, year), search, and detail pages with the plot, cast, backdrop and a resume button.
+- **Series:** seasons and episodes with stills and progress, L and R to change the season, and the next episode after a 10-second countdown.
+- **Player:** audio and subtitle tracks, subtitle size / color / background / position / delay, 10-second skips with the D-pad, and playback resumes where you left off.
+- **Downloads:** save movies and episodes to the SD card, pause and continue them, and watch them without internet.
+- **History and favorites**, a PIN lock for adult categories, and the account status (end date, connections).
+- **Languages:** English, Turkish, Italian and Brazilian Portuguese.
 
-<div align="center">
-<a href="https://discord.gg/etUeUJXkm3">
-    <img src="https://img.shields.io/badge/Join%20on%20Discord-5865F2?logo=discord&logoColor=white&style=for-the-badge" alt="Join on Discord"/>
-</a>
-</div>
-<br>
-<p align="center">
-<img src="docs/images/screenshot-NX.png" alt="screenshot">
-</p>
-<p align="center">
-<img src="docs/images/screenshot-macOS.png" alt="screenshot">
-</p>
+## Screenshots
 
+<table>
+  <tr>
+    <td><img src="docs/screenshots/home.jpg" alt="Home"/><br/>Home</td>
+    <td><img src="docs/screenshots/live-tv.jpg" alt="Live TV"/><br/>Live TV</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/movies.jpg" alt="Movies"/><br/>Movies</td>
+    <td><img src="docs/screenshots/movie-detail.jpg" alt="Movie details"/><br/>Movie details</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/series.jpg" alt="Series"/><br/>Series</td>
+    <td><img src="docs/screenshots/series-detail.jpg" alt="Seasons and episodes"/><br/>Seasons and episodes</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/player.jpg" alt="Player"/><br/>Player</td>
+    <td><img src="docs/screenshots/player-settings.jpg" alt="Audio and subtitles"/><br/>Audio and subtitles</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/live-player.jpg" alt="Live TV with the programme guide"/><br/>Live TV with the programme guide</td>
+    <td><img src="docs/screenshots/next-episode.jpg" alt="Next episode"/><br/>Next episode</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/search.jpg" alt="Search"/><br/>Search</td>
+    <td><img src="docs/screenshots/favorites.jpg" alt="Favorites"/><br/>Favorites</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/downloads.jpg" alt="Downloads"/><br/>Downloads</td>
+    <td><img src="docs/screenshots/history.jpg" alt="History"/><br/>History</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/settings.jpg" alt="IPTV settings"/><br/>IPTV settings</td>
+    <td><img src="docs/screenshots/account.jpg" alt="Account info"/><br/>Account info</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/about.jpg" alt="About"/><br/>About</td>
+    <td></td>
+  </tr>
+</table>
 
-# Introduction
+The screenshots use a made-up catalogue: the channel names, titles and posters are not real.
 
-This app turns your Nintendo Switch into a powerful multimedia streaming device. With a user-friendly interface and extensive customization options, you can easily access and enjoy your favorite IPTV channels.
+## Installation
 
-- Access to Your Favorite Content: Supports IPTV playlists in M3U format, enabling streaming of live TV, movies, and on-demand series.
-- Optimized Interface: A clean, intuitive design tailored for Nintendo Switch's touchscreen and Joy-Con controls.
-- Multilanguage Support: Offers subtitles, multiple audio tracks, and language options for a global audience.
+1. Download `iptv-player.nro` from the [latest release](https://github.com/murat303/iptv-player/releases/latest).
+2. Copy it to the SD card as `/switch/iptv-player/iptv-player.nro`.
+3. Start it from the Homebrew Menu or a launcher such as Sphaira.
 
-<br>
+Starting the Homebrew Menu through a game (hold **R** while you open a game) gives the app more memory, which helps
+with very large lists.
 
-## Default Playlist
+## First start
 
-The app comes preloaded with a default playlist sourced from the [Free-TV/IPTV repository](https://github.com/Free-TV/IPTV). This repository provides a wide range of free and publicly available IPTV channels.
+1. Open **Settings → IPTV**.
+2. Pick the **IPTV mode**: *Xtream Codes* or *M3U8*.
+3. For Xtream Codes, enter the server address (for example `http://server.com:8080`), the username and the password.
+   For M3U8, enter the playlist address.
+4. Go back to **Home** and open Live TV, Movies or Series.
 
-### Nintendo Switch
+The app is in English by default. The language can be changed in **Settings → UI → Language**.
 
+## Controls
 
-1. Download TsVitch-NintendoSwitch.zip from: [TsVitch releases](https://github.com/giovannimirulla/TsVitch/releases)
-2. Place TsVitch.nro in the SD card under the switch directory.
-3. On the home screen, hold the R button while opening any game to access hbmenu. From the list, select TsVitch and click to launch.
-4. [Optional] Install a desktop shortcut within the app via: Settings/Utilities/User Guide.
+| Button | Lists | Details | Player |
+|---|---|---|---|
+| A | Open | Play | Play / pause |
+| B | Back | Back | Back |
+| X | Favorite | Favorite | |
+| Y | Search | | Show / hide controls |
+| L | Sort | Previous season | Previous channel or episode |
+| R | Refresh | Next season | Next channel or episode |
+| ZR | Download | Download | Volume with ↑ / ↓ |
+| ← / → | Move | Move | Skip 10 s back / forward |
+| − | | | Video information |
 
-# Clone & Build
+In the history, **Y** removes the selected video. The player controls can also be used by touch.
 
-```shell
-# Pulling code
-git clone --recursive https://github.com/giovannimirulla/TsVitch.git
-cd TsVitch
+## Files
+
+Everything the app saves is in `/switch/iptv-player/`, next to the app: the settings, favorites, watch history,
+playback positions, the cached lists of the provider and the downloads.
+
+When the app starts for the first time, it copies the settings, favorites and history of
+[TsVitch](https://github.com/giovannimirulla/TsVitch) from `/config/tsvitch` if they exist. It only copies them:
+TsVitch keeps its own files. Videos downloaded with TsVitch stay in its folder and still play from there.
+
+## Building
+
+The Nintendo Switch build needs [Docker](https://www.docker.com/):
+
+```bash
+git clone --recursive https://github.com/murat303/iptv-player
+cd iptv-player
+docker run --rm -v "$PWD:/data" devkitpro/devkita64 bash /data/scripts/build_switch.sh
 ```
 
-### PC
+The result is `cmake-build-switch/iptv-player.nro`. Every push is also built by GitHub Actions.
 
-Currently TsVitch is supported on macOS.
+Only the Nintendo Switch version is maintained. The files for the other platforms come from TsVitch and are not tested.
 
-<details>
+## Credits
 
-#### macOS
+IPTV Player is a modified version of **[TsVitch](https://github.com/giovannimirulla/TsVitch)** by giovannimirulla,
+with the Xtream movies and series support of **[ratk](https://github.com/ratk/TsVitch)**. TsVitch is based on
+**[wiliwili](https://github.com/xfangfang/wiliwili)** by xfangfang.
 
-```shell
-# macOS: install dependencies
-brew install mpv webp
+It is built with [borealis](https://github.com/xfangfang/borealis), [mpv](https://mpv.io),
+[FFmpeg](https://ffmpeg.org), [libass](https://github.com/libass/libass), [cpr](https://github.com/libcpr/cpr),
+[nlohmann/json](https://github.com/nlohmann/json) and [lunasvg](https://github.com/sammycage/lunasvg).
 
-cmake -B build -DCPR_USE_SYSTEM_CURL=ON \
-  -DCPR_USE_BOOST_FILESYSTEM=ON \
-  -DCURL_INCLUDE_DIR=/opt/homebrew/opt/curl/include \
-  -DCURL_LIBRARY=/opt/homebrew/opt/curl/lib/libcurl.dylib \
-  -DBOOST_ROOT=/opt/homebrew/opt/boost \
-  -DBoost_NO_SYSTEM_PATHS=ON \
-  -DPLATFORM_DESKTOP=ON
-make -C build TsVitch -j$(sysctl -n hw.ncpu)
-```
+The changes of IPTV Player (2026, muratgokce) are listed in the [changelog](CHANGELOG.md).
 
-</details>
+## License
 
-### Cross-compile the Switch executable (TsVitch.nro)
+IPTV Player is free software under the [GNU General Public License v3.0](LICENSE), like TsVitch.
+It comes with no warranty.
 
-Recommended to use docker build, local build configuration environment is slightly cumbersome, but can be used to switch the underlying ffmpeg or mpv and other dependent libraries for more flexible debugging.
+## Disclaimer
 
-<details>
+IPTV Player is only a player. It does not provide, host or link to any content. Use it only with services and
+content that you are allowed to watch. IPTV Player is not affiliated with Nintendo or with any IPTV provider.
 
-The following describes the build method under OpenGL. deko3d (better hard solver support) please refer to it: `scripts/build_switch_deko3d.sh`
+---
 
-#### Docker
+## Türkçe
 
-```shell
-docker run --rm -v $(pwd):/data devkitpro/devkita64:20240202 \
-  bash -c "/data/scripts/build_switch.sh"
-```
+IPTV Player, Nintendo Switch'te (homebrew) kendi IPTV aboneliğinin canlı kanallarını, filmlerini ve dizilerini
+izlemeni sağlar. Xtream Codes hesaplarıyla ve M3U / M3U8 listeleriyle çalışır; içinde hiçbir kanal, liste ya da hesap yoktur.
 
-#### Compilation 
+**Kurulum:** [Son sürümden](https://github.com/murat303/iptv-player/releases/latest) `iptv-player.nro` dosyasını indir ve
+SD kartta `/switch/iptv-player/` klasörüne kopyala. Homebrew menüsünden ya da Sphaira'dan aç.
 
-```shell
-# 1. Install the devkitpro environment: https://github.com/devkitPro/pacman/releases
+**İlk açılış:** Ayarlar → IPTV bölümünden Xtream Codes ya da M3U8 seç ve hesap bilgilerini gir.
+Arayüzü Türkçe yapmak için: Settings → UI → Language → Türkçe.
 
-# 2. Installation of dependencies
-sudo dkp-pacman -S switch-glfw switch-libwebp switch-cmake switch-curl devkitA64
-
-# 3. Installing custom dependencies
-base_url="https://github.com/xfangfang/wilwili/releases/download/v0.1.0"
-sudo dkp-pacman -U \
-    $base_url/switch-ffmpeg-7.1-1-any.pkg.tar.zst \
-    $base_url/switch-libmpv-0.36.0-3-any.pkg.tar.zst
-
-# 4. Build
-cmake -B cmake-build-switch -DPLATFORM_SWITCH=ON
-make -C cmake-build-switch TsVitch.nro -j$(nproc)
-```
-
-</details>
-
-# Disclaimer
-This project is for educational purposes only. The author is not responsible for any damage caused by the use of this project. Please comply with the laws of your country.
-
-This app does not host or provide any IPTV content. Users are responsible for ensuring their playlists contain only legal and authorized content.
-
-# Acknowledgement
-
-The development of TsVitch cannot do without the support of the following open source projects.
-
-- Toolchain: devkitpro, switchbrew, vitasdk OpenOrbis and PacBrew
-    - https://github.com/devkitPro
-    - https://github.com/switchbrew/libnx
-    - https://github.com/vitasdk
-    - https://github.com/OpenOrbis
-    - https://github.com/PacBrew
-- UI Library: natinusala and XITRIX
-    - https://github.com/natinusala/borealis
-    - https://github.com/XITRIX/borealis
-- Video Player: Cpasjuste, proconsule fish47 and averne
-    - https://github.com/Cpasjuste/pplay
-    - https://github.com/proconsule/nxmp
-    - https://github.com/fish47/FFmpeg-vita
-    - https://github.com/averne
-- wiliwili
-    - https://github.com/xfangfang/wiliwili
-- Misc
-    - https://github.com/nlohmann/json
-    - https://github.com/nayuki/QR-Code-generator
-    - https://github.com/BYVoid/OpenCC
-    - https://github.com/imageworks/pystring
-    - https://github.com/sammycage/lunasvg
-    - https://chromium.googlesource.com/webm/libwebp
-    - https://github.com/fancycode/MemoryModule
-    - https://github.com/dacap/clip
+TsVitch'i kullandıysan ayarların, favorilerin ve geçmişin ilk açılışta kendiliğinden gelir.

@@ -67,13 +67,14 @@
                                 id="video/card/hint"
                                 height="18"
                                 marginTop="2"
-                                shrink="0"
+                                shrink="1"
                                 backgroundColor="@theme/color/yellow_1"
                                 cornerRadius="4"
                                 justifyContent="center"
                                 alignItems="center">
                                 <brls:Label
                                         id="video/card/label/group"
+                                        singleLine="true"
                                         fontSize="13"
                                         margin="2"
                                         horizontalAlign="center"

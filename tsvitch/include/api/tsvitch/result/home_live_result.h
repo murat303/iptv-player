@@ -114,8 +114,12 @@ public:
     std::string groupTitle;
     std::string url;
     int type = 0;  // 0 = live TV, 1 = movie, 2 = series (para histórico por tipo)
+    float rating  = 0;  // Xtream rating (0-10), 0 = unknown
+    int64_t added = 0;  // unix time the item was added/updated on the server, 0 = unknown
+    int year      = 0;  // year of release (movies and series), 0 = unknown
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(LiveM3u8, id, chno, title, logo, groupTitle, url, type)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(LiveM3u8, id, chno, title, logo, groupTitle, url, type, rating, added,
+                                                year)
 
 typedef std::vector<LiveM3u8> LiveM3u8ListResult;
 

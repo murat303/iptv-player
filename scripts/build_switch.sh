@@ -1,17 +1,15 @@
-
+#!/bin/bash
+# Builds iptv-player.nro in the devkitPro container, from the repository root:
+#   docker run --rm -v "$PWD:/data" devkitpro/devkita64 bash /data/scripts/build_switch.sh
+# The result is cmake-build-switch/iptv-player.nro
 set -e
-
 BUILD_DIR=cmake-build-switch
 
+cd "$(dirname "$0")/.."
+git config --global --add safe.directory "$(pwd)" || true
 
-cd "$(dirname $0)/.."
-git config --global --add safe.directory `pwd`
-
-# Aggiorna i pacchetti nel container DevkitPro prima della build
-dkp-pacman -Syu --noconfirm
-
+# The prebuilt libraries of wiliwili: mpv 0.36 and FFmpeg 6.1 with OpenGL
 BASE_URL="https://github.com/xfangfang/wiliwili/releases/download/v0.1.0/"
-
 PKGS=(
     "switch-libass-0.17.1-1-any.pkg.tar.zst"
     "switch-ffmpeg-6.1-5-any.pkg.tar.zst"
@@ -19,57 +17,17 @@ PKGS=(
     "switch-nspmini-48d4fc2-1-any.pkg.tar.xz"
     "hacBrewPack-3.05-1-any.pkg.tar.zst"
 )
+mkdir -p .packages
 for PKG in "${PKGS[@]}"; do
-    [ -f "${PKG}" ] || curl -LO ${BASE_URL}${PKG}
-    dkp-pacman -U --noconfirm ${PKG}
+    [ -s ".packages/${PKG}" ] || curl -fsSL --retry 3 -o ".packages/${PKG}" "${BASE_URL}${PKG}"
 done
-
-
-if [ -z "${GA_ID}" ] || [ -z "${GA_KEY}" ]; then
-    echo "GA_ID or GA_KEY not found in environment"
-    exit 1
-fi
-
-if [ -z "${SERVER_URL}" ]; then
-    echo "SERVER_URL not found in environment"
-    exit 1
-fi
-
-if [ -z "${SERVER_TOKEN}" ]; then
-    echo "SERVER_TOKEN not found in environment"
-    exit 1
-fi
-
-if [ -z "${M3U8_URL}" ]; then
-    echo "M3U8_URL not found in environment"
-    exit 1
-fi
-
-# GITHUB_TOKEN is optional but pass it if available
-GITHUB_TOKEN_FLAG=""
-if [ -n "${GITHUB_TOKEN}" ]; then
-    GITHUB_TOKEN_FLAG="-DGITHUB_TOKEN=\"${GITHUB_TOKEN}\""
-fi
-
-# Disable unity build by default for stability on Switch
-# Can be re-enabled with ENABLE_UNITY_BUILD=true environment variable
-UNITY_BUILD_FLAG="-DBRLS_UNITY_BUILD=OFF"
-if [ "${ENABLE_UNITY_BUILD}" = "true" ]; then
-    UNITY_BUILD_FLAG="-DBRLS_UNITY_BUILD=ON"
-fi
+dkp-pacman -U --noconfirm "${PKGS[@]/#/.packages/}"
 
 cmake -B ${BUILD_DIR} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBUILTIN_NSP=ON \
-  -DPLATFORM_SWITCH=ON \
-  ${UNITY_BUILD_FLAG} \
-  -DCMAKE_UNITY_BUILD_BATCH_SIZE=16 \
-  -DANALYTICS=ON \
-  -DANALYTICS_ID="${GA_ID}" \
-  -DANALYTICS_KEY="${GA_KEY}" \
-  -DSERVER_URL="${SERVER_URL}" \
-    -DSERVER_TOKEN="${SERVER_TOKEN}" \
-  -DM3U8_URL="${M3U8_URL}" \
-  ${GITHUB_TOKEN_FLAG} 
-
-make -C ${BUILD_DIR} TsVitch.nro -j$(nproc)
+    -DCMAKE_BUILD_TYPE=Release \
+    -DPLATFORM_SWITCH=ON \
+    -DUSE_DEKO3D=OFF \
+    -DBUILTIN_NSP=OFF \
+    -DBRLS_UNITY_BUILD=OFF
+make -C ${BUILD_DIR} iptv-player.nro -j"$(nproc)"
+echo "Built ${BUILD_DIR}/iptv-player.nro"

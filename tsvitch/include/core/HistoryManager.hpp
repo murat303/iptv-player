@@ -23,11 +23,15 @@ public:
     // Remove todo o histórico
     void clearAll();
 
+    // Removes one video from the history
+    void remove(const std::string& url);
+
     //get istantance
      static HistoryManager* get();
 
 private:
     std::filesystem::path file_;
     std::deque<tsvitch::LiveM3u8> ring_; // cambia il tipo da string a LiveM3u8
-    static constexpr std::size_t MAX_ITEMS = 10;
+    // Enough for the series screens to find the episode watched last
+    static constexpr std::size_t MAX_ITEMS = 100;
 };

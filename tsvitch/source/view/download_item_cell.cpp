@@ -1,220 +1,128 @@
 #include "view/download_item_cell.hpp"
-#include "utils/image_helper.hpp"
+
+#include <algorithm>
+#include <cstdio>
 #include <borealis/core/i18n.hpp>
 #include <fmt/format.h>
-#include <algorithm>
+
+#include "utils/image_helper.hpp"
 
 using namespace brls::literals;
 
-DownloadItemCell::DownloadItemCell() {
-    brls::Logger::debug("DownloadItemCell constructor");
-    this->inflateFromXMLRes("xml/views/download_item_cell.xml");
-    this->reuseIdentifier = "DownloadItemCell";
-    
-    // Verifica che i componenti critici siano stati trovati e logga i loro stati
-    brls::Logger::debug("DownloadItemCell: Component check - titleLabel: {}, statusLabel: {}, progressLabel: {}", 
-        (titleLabel ? "OK" : "NULL"), (statusLabel ? "OK" : "NULL"), (progressLabel ? "OK" : "NULL"));
-    brls::Logger::debug("DownloadItemCell: Component check - progressBar: {}, spinner: {}, imageView: {}, progressContainer: {}", 
-        (progressBar ? "OK" : "NULL"), (spinner ? "OK" : "NULL"), (imageView ? "OK" : "NULL"), (progressContainer ? "OK" : "NULL"));
-    
-    if (!titleLabel || !statusLabel || !progressLabel || !progressBar || !spinner || !imageView || !progressContainer) {
-        brls::Logger::error("DownloadItemCell: One or more components are null after inflation!");
-    }
-    
-    // Configura lo slider senza cursore
-    if (progressBar) {
-        progressBar->setProgress(0.0f);
-        progressBar->setPointerSize(0.0f);
-        brls::Logger::debug("DownloadItemCell: Progress bar configured with initial progress 0.0");
-    } else {
-        brls::Logger::error("DownloadItemCell: Cannot configure progress bar - it's null!");
-    }
-    
-    // Imposta la visibilità iniziale
-    this->setVisibility(brls::Visibility::VISIBLE);
-    brls::Logger::debug("DownloadItemCell constructor completed");
+namespace {
+
+// "8 dk kaldı" from the bytes still to come and the current speed
+std::string timeLeft(size_t remaining, double speed) {
+    if (speed < 1) return "";
+    auto seconds = static_cast<long long>(static_cast<double>(remaining) / speed);
+    if (seconds < 60) return "tsvitch/download/time_left_less"_i18n;
+    long long minutes = (seconds + 59) / 60;
+    if (minutes < 60) return brls::getStr("tsvitch/download/time_left_m", minutes);
+    return brls::getStr("tsvitch/download/time_left_h", minutes / 60, minutes % 60);
 }
 
-DownloadItemCell::~DownloadItemCell() {
-    brls::Logger::debug("DownloadItemCell: delete");
-    if (imageView) {
-        ImageHelper::clear(imageView);
-    }
+}  // namespace
+
+DownloadItemCell::DownloadItemCell() { this->inflateFromXMLRes("xml/views/download_item_cell.xml"); }
+
+DownloadItemCell::~DownloadItemCell() { ImageHelper::clear(this->image); }
+
+RecyclingGridItem* DownloadItemCell::create() { return new DownloadItemCell(); }
+
+std::string DownloadItemCell::formatSize(size_t bytes) {
+    const double kb = 1024.0, mb = kb * 1024.0, gb = mb * 1024.0;
+    std::string text;
+    if (bytes >= gb)
+        text = fmt::format("{:.2f} GB", bytes / gb);
+    else if (bytes >= mb)
+        text = fmt::format("{:.1f} MB", bytes / mb);
+    else
+        text = fmt::format("{:.0f} KB", bytes / kb);
+    std::replace(text.begin(), text.end(), '.', ',');
+    return text;
 }
 
 void DownloadItemCell::setDownloadItem(const DownloadItem& item) {
-    brls::Logger::debug("DownloadItemCell::setDownloadItem called for '{}' with status {} progress {:.1f}%", 
-        item.title, static_cast<int>(item.status), item.progress);
-    
-    // Aggiorna TUTTO il currentItem prima di fare qualsiasi altra operazione
-    currentItem = item;
-    
-    // Verifica che i componenti siano validi
-    if (!titleLabel || !statusLabel) {
-        brls::Logger::error("DownloadItemCell::setDownloadItem - null components!");
-        return;
-    }
-    
-    // Imposta il titolo (troncato se troppo lungo)
-    std::string safeTitle = item.title;
-    if (safeTitle.empty()) {
-        safeTitle = "Download";
-    } else if (safeTitle.length() > 45) {
-        safeTitle = safeTitle.substr(0, 42) + "...";
-    }
-    titleLabel->setText(safeTitle);
-    
-    // Imposta l'immagine se disponibile
-    if (imageView) {
-        if (!item.imageUrl.empty()) {
-            brls::Logger::debug("DownloadItemCell: Setting image URL: {}", item.imageUrl);
-            ImageHelper::with(imageView)->load(item.imageUrl);
-            imageView->setVisibility(brls::Visibility::VISIBLE);
+    if (item.id != downloadId || item.imageUrl != imageUrl || item.imagePath != imagePath) {
+        downloadId = item.id;
+        imageUrl   = item.imageUrl;
+        imagePath  = item.imagePath;
+        ImageHelper::clear(this->image);
+        // The cover saved next to the video works without internet
+        std::FILE* cover = imagePath.empty() ? nullptr : std::fopen(imagePath.c_str(), "rb");
+        if (cover) {
+            std::fclose(cover);
+            this->image->setImageFromFile(imagePath);
+        } else if (!imageUrl.empty()) {
+            ImageHelper::with(this->image)->load(ImageHelper::smallPoster(imageUrl));
         } else {
-            ImageHelper::clear(imageView);
-            imageView->setVisibility(brls::Visibility::GONE);
+            this->image->setImageFromRes("pictures/video-card-bg.png");
         }
     }
-    
-    // Aggiorna status e progress - IMPORTANTE: chiamare updateStatus prima di updateProgress
-    updateStatus(item.status);
-    
-    // Aggiorna il progresso DOPO aver impostato lo status (che controlla la visibilità)
-    updateProgress(item.progress);
-    
-    this->setVisibility(brls::Visibility::VISIBLE);
-    brls::Logger::debug("DownloadItemCell item set successfully - downloadedSize: {}, totalSize: {}", 
-        currentItem.downloadedSize, currentItem.totalSize);
-}
+    this->title->setText(item.title);
 
-void DownloadItemCell::updateProgress(float progress) {
-    currentItem.progress = progress;
-    
-    // Debug: logga tutti i valori per il debug
-    brls::Logger::debug("DownloadItemCell::updateProgress called with progress={:.1f}%, downloadedSize={}, totalSize={}", 
-        progress, currentItem.downloadedSize, currentItem.totalSize);
-    
-    // Aggiorna sempre la progress bar se esiste, indipendentemente dalla visibilità
-    if (progressBar) {
-        float normalizedProgress = std::max(0.0f, std::min(100.0f, progress)) / 100.0f;
-        progressBar->setProgress(normalizedProgress);
-        brls::Logger::debug("DownloadItemCell: Updated progress bar to {:.1f}% (normalized: {:.3f})", progress, normalizedProgress);
-    } else {
-        brls::Logger::warning("DownloadItemCell: progressBar is null, cannot update progress");
-    }
-    
-    // Aggiorna il testo del progresso se esiste
-    if (progressLabel) {
-        std::string progressText;
-        if (currentItem.totalSize > 0) {
-            std::string downloaded = formatFileSize(currentItem.downloadedSize);
-            std::string total = formatFileSize(currentItem.totalSize);
-            progressText = fmt::format("{:.1f}% ({} / {})", progress, downloaded, total);
-        } else {
-            progressText = fmt::format("{:.1f}%", progress);
+    std::string state, info;
+    NVGcolor color = nvgRGB(255, 145, 0);
+    std::string sizes =
+        item.totalSize ? formatSize(item.downloadedSize) + " / " + formatSize(item.totalSize) : formatSize(item.downloadedSize);
+    std::string percent = item.totalSize ? fmt::format("%{:.0f}", item.progress) : "";
+    switch (item.status) {
+        case DownloadStatus::DOWNLOADING: {
+            state = "tsvitch/download/status/downloading"_i18n;
+            std::vector<std::string> parts;
+            if (!percent.empty()) parts.push_back(percent);
+            if (item.downloadedSize) parts.push_back(sizes);
+            if (item.speed >= 1) parts.push_back(brls::getStr("tsvitch/download/speed", formatSize((size_t)item.speed)));
+            if (item.totalSize > item.downloadedSize) {
+                std::string left = timeLeft(item.totalSize - item.downloadedSize, item.speed);
+                if (!left.empty()) parts.push_back(left);
+            }
+            for (size_t i = 0; i < parts.size(); i++) info += (i ? "  ·  " : "") + parts[i];
+            break;
         }
-        progressLabel->setText(progressText);
-        brls::Logger::debug("DownloadItemCell: Updated progress text to: {}", progressText);
-    } else {
-        brls::Logger::warning("DownloadItemCell: progressLabel is null, cannot update progress text");
+        case DownloadStatus::PENDING:
+            state = "tsvitch/download/status/queued"_i18n;
+            info  = item.downloadedSize ? (percent.empty() ? sizes : percent + "  ·  " + sizes) : "";
+            break;
+        case DownloadStatus::PAUSED:
+        case DownloadStatus::CANCELLED:
+            state = "tsvitch/download/status/paused"_i18n;
+            color = nvgRGB(180, 185, 194);
+            info  = item.downloadedSize ? (percent.empty() ? sizes : percent + "  ·  " + sizes) : "";
+            break;
+        case DownloadStatus::FAILED:
+            state = "tsvitch/download/status/failed"_i18n;
+            color = nvgRGB(255, 90, 90);
+            info  = item.error;
+            break;
+        case DownloadStatus::COMPLETED:
+            state = "tsvitch/download/status/completed"_i18n;
+            color = nvgRGB(76, 217, 100);
+            info  = formatSize(item.totalSize ? item.totalSize : item.downloadedSize);
+            break;
     }
-}
+    this->status->setText(state);
+    this->status->setTextColor(color);
+    this->detail->setText(info);
 
-void DownloadItemCell::updateStatus(DownloadStatus status) {
-    currentItem.status = status;
-    brls::Logger::info("DownloadItemCell::updateStatus called with status: {}", static_cast<int>(status));
-    
-    // Aggiorna il testo dello status
-    if (statusLabel) {
-        statusLabel->setText(getStatusText(status));
+    bool showBar = item.status != DownloadStatus::COMPLETED && item.totalSize > 0;
+    this->bar->setVisibility(showBar ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    if (showBar) {
+        this->barFill->setWidthPercentage(std::clamp(item.progress, 0.0f, 100.0f));
+        this->barFill->setBackgroundColor(item.status == DownloadStatus::FAILED ? nvgRGB(255, 90, 90)
+                                          : item.status == DownloadStatus::DOWNLOADING ? nvgRGB(255, 145, 0)
+                                                                                       : nvgRGB(140, 145, 155));
     }
-    
-    // Mostra/nascondi componenti in base allo status
-    bool showProgress = (status == DownloadStatus::DOWNLOADING || status == DownloadStatus::PENDING || status == DownloadStatus::PAUSED);
-    
-    if (progressContainer) {
-        if (showProgress) {
-            progressContainer->setVisibility(brls::Visibility::VISIBLE);
-            brls::Logger::debug("DownloadItemCell: Showing progress container for status {}", static_cast<int>(status));
-        } else {
-            progressContainer->setVisibility(brls::Visibility::GONE);
-            brls::Logger::info("DownloadItemCell: Hiding progress container for completed/failed download");
-        }
-    }
-    
-    // Gestisci lo spinner
-    if (spinner) {
-        if (status == DownloadStatus::DOWNLOADING || status == DownloadStatus::PENDING) {
-            spinner->setVisibility(brls::Visibility::VISIBLE);
-        } else {
-            spinner->setVisibility(brls::Visibility::GONE);
-        }
-    }
-}
-
-RecyclingGridItem* DownloadItemCell::create() {
-    brls::Logger::debug("DownloadItemCell::create() called - creating new cell");
-    return new DownloadItemCell();
 }
 
 void DownloadItemCell::prepareForReuse() {
-    brls::Logger::debug("DownloadItemCell::prepareForReuse called");
     RecyclingGridItem::prepareForReuse();
-    
-    // Reset visual state
-    if (titleLabel) titleLabel->setText("Loading...");
-    if (statusLabel) statusLabel->setText("Ready");
-    if (progressLabel) progressLabel->setText("0%");
-    if (progressBar) progressBar->setProgress(0.0f);
-    if (spinner) spinner->setVisibility(brls::Visibility::GONE);
-    if (progressContainer) progressContainer->setVisibility(brls::Visibility::GONE);
-    if (imageView) {
-        ImageHelper::clear(imageView);
-        imageView->setVisibility(brls::Visibility::GONE);
-    }
-    
-    this->setVisibility(brls::Visibility::VISIBLE);
+    downloadId.clear();
+    imageUrl.clear();
+    imagePath.clear();
 }
 
 void DownloadItemCell::cacheForReuse() {
     RecyclingGridItem::cacheForReuse();
-}
-
-std::string DownloadItemCell::formatFileSize(size_t bytes) {
-    const char* suffixes[] = {"B", "KB", "MB", "GB"};
-    int suffixIndex = 0;
-    double size = static_cast<double>(bytes);
-    
-    while (size >= 1024 && suffixIndex < 3) {
-        size /= 1024;
-        suffixIndex++;
-    }
-    
-    if (suffixIndex == 0) {
-        return fmt::format("{} {}", static_cast<int>(size), suffixes[suffixIndex]);
-    } else {
-        return fmt::format("{:.1f} {}", size, suffixes[suffixIndex]);
-    }
-}
-
-std::string DownloadItemCell::getStatusText(DownloadStatus status) {
-    switch (status) {
-        case DownloadStatus::PENDING:
-            return brls::getStr("tsvitch/download/status/queued");
-        case DownloadStatus::DOWNLOADING:
-            return brls::getStr("tsvitch/download/status/downloading");
-        case DownloadStatus::PAUSED:
-            return brls::getStr("tsvitch/download/status/paused");
-        case DownloadStatus::COMPLETED:
-            return brls::getStr("tsvitch/download/status/completed");
-        case DownloadStatus::FAILED:
-            if (!currentItem.error.empty()) {
-                return fmt::format("{}: {}", brls::getStr("tsvitch/download/status/error"), currentItem.error);
-            }
-            return brls::getStr("tsvitch/download/status/failed");
-        case DownloadStatus::CANCELLED:
-            return brls::getStr("tsvitch/download/status/cancelled");
-        default:
-            return brls::getStr("tsvitch/download/status/unknown");
-    }
+    ImageHelper::clear(this->image);
 }

@@ -1,0 +1,690 @@
+{
+  "title": "IPTV Player",
+  "github": "https://github.com/murat303/iptv-player",
+  "github_release": "https://github.com/murat303/iptv-player/releases/latest",
+  "setting": {
+    "quit_hint": "Uygulamadan çıkılacak. Ayarlar bir sonraki açılışta geçerli olur",
+    "app": {
+      "tab": "Uygulama",
+      "playback": {
+        "header": "Oynatma",
+        "report": "Oynatma geçmişini yükle",
+        "player_bar": "İlerleme çubuğunu hep göster",
+        "low_quality": "Düşük kaliteli çözme (daha az işlemci)",
+        "in_memory_cache": "Bellek önbelleği",
+        "hwdec": "Donanımsal çözme",
+        "exit_fullscreen": "Oynatma bitince tam ekrandan çık",
+        "play_strategy": "Oynatma davranışı",
+        "auto_play_next_part": "Sonraki bölümü otomatik oynat",
+        "auto_play_recommend": "Önerilen videoları otomatik oynat",
+        "auto_loop": "Videoyu tekrarla",
+        "auto_no": "Bitince duraklat",
+        "auto_hint": "\"Önerilenleri otomatik oynat\" seçiliyse bölüm bitince önerilen videolar oynatılır.",
+        "sleep": "Uyku zamanlayıcısı",
+        "video_codec": "Video kodeği",
+        "audio_quality": "Ses kalitesi",
+        "video_format": "Video biçimi",
+        "player": "Oynatıcı",
+        "auto_next": "Sonraki bölümü otomatik oynat"
+      },
+      "image": {
+        "header": "Görseller",
+        "texture": "Görsel önbelleği (doku sayısı)",
+        "threads": "Görsel indirme iş parçacığı sayısı"
+      },
+      "network": {
+        "header": "Ağ",
+        "tls": "TLS doğrulaması",
+        "proxy": "Vekil sunucu",
+        "proxy_hint": "örnek: http://127.0.0.1:7890"
+      },
+      "ui": {
+        "header": "Arayüz",
+        "tv_osd": "TV tarzı ekran kontrolleri",
+        "window": "Pencere",
+        "bottom_bar": "Alt ipucu çubuğu"
+      },
+      "others": {
+        "header": "Diğer",
+        "vibration": "Kumanda titreşimi",
+        "hide_bottom": "Alttaki ipucu çubuğunu gizle",
+        "show_bottom": "Alttaki ipucu çubuğunu göster",
+        "hide_fps": "FPS'yi gizle",
+        "show_fps": "FPS'yi göster",
+        "limited_fps": "En yüksek kare hızı",
+        "limited_fps_vsync": "Dikey eşitleme",
+        "fullscreen": "Tam ekran",
+        "always_on_top": "Her zaman üstte",
+        "tv_search": "TV tarzı arama sayfası",
+        "clear_history": "Arama geçmişini temizle",
+        "theme": {
+          "header": "Tema (yeniden başlatma gerekir)",
+          "1": "Otomatik",
+          "2": "Açık",
+          "3": "Koyu"
+        },
+        "custom_theme": {
+          "header": "Özel düzen (yeniden başlatma gerekir)"
+        },
+        "scale": {
+          "header": "Arayüz ölçeği (yeniden başlatma gerekir)",
+          "544p": "544p",
+          "720p": "720p",
+          "900p": "900p",
+          "1080p": "1080p"
+        },
+        "language": {
+          "header": "Dil (yeniden başlatma gerekir)",
+          "auto": "Konsol dili",
+          "chinese_s": "Basitleştirilmiş Çince",
+          "chinese_t": "Geleneksel Çince",
+          "english": "İngilizce",
+          "japanese": "Japonca",
+          "ryukyuan": "Ryukyu dili",
+          "italiano": "İtalyanca",
+          "korean": "Korece",
+          "portuguese_br": "Brezilya Portekizcesi"
+        },
+        "opencc": "Basitleştirilmiş Çinceyi otomatik dönüştür (yeniden başlatma gerekir)",
+        "keymap": {
+          "header": "Tuş simgeleri",
+          "xbox": "Xbox",
+          "ps": "PlayStation",
+          "keyboard": "Klavye",
+          "swap": "A/B tuşlarını değiştir"
+        },
+        "always_on_top_hint": "Pencereyi diğerlerinin üstünde tut"
+      }
+    },
+    "tools": {
+      "tab": "Araçlar",
+      "m3u8": {
+        "header": "M3U8 listesi",
+        "input": "Özel liste",
+        "timeout": "İndirme zaman aşımı (saniye)",
+        "hint": "http://ornek.com/liste.m3u8"
+      },
+      "proxy": {
+        "header": "Vekil sunucu ayarları",
+        "input": "Vekil sunucu",
+        "hint": "http://127.0.0.1:8080 ya da socks5://127.0.0.1:1080"
+      },
+      "tutorial": {
+        "header": "Rehber",
+        "intro": "Uygulama tanıtımı (çevrimiçi video, Çince)",
+        "wiki": "Ayrıntılar için wiki sayfası",
+        "open": "Simge ana ekrana nasıl eklenir",
+        "error": "Bir hatayla karşılaşırsan",
+        "hot_key": "Kısayol tuşları",
+        "font": "Özel yazı tipi ayarla"
+      },
+      "test": {
+        "header": "Tanılama",
+        "net": "Ağ tanılaması",
+        "proxy": "Vekil sunucuyu dene",
+        "proxy_none": "Vekil sunucu ayarlanmamış",
+        "proxy_testing": "Vekil sunucu deneniyor",
+        "proxy_success": "✓ Vekil sunucu çalışıyor",
+        "proxy_failed": "✗ Vekil sunucu çalışmadı - Kod",
+        "proxy_error": "✗ Vekil sunucu denenirken hata",
+        "vibration": "Titreşim testi"
+      },
+      "others": {
+        "header": "Diğer",
+        "dlna": "DLNA alıcısı",
+        "dlna_waiting": "DLNA yayını bekleniyor...",
+        "dlna_quit": "DLNA yayınından çıkılsın mı?",
+        "up2date": "Uygulama güncel",
+        "checking_update": "Güncellemeler denetleniyor...",
+        "release": "Güncellemeleri denetle",
+        "config": "Ayar klasörünü aç",
+        "config_dir": "Ayar klasörünü göster"
+      }
+    },
+    "about": {
+      "tab": "Hakkında",
+      "brief_header": "Tanıtım",
+      "repository": "Kaynak kodu",
+      "brief": "Nintendo Switch için IPTV oynatıcı: canlı TV, filmler ve diziler (Xtream Codes ve M3U8 listeleri).",
+      "repo_header": "Kaynak kodu",
+      "author_header": "Yazarın notu",
+      "author": "How nice it is to watch TV in the bathroom",
+      "contrib_header": "Katkı ve destek",
+      "contrib_text": "IPTV Player açık kaynaklıdır (GPL-3.0). Hata bildirimlerini ve önerileri GitHub'a yazabilirsin: github.com/murat303/iptv-player",
+      "contributors_header": "Katkıda bulunanlar",
+      "sponsors_header": "Destekçiler",
+      "sponsor_qr": "Destekçi ol",
+      "developer_header": "Geliştirici",
+      "credits_header": "Temel aldığı projeler",
+      "credits": "giovannimirulla'nın TsVitch uygulaması, ratk'ın Xtream film/dizi desteği, xfangfang'ın wiliwili uygulaması ve borealis arayüz kitaplığı.",
+      "license_header": "Lisans",
+      "license": "GPL-3.0: özgür yazılımdır ve hiçbir garanti verilmez. Kaynak kodu: github.com/murat303/iptv-player"
+    },
+    "opensource": {
+      "tab": "Açık kaynak"
+    },
+    "tutorial": {
+      "error_q1": "İnternete bağlanılamıyor",
+      "error_a1": "1. Atmosphère ve sistem yazılımının güncel olduğundan emin ol\n2. Sistem saatinin doğru olduğunu kontrol et\n3. IP, DNS gibi ağ ayarlarını varsayılana döndür",
+      "error_q2": "Uygulama rastgele kapanıyor",
+      "error_a2": "1. FAT32 biçimli bir hafıza kartı kullan\n2. Atmosphère ve sistem yazılımının güncel olduğundan emin ol\n3. Sorun sürerse bildir",
+      "font_q1": "Özel yazı tipi ya da simge nasıl ayarlanır",
+      "font_a1": "1. İstediğin yazı tipini ya da simge dosyasını indir\n2. Yazı tipinin adını font.ttf, simgeninkini icon.ttf yap\n3. Dosyaları ayar klasörüne koy\n4. Uygulamayı yeniden başlat",
+      "font_q2": "Sık sorulan sorular",
+      "font_a2": "1. Uygulama önce özel yazı tipini, yoksa yerleşik yazı tiplerini kullanır\n2. \"Ayarlar - Araçlar - Diğer\" menüsünden ayar klasörü açılabilir\n3. Linux'ta klasör xdg-open ile açılır; açılmazsa bu aracı kur"
+    },
+    "hot_keys": {
+      "common_header": "Genel",
+      "common_content": " /  Ana sayfalar arasında geç\n /  Alt sayfalar arasında geç",
+      "player_header": "Oynatıcı",
+      "player_content": " Hızlandır, çift tıklayınca  kilitlenir\n +  İleri sar\n Ekran kontrollerini göster/gizle\n Kayan yorumları göster/gizle"
+    },
+    "net": {
+      "test": {
+        "header": "Ağ erişimi",
+        "feed": "Liste isteği"
+      },
+      "profile": {
+        "header": "Ağ",
+        "subtitle": "Ağ ayarlarını sıfırlamak da bazı sorunları çözebilir",
+        "ip": "IP adresi",
+        "dns": "DNS adresi"
+      }
+    },
+    "iptv": {
+      "mode": "IPTV türü",
+      "m3u8_timeout": "M3U8 zaman aşımı",
+      "server": "Sunucu adresi",
+      "username": "Kullanıcı adı",
+      "password": "Şifre",
+      "account": "Hesap bilgisi",
+      "tab": "IPTV",
+      "header": "IPTV ayarları",
+      "server_hint": "Xtream Codes sunucu adresini gir",
+      "username_hint": "Kullanıcı adını gir",
+      "password_hint": "Şifreni gir"
+    }
+  },
+  "hints": {
+    "hint1": "Ana ekrandan bir oyun seç",
+    "hint2": " tuşunu basılı tutup  ile hbmenu'ye gir",
+    "hint3": "hbmenu'de IPTV Player'ı seç",
+    "hint4": "İsteğe bağlı: NSP kısayolu kullan (iptv-player.nro, /switch/iptv-player/ klasöründe olmalı)",
+    "hint_nsp": " ile NSP kısayolunu kur",
+    "hint_confirm": "NSP kısayolu kurmak ban riskine yol açabilir\nOnaylıyor musun?",
+    "hint_right": "Görseller internetten alınmıştır, telif hakları Nintendo Co., Ltd'ye aittir"
+  },
+  "home": {
+    "common": {
+      "part": "Kanal:",
+      "recommend": "Önerilen",
+      "search": "Kanal ara",
+      "switch": "Değiştir",
+      "refresh": "Yenile",
+      "last": "Önceki",
+      "next": "Sonraki",
+      "filter": "Filtre",
+      "save": "Kaydet",
+      "min": "dakika",
+      "high": "Yüksek",
+      "medium": "Orta",
+      "low": "Düşük",
+      "no_login": "Henüz giriş yapmadın"
+    },
+    "live": {
+      "tab": "Kanallar",
+      "dialog": "Kanallar",
+      "default": "Kanal: Keşfet"
+    },
+    "rcmd": {
+      "tab": "Keşfet"
+    },
+    "hots": {
+      "tab": "Popüler",
+      "t1": "Popüler",
+      "t2": "Sıralama",
+      "t3": "Haftalık",
+      "t4": "Geçmiş"
+    },
+    "bangumi": {
+      "tab": "Bangumi"
+    },
+    "cinema": {
+      "tab": "Sinema"
+    }
+  },
+  "dynamic": {
+    "detail": "Etkinlik ayrıntısı",
+    "video": "Video",
+    "article": "Etkinlik"
+  },
+  "search": {
+    "tv": {
+      "hint": "Anahtar kelime ya da baş harflerle arayabilirsin",
+      "clear": "Temizle",
+      "delete": "Sil",
+      "search": "Ara",
+      "hots": "Popüler",
+      "history": "Geçmiş",
+      "history_clear": "Tümünü temizle",
+      "history_delete": "Sil",
+      "suggest": "Öneriler"
+    },
+    "order": {
+      "all": "Tümü",
+      "click": "Tıklanma",
+      "pubdate": "Yayın tarihi",
+      "dm": "Yorum",
+      "stow": "Favori"
+    },
+    "tab": "Ara",
+    "t0": "Geçmiş",
+    "t1": "Popüler",
+    "t2": "Video",
+    "t3": "Bangumi",
+    "t4": "Sinema"
+  },
+  "activity": {
+    "all": "Tüm etkinlikler",
+    "refresh": "Listeyi yenile"
+  },
+  "mine": {
+    "login": {
+      "check": "Giriş bilgileri denetleniyor...",
+      "success": "Giriş başarılı",
+      "refresh": "Yenile",
+      "click": "Giriş için buraya tıkla",
+      "logout": "Hesaptan çık\n(uygulama kapanır)",
+      "scan": "Giriş için QR kodunu okut",
+      "loading": "QR kodu yükleniyor...",
+      "hint": "QR kodunu mobil uygulamayla okut",
+      "network_error": "Ağ hatası, tekrar dene",
+      "qr_not_available": "QR kodu geçersiz, pencereyi yeniden aç",
+      "need_confirm": "Onay bekleniyor",
+      "need_scan": "QR kodunun okutulması bekleniyor"
+    },
+    "later": "Sonra izle",
+    "history": "Geçmiş",
+    "collection": "Favoriler",
+    "subscription": "Abonelikler",
+    "anime": "Anime",
+    "series": "Diziler",
+    "refresh_history": "Geçmişi yenile",
+    "refresh_collection": "Favorileri yenile",
+    "refresh_subscription": "Abonelikleri yenile",
+    "refresh_later": "Sonra izle listesini yenile",
+    "refresh_anime": "Animeleri yenile",
+    "refresh_series": "Dizileri yenile",
+    "coin": "Jeton",
+    "following": "Takip edilen",
+    "follower": "Takipçi",
+    "activity": "Etkinlik",
+    "public": "Herkese açık",
+    "private": "Gizli",
+    "num": " içerik",
+    "pub": "Oluşturulma",
+    "creator": "Yazar",
+    "done": "Tamamlandı",
+    "article": "Tarayıcıda aç:"
+  },
+  "player": {
+    "intro": "Tanıtım",
+    "p": "Bölümler",
+    "ugc_season": "Oynatma listesi",
+    "related": "İlgili",
+    "series": "Dizi",
+    "recommend": "Önerilen",
+    "uploaded": "Diğer",
+    "qr": "İzlemek/paylaşmak için QR kodunu okut",
+    "clipboard": "Panoya kopyalandı",
+    "comment": "Yorum",
+    "current": " kişi izliyor",
+    "share": "Paylaş",
+    "rights": "Yeniden paylaşılamaz",
+    "fs": "Tam ekran",
+    "quality": "Kalite",
+    "speed": "Hız",
+    "replay": "Yeniden oynat",
+    "current_speed": "Şu anki hız: {0}",
+    "not_follow": "Takipten çıkılsın mı?",
+    "coin": {
+      "title": "Jeton",
+      "hint": "Jeton sayısını seç",
+      "like": "Aynı anda beğen",
+      "own": "Kendine jeton veremezsin",
+      "run_out": "Bu videonun jeton sınırı doldu",
+      "exp": "Deneyim + {} (Bugün {}/50)",
+      "exp_full": "Günlük deneyim sınırına ulaşıldı (50/50)!",
+      "pcs": "{} adet"
+    },
+    "season_part": {
+      "ascend": "Artan",
+      "descend": "Azalan"
+    },
+    "comment_sort": {
+      "sort_top": "Popülerliğe göre",
+      "sort_new": "En yeniye göre",
+      "top": "Öne çıkan yorumlar",
+      "new": "En yeni yorumlar"
+    },
+    "collection": {
+      "type": "Favoriler",
+      "title": "Favori klasörü seç"
+    },
+    "setting": {
+      "subtitle": {
+        "header": "Altyazı"
+      },
+      "equalizer": {
+        "header": "Görüntü ayarları",
+        "brightness": "Parlaklık",
+        "contrast": "Karşıtlık",
+        "saturation": "Doygunluk",
+        "gamma": "Gama",
+        "hue": "Renk tonu",
+        "reset": "Sıfırla"
+      },
+      "common": {
+        "header": "Genel",
+        "mirror": "Aynala",
+        "highlight": "Öne çıkan anları hep göster",
+        "skip_opening_credits": "Açılış jeneriğini atla",
+        "skip_hint1": "Sonraki videodan itibaren açılış otomatik atlanır",
+        "skip_hint2": "Sonraki videodan itibaren açılış atlanmaz",
+        "skip_hint3": "Sonraki videodan itibaren özel açılış süresi kullanılır",
+        "skip_hint4": "Sonraki videodan itibaren özel açılış süresi kullanılmaz",
+        "wiki": "Gölgelendiricilerin nasıl çalıştığı için wiki sayfası"
+      },
+      "season": {
+        "aspect": "Özel görüntü oranı",
+        "clip": "Özel açılış",
+        "clip_start": "Açılış süresi",
+        "clip_end": "Kapanış süresi",
+        "unit": "Birim: saniye"
+      },
+      "aspect": {
+        "header": "Görüntü oranı",
+        "crop": "Kırp",
+        "stretch": "Uzat",
+        "auto": "Otomatik"
+      },
+      "shader": {
+        "header": "Gölgelendirici"
+      }
+    },
+    "cast": {
+      "header": "DLNA",
+      "device": "Cihazlar",
+      "request_url": "Video bağlantısı alınıyor...",
+      "cast_to_renderer": "Alıcıya yansıtılıyor...",
+      "casting": "Yansıtılıyor...",
+      "cancel": "Yansıtmayı durdur",
+      "err_connect": "DLNA alıcısına bağlanılamadı",
+      "err_url": "Video bağlantısı alınamadı",
+      "countdown": "Arama süresi",
+      "live_download_error": "İndirilemez",
+      "live_download_error_desc": "Süren bir canlı yayın indirilemez.\nYalnızca film ve dizi bölümleri indirilebilir."
+    },
+    "danmaku": {
+      "header": "Kayan yorum ayarları",
+      "send": {
+        "action": "Gönder",
+        "hint": "Güzel bir şey yaz"
+      },
+      "performance": {
+        "header": "Performans",
+        "render": "Çizim kalitesi"
+      },
+      "filter": {
+        "header": "Kayan yorum filtresi",
+        "mask": "Akıllı maske",
+        "top": "Üst",
+        "scroll": "Kayan",
+        "bottom": "Alt",
+        "color": "Renkli",
+        "advanced": "Gelişmiş",
+        "level": "Filtre düzeyi",
+        "level_n": "Düzey {}"
+      },
+      "style": {
+        "header": "Kayan yorum görünümü",
+        "font": "Kenarlık biçimi",
+        "font_stroke": "Kenarlık",
+        "font_incline": "Eğik",
+        "font_shadow": "Gölge",
+        "font_pure": "Sade",
+        "area": "Gösterim alanı",
+        "area_1_4": "Ekranın 1/4'ü",
+        "area_2_4": "Ekranın yarısı",
+        "area_3_4": "Ekranın 3/4'ü",
+        "area_4_4": "Tam ekran",
+        "alpha": "Saydamlık",
+        "fontsize": "Yazı boyutu",
+        "line_height": "Satır yüksekliği",
+        "speed": "Hız",
+        "speed_slow_plus": "Çok yavaş",
+        "speed_slow": "Yavaş",
+        "speed_fast_plus": "Çok hızlı",
+        "speed_fast": "Hızlı",
+        "speed_moderate": "Orta"
+      }
+    },
+    "single_comment": {
+      "detail": "Ayrıntılar",
+      "hint": "Güzel bir şey yaz",
+      "related": "Toplam {} yanıt",
+      "end": "Başka yorum yok.",
+      "delete": "Yorum silinince altındaki tüm yanıtlar da silinir\n\nDevam edilsin mi?"
+    },
+    "tracks": {
+      "header": "Ses ve altyazı",
+      "audio": "Ses",
+      "subtitle": "Altyazı",
+      "none": "Yok",
+      "track": "Parça {}",
+      "sub_size": "Altyazı boyutu",
+      "size_small": "Küçük",
+      "size_normal": "Normal",
+      "size_big": "Büyük",
+      "size_huge": "Çok büyük",
+      "sub_color": "Altyazı rengi",
+      "color_white": "Beyaz",
+      "color_yellow": "Sarı",
+      "sub_background": "Altyazı zemini",
+      "background_half": "Yarı saydam",
+      "background_black": "Siyah",
+      "sub_position": "Altyazı konumu",
+      "position_bottom": "Altta",
+      "position_higher": "Biraz yukarı",
+      "position_high": "Yukarı",
+      "sub_delay": "Altyazı gecikmesi",
+      "seconds": "{} sn"
+    },
+    "next_episode": {
+      "title": "Sıradaki bölüm",
+      "countdown": "{} saniye içinde başlıyor",
+      "play_now": "Şimdi oynat"
+    },
+    "epg": {
+      "now": "Şimdi",
+      "next": "Sonra"
+    },
+    "hint": {
+      "channels": "{}  Önceki kanal      {}  Sonraki kanal",
+      "episodes": "{}  Önceki bölüm      {}  Sonraki bölüm",
+      "videos": "{}  Önceki video      {}  Sonraki video",
+      "seek": "{} {}  10 sn geri / ileri"
+    }
+  },
+  "dialog": {
+    "not_supported": "Desteklenmiyor",
+    "quit_hint": "Uygulamadan çıkılıyor..."
+  },
+  "xtream": {
+    "content": {
+      "live": "Canlı TV",
+      "movies": "Filmler",
+      "series": "Diziler"
+    },
+    "action": {
+      "search": "Ara",
+      "refresh": "Yenile"
+    },
+    "noun": {
+      "live": "kanallar",
+      "movies": "filmler",
+      "series": "diziler"
+    },
+    "season": "{}. Sezon",
+    "group": {
+      "all": "Tümü",
+      "recent": "★ Son eklenenler"
+    },
+    "search_results": "\"{1}\" için {0} sonuç",
+    "no_results": "\"{}\" için sonuç yok",
+    "bad_response": "Sunucudan eksik yanıt geldi. Tekrar denemek için Yenile'ye bas.",
+    "sort": {
+      "title": "Sırala",
+      "label": "Sıralama: {}",
+      "server": "Sunucu sırası",
+      "recent": "Son eklenen",
+      "rating": "Puan",
+      "name": "İsim (A-Z)",
+      "year": "Yıl"
+    },
+    "search_label": {
+      "live": "Kanal ara",
+      "movies": "Film ara",
+      "series": "Dizi ara"
+    },
+    "refresh_label": {
+      "live": "Kanalları yenile",
+      "movies": "Filmleri yenile",
+      "series": "Dizileri yenile"
+    }
+  },
+  "download": {
+    "started": "İndirme başladı",
+    "completed": "İndirme tamamlandı!",
+    "already": "Bu video zaten indirildi. İndirilenler bölümünden izleyebilirsin.",
+    "error": "İndirme hatası",
+    "start_error": "İndirme başlatılamadı",
+    "action": "İndir",
+    "live_error": "Canlı yayın indirilemez.\nYalnızca film ve dizi bölümleri indirilebilir.",
+    "error_title": "Hata",
+    "in_progress": "İndiriliyor...",
+    "pause": "Duraklat",
+    "resume": "Devam et",
+    "play": "Oynat",
+    "delete": "Sil",
+    "exit_warning": "Süren bir indirme var. Çıkarsan indirme duraklatılır, sonra İndirilenler bölümünden devam ettirebilirsin. Çıkılsın mı?",
+    "status": {
+      "queued": "Sırada",
+      "downloading": "İndiriliyor",
+      "paused": "Duraklatıldı",
+      "completed": "İndirildi",
+      "failed": "İndirilemedi",
+      "cancelled": "İptal edildi",
+      "unknown": "Bilinmiyor",
+      "error": "Hata"
+    },
+    "title": "İndirilenler",
+    "started_title": "İndirme başladı: {}\nİlerlemeyi İndirilenler bölümünden izleyebilirsin.",
+    "completed_title": "İndirme tamamlandı: {}",
+    "failed_title": "İndirme durdu: {}\nİndirilenler bölümünden tekrar deneyebilirsin.",
+    "already_running": "Bu video zaten indiriliyor.",
+    "busy_download": "Şu an “{}” indiriliyor.\nSağlayıcın aynı anda tek bağlantıya izin verdiği için başka bir indirme başlatılamaz. Bu indirmenin bitmesini bekle ya da İndirilenler bölümünden duraklat.",
+    "busy_watch": "Şu an “{}” indiriliyor.\nSağlayıcın aynı anda tek bağlantıya izin verdiği için indirme sürerken izleme başlatılamaz.",
+    "pause_and_watch": "İndirmeyi duraklat ve izle",
+    "close": "Vazgeç",
+    "delete_confirm": "“{}” silinsin mi?\nVideo dosyası SD karttan da silinir.",
+    "file_missing": "Video dosyası SD kartta bulunamadı.",
+    "empty": "Henüz indirme yok",
+    "empty_hint": "Film veya bölüm ekranındaki İndir düğmesini kullan. İndirilen videolar internetsiz de oynatılır.",
+    "speed": "{}/sn",
+    "time_left_m": "{} dk kaldı",
+    "time_left_h": "{} sa {} dk kaldı",
+    "time_left_less": "1 dakikadan az kaldı",
+    "error_file": "SD karta yazılamadı (kart dolu olabilir)",
+    "error_network": "Bağlantı koptu",
+    "error_not_video": "Sunucu video yerine hata sayfası gönderdi"
+  },
+  "parental": {
+    "enter_pin": "PIN'i gir",
+    "wrong_pin": "PIN yanlış",
+    "enabled": "Ebeveyn kilidi",
+    "change_pin": "PIN'i değiştir",
+    "categories": "Kilitli kategoriler",
+    "reset_app": "Uygulamayı sıfırla (her şey silinir)",
+    "current_pin": "Şu anki PIN",
+    "new_pin": "Yeni PIN",
+    "pin_changed": "PIN değiştirildi",
+    "reset_confirm": "TÜM ayarlar, PIN ve Xtream/M3U8 giriş bilgileri silinecek. Devam edilsin mi?",
+    "no_categories": "Kategorilerin yüklenmesi için önce bir listeyi aç",
+    "choose_type": "Hangi tür?",
+    "loading": "Yükleniyor...",
+    "clear_history": "Geçmişi temizle",
+    "clear_history_all": "Tümü",
+    "history_cleared": "Geçmiş temizlendi"
+  },
+  "detail": {
+    "play": "Oynat",
+    "resume": "Devam et ({})",
+    "restart": "Baştan başla",
+    "favorite_add": "Favorilere ekle",
+    "favorite_remove": "Favorilerden çıkar",
+    "play_episode": "Oynat: S{} B{}",
+    "resume_episode": "Devam et: S{} B{}",
+    "next_episode": "Sıradaki: S{} B{}",
+    "episode_title": "{}. {}",
+    "episode_count": "{} bölüm",
+    "season_count": "{} sezon  ·  {} bölüm",
+    "season_pick": "Sezon",
+    "director": "Yönetmen: {}",
+    "cast": "Oyuncular: {}",
+    "hours_minutes": "{} sa {} dk",
+    "minutes": "{} dk",
+    "load_error": "Ayrıntılar yüklenemedi",
+    "episode": "{}. Bölüm",
+    "download": "İndir",
+    "download_series_hint": "Bölüm indirmek için diziyi aç, bölümün üstündeyken ZR'ye bas",
+    "download_pick_episode": "İndirmek için bir bölüm seç",
+    "load_error_retry": "Bilgiler alınamadı. Sağlayıcı şu an yanıt vermiyor olabilir.",
+    "retry": "Tekrar dene",
+    "previous_season": "Önceki sezon",
+    "next_season": "Sonraki sezon"
+  },
+  "cast": {
+    "live_download_error": "İndirilemez",
+    "live_download_error_desc": "Süren bir canlı yayın indirilemez.\nYalnızca film ve dizi bölümleri indirilebilir."
+  },
+  "account": {
+    "title": "Hesap bilgisi",
+    "loading": "Hesap bilgisi alınıyor...",
+    "error": "Hesap bilgisi alınamadı. İnternet bağlantısını ve IPTV ayarlarını kontrol et.",
+    "status": "Durum: {}",
+    "status_active": "Aktif",
+    "status_expired": "Süresi dolmuş",
+    "status_banned": "Engellenmiş",
+    "status_disabled": "Kapatılmış",
+    "expires": "Bitiş tarihi: {}",
+    "days_left": "{} gün kaldı",
+    "unlimited": "Bitiş tarihi: süresiz",
+    "connections": "Bağlantı: {} / {} kullanımda",
+    "trial": "Deneme hesabı: {}",
+    "yes": "Evet",
+    "no": "Hayır",
+    "created": "Oluşturulma: {}",
+    "ends_soon": "Aboneliğin {} gün sonra bitiyor ({}).",
+    "ends_today": "Aboneliğin bugün bitiyor.",
+    "ended": "Aboneliğinin süresi doldu."
+  },
+  "history": {
+    "title": "İzleme geçmişi",
+    "clear_all": "Tümünü temizle",
+    "remove": "Kaldır",
+    "removed": "Geçmişten kaldırıldı",
+    "clear_confirm": "Bütün izleme geçmişi silinsin mi?",
+    "empty": "Henüz bir şey izlemedin"
+  }
+}

@@ -11,10 +11,11 @@
 #include "utils/config_helper.hpp"
 #include "utils/activity_helper.hpp"
 #include "view/mpv_core.hpp"
+#include "utils/image_helper.hpp"
+#include "api/tsvitch.h"
 
 #include "core/HistoryManager.hpp"
 #include "core/FavoriteManager.hpp"
-#include "core/DownloadProgressManager.hpp"
 
 #ifdef IOS
 #include <SDL2/SDL_main.h>
@@ -57,13 +58,15 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+#ifdef __SWITCH__
+    // Closing returns to the launcher (sphaira / hbmenu) instead of closing it too
+    brls::Application::getPlatform()->exitToHomeMode(false);
+#else
+    // On a computer "false" would restart the app
     brls::Application::getPlatform()->exitToHomeMode(true);
-    brls::Application::createWindow(APP_NAME);
+#endif
+    brls::Application::createWindow(APP_TITLE);
     brls::Logger::info("createWindow done");
-
-    // Initialize global download progress manager
-    tsvitch::DownloadProgressManager::getInstance()->initialize();
-    brls::Logger::info("DownloadProgressManager initialized");
 
     Register::initCustomView();
     Register::initCustomTheme();
@@ -117,15 +120,17 @@ int main(int argc, char* argv[]) {
                     {"language", brls::Application::getLocale()},
                     {"window", fmt::format("{}x{}", brls::Application::windowWidth, brls::Application::windowHeight)}})
 
+#ifndef DISABLE_UPDATE_CHECK
     APPVersion::instance().checkUpdate();
+#endif
 
     while (brls::Application::mainLoop()) {
     }
 
     brls::Logger::info("mainLoop done");
-    
-    // Cleanup download progress manager
-    tsvitch::DownloadProgressManager::getInstance()->cleanup();
+    // Closing waits for the network threads: requests to a server that does not answer stop now
+    tsvitch::TsVitchClient::stopRequests();
+    ImageHelper::stopRequests();
     
     ProgramConfig::instance().exit(argv);
 

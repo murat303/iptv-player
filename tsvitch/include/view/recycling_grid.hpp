@@ -68,6 +68,10 @@ public:
 
     void reloadData();
 
+    /// Shows the rows again (or new rows when source is given) with the row at index focused, if the focus
+    /// was in the grid: after a plain reload the focus stays on a recycled row that shows another item
+    void reloadWithFocus(size_t index, RecyclingGridDataSource* source = nullptr);
+
     void notifyDataChanged();
 
     RecyclingGridItem* getGridItemByIndex(size_t index);

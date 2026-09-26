@@ -369,6 +369,18 @@ void RecyclingGrid::reloadData() {
     selectRowAt(cellFocusIndex, false);
 }
 
+void RecyclingGrid::reloadWithFocus(size_t index, RecyclingGridDataSource* source) {
+    bool hadFocus = false;
+    for (brls::View* v = brls::Application::getCurrentFocus(); v && !hadFocus; v = v->getParent()) hadFocus = v == this;
+    size_t count = source ? source->getItemCount() : dataSource ? dataSource->getItemCount() : 0;
+    this->setDefaultCellFocus(count ? std::min(index, count - 1) : 0);
+    if (source)
+        this->setDataSource(source);
+    else
+        this->reloadData();
+    if (hadFocus && count) brls::Application::giveFocus(this->getDefaultFocus());
+}
+
 void RecyclingGrid::notifyDataChanged() {
     brls::Logger::debug("RecyclingGrid notifyDataChanged");
     if (!layouted) return;
@@ -747,6 +759,8 @@ float RecyclingGrid::getPaddingRight() {
 }
 
 brls::View* RecyclingGrid::getDefaultFocus() {
+    // A hidden grid keeps its (visible) cells: they must not take the focus
+    if (this->getVisibility() == brls::Visibility::GONE) return nullptr;
     if (this->dataSource && this->dataSource->getItemCount() > 0) return ScrollingFrame::getDefaultFocus();
     return nullptr;
 }

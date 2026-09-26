@@ -20,11 +20,13 @@ protected:
 
 class RecyclingGridItemLiveVideoCard : public BaseVideoCard {
 public:
-    RecyclingGridItemLiveVideoCard();
+    // posterLayout: big 2:3 poster with title below (movies and series) instead of the channel card
+    explicit RecyclingGridItemLiveVideoCard(bool posterLayout = false);
 
     ~RecyclingGridItemLiveVideoCard() override;
 
-    void setChannel(tsvitch::LiveM3u8 liveData);
+    // showGroup: the category tag under a channel (hidden when the list is one category already)
+    void setChannel(tsvitch::LiveM3u8 liveData, bool showGroup = true);
 
    tsvitch::LiveM3u8 getChannel();
 
@@ -32,8 +34,11 @@ public:
 
     static RecyclingGridItemLiveVideoCard* create();
 
+    static RecyclingGridItemLiveVideoCard* createPoster();
+
 private:
 tsvitch::LiveM3u8 liveData;
+    bool posterLayout = false;
     BRLS_BIND(TextBox, labelTitle, "video/card/label/title");
     BRLS_BIND(brls::Label, labelGroup, "video/card/label/group");
     BRLS_BIND(brls::Label, labelChno, "video/card/label/chno");

@@ -47,6 +47,31 @@
                 <brls:Header
                         width="auto"
                         height="auto"
+                        title="@i18n/tsvitch/player/tracks/header"
+                        marginBottom="0px"/>
+                <brls:Box
+                        width="100%"
+                        height="auto"
+                        axis="column"
+                        marginBottom="30px">
+                    <brls:DetailCell
+                            id="setting/tracks/audio"/>
+                    <brls:DetailCell
+                            id="setting/tracks/sub"/>
+                    <SelectorCell
+                            id="setting/tracks/sub/size"/>
+                    <SelectorCell
+                            id="setting/tracks/sub/color"/>
+                    <SelectorCell
+                            id="setting/tracks/sub/background"/>
+                    <SelectorCell
+                            id="setting/tracks/sub/position"/>
+                    <SelectorCell
+                            id="setting/tracks/sub/delay"/>
+                </brls:Box>
+                <brls:Header
+                        width="auto"
+                        height="auto"
                         title="@i18n/tsvitch/player/setting/common/header"
                         marginBottom="0px"/>
                 <brls:Box

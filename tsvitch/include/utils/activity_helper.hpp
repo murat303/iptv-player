@@ -3,10 +3,20 @@
 #include <borealis/core/event.hpp> // aggiungi questa riga
 #include "api/tsvitch/result/home_live_result.h" // aggiungi questa riga
 
+/// The items of the same kind as items[index], without series pages (they cannot play): the player's
+/// next/previous buttons move between them. start: where items[index] is in the result.
+std::vector<tsvitch::LiveM3u8> sameKindPlaylist(const std::vector<tsvitch::LiveM3u8>& items, size_t index,
+                                                size_t& start);
+
 class Intent {
 public:
 
-    static void openLive(const std::vector<tsvitch::LiveM3u8>& channelList, size_t index, std::function<void()> onClose);
+    // seriesPlaylist: the list holds the episodes of a series in order (the next one can start by itself)
+    static void openLive(const std::vector<tsvitch::LiveM3u8>& channelList, size_t index, std::function<void()> onClose,
+                         bool seriesPlaylist = false);
+
+    // Information screen of an Xtream movie or series (series items carry the xtream-series:// url)
+    static void openXtreamDetail(const tsvitch::LiveM3u8& item);
 
     static void openPgcFilter(const std::string& filter);
 

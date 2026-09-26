@@ -1,3 +1,6 @@
+#ifdef __linux__
+#include <borealis/platforms/desktop/steam_deck.hpp>
+#endif
 #include "view/sponsors_view.hpp"
 #include <borealis/core/application.hpp>
 #include <borealis/views/label.hpp>
@@ -70,7 +73,7 @@ void SponsorsView::loadSponsors() {
 
         auto response = cpr::Post(cpr::Url{"https://api.github.com/graphql"},
                                    cpr::Header{{"Authorization", std::string("bearer ") + token},
-                                               {"User-Agent", "TsVitch"},
+                                               {"User-Agent", "IPTVPlayer/1.0"},
                                                {"Accept", "application/json"}},
                                    cpr::Body{body.dump()},
                                    cpr::Timeout{6000});

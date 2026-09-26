@@ -8,6 +8,6 @@ icon_dirs=(16 24 32 48 64 128 256)
 for icon_dir in "${icon_dirs[@]}"; do
     icon_path="icons/${icon_dir}x${icon_dir}"
     mkdir -p "icons/${icon_dir}x${icon_dir}"
-    icon_path=${icon_path}/com.giovannimirulla.tsvitch.png
+    icon_path=${icon_path}/io.github.murat303.iptvplayer.png
     vips thumbnail ../../resources/icon/icon.png "${icon_path}" "${icon_dir}"
 done

@@ -100,11 +100,28 @@ enum class SettingItem {
     PARENTAL_LOCKED_CATEGORIES,   // JSON array of locked category names (when configured)
     KNOWN_CATEGORIES,             // JSON array of category names seen (for the settings UI)
 
+    // Order of movies and series: 0 = server, 1 = recently added, 2 = rating, 3 = name, 4 = year
+    XTREAM_SORT_MODE,
+    // Preferred audio language of the player ("" = automatic, e.g. "tur" or "eng")
+    PLAYER_LANGUAGE,
+    // Preferred subtitle language ("" = automatic, "no" = no subtitles, e.g. "tur")
+    PLAYER_SUB_LANGUAGE,
+    // Subtitle look: size 0-3 (small to very big), color 0 white / 1 yellow,
+    // background 0 none / 1 half transparent / 2 black, position 0 bottom / 1 a bit higher / 2 higher
+    PLAYER_SUB_SIZE,
+    PLAYER_SUB_COLOR,
+    PLAYER_SUB_BACKGROUND,
+    PLAYER_SUB_POSITION,
+    // After an episode ends the next one starts after a short countdown (on by default)
+    PLAYER_AUTO_NEXT,
+    // Unix time of the last daily subscription check (the reminder before it ends)
+    XTREAM_ACCOUNT_CHECKED,
+
     GROUP_SELECTED_INDEX,
 };
 
 class APPVersion : public brls::Singleton<APPVersion> {
-    inline static std::string RELEASE_API = "https://api.github.com/repos/giovannimirulla/TsVitch/releases/latest";
+    inline static std::string RELEASE_API = "https://api.github.com/repos/murat303/iptv-player/releases/latest";
 
 public:
     int major, minor, revision;
@@ -211,6 +228,14 @@ public:
     void init();
 
     std::string getConfigDir();
+
+    // Where TsVitch kept its files (empty where there is nothing to take over)
+    std::string getLegacyConfigDir();
+
+    // Copies TsVitch's settings and lists into the app's own folder at the first start
+    void importLegacyConfig();
+
+    static inline const std::string CONFIG_FILE = "config.json";
 
     std::string getHomePath();
 

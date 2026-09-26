@@ -73,13 +73,13 @@
                     width="200"
                     height="200"
                     alignSelf="center"
-                    QRContent="https://github.com/giovannimirulla/TsVitch/releases"/>
+                    QRContent="https://github.com/murat303/iptv-player/releases"/>
 
             <brls:Label
                     width="auto"
                     height="auto"
                     textColor="@theme/font/grey"
-                    text="https://github.com/giovannimirulla/TsVitch/releases"
+                    text="https://github.com/murat303/iptv-player/releases"
                     horizontalAlign="center"
                     marginTop="20"
                     marginBottom="30"/>

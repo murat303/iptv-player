@@ -49,7 +49,7 @@
                         paddingRight="10"
                         marginTop="8"
                         marginBottom="8"
-                        itemHeight="50"
+                        itemHeight="60"
                         preFetchLine="2"
                         spanCount="1"
                         wireframe="false"
@@ -57,32 +57,42 @@
                         lineRight="1"
                         id="dynamic/up/recyclingGrid" />
         </brls:Box>
-        <RecyclingGrid
-                paddingLeft="20"
-                paddingRight="20"
-                marginTop="70"
-                grow="1"
-                spanCount="@style/tsvitch/grid/span/4"
-                itemHeight="200"
-                wireframe="false"
-                preFetchLine="2"
-                id="home/live/recyclingGrid" />
-
-
+        <!-- Right side: the buttons above the grid (reachable with Up from the first row) -->
         <brls:Box
-                positionType="absolute"
-                positionRight="0"
-                positionTop="0"
-                width="520"
+                axis="column"
+                grow="1"
+                height="auto">
+        <brls:Box
+                width="100%"
                 height="70"
                 axis="row"
                 justifyContent="flexEnd"
                 alignItems="center"
                 wireframe="false">
                 <CustomButton
+                        id="home/sort"
+                        focusable="true"
+                        highlightCornerRadius="6"
+                        hideHighlightBackground="true"
+                        width="210"
+                        height="35"
+                        marginRight="10"
+                        backgroundColor="#E3E5E7"
+                        paddingLeft="15"
+                        cornerRadius="6"
+                        alignItems="center"
+                        visibility="gone">
+                        <brls:Label
+                                id="home/sort/label"
+                                fontSize="14"
+                                singleLine="true"
+                                textColor="#18191c"/>
+                </CustomButton>
+                <CustomButton
                         id="home/refresh"
                         focusable="true"
                         highlightCornerRadius="6"
+                        hideHighlightBackground="true"
                         width="180"
                         height="35"
                         marginRight="10"
@@ -119,6 +129,16 @@
                                 textColor="#18191c"
                                 text="y" />
                 </CustomButton>
+        </brls:Box>
+        <RecyclingGrid
+                paddingLeft="20"
+                paddingRight="20"
+                grow="1"
+                spanCount="@style/tsvitch/grid/span/4"
+                itemHeight="200"
+                wireframe="false"
+                preFetchLine="2"
+                id="home/live/recyclingGrid" />
         </brls:Box>
 
         <brls:Box

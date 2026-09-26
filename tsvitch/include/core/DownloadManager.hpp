@@ -1,190 +1,111 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <functional>
-#include <memory>
 #include <atomic>
-#include <thread>
-#include <mutex>
-#include <unordered_map>
-#include <set>
 #include <chrono>
+#include <cstdint>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 #include <borealis/core/singleton.hpp>
 #include <borealis/core/event.hpp>
 
-enum class DownloadStatus {
-    PENDING,
-    DOWNLOADING,
-    PAUSED,
-    COMPLETED,
-    FAILED,
-    CANCELLED
-};
-
-// Struttura per tracciare i chunk dei download (specifico per Switch)
-struct DownloadChunk {
-    size_t start;
-    size_t end;
-    bool completed;
-    std::string tempFilePath;
-    
-    DownloadChunk(size_t s, size_t e) : start(s), end(e), completed(false) {}
-};
+// The numbers are stored in downloads.json
+enum class DownloadStatus { PENDING = 0, DOWNLOADING = 1, PAUSED = 2, COMPLETED = 3, FAILED = 4, CANCELLED = 5 };
 
 struct DownloadItem {
     std::string id;
     std::string title;
     std::string url;
     std::string localPath;
-    std::string imageUrl;  // URL dell'immagine del film
-    std::string imagePath; // Path locale dell'immagine scaricata
-    DownloadStatus status;
-    float progress;
-    size_t totalSize;
-    size_t downloadedSize;
+    std::string imageUrl;
+    std::string imagePath;  // cover saved by older versions (removed together with the video)
+    DownloadStatus status = DownloadStatus::PENDING;
+    float progress        = 0.0f;
+    size_t totalSize      = 0;  // 0 while the size is unknown
+    size_t downloadedSize = 0;
+    double speed          = 0;  // bytes per second while downloading (not saved)
     std::string error;
-    std::chrono::steady_clock::time_point startTime; // Timestamp di inizio download
-    
-    // Supporto per download a chunk (Switch)
-    bool useChunkedDownload;
-    std::vector<DownloadChunk> chunks;
-    size_t chunkSize;
-    
-    DownloadItem() : status(DownloadStatus::PENDING), progress(0.0f),
-                     totalSize(0), downloadedSize(0), error(),
-                     startTime(std::chrono::steady_clock::now()),
-                     useChunkedDownload(false), chunkSize(0) {}
 };
 
+struct DownloadTransfer;
+
+/// Downloads movies and episodes to <config dir>/downloads. Downloads run one after the other (IPTV
+/// accounts usually allow a single connection); the list is saved in downloads.json and a stopped download
+/// continues where its file ends.
 class DownloadManager : public brls::Singleton<DownloadManager> {
 public:
-    using DownloadProgressCallback = std::function<void(const std::string& id, float progress, size_t downloaded, size_t total)>;
-    using DownloadCompleteCallback = std::function<void(const std::string& id, const std::string& filePath)>;
-    using DownloadErrorCallback = std::function<void(const std::string& id, const std::string& error)>;
-    using GlobalProgressCallback = std::function<void(const std::string& id, float progress, size_t downloaded, size_t total)>;
-    using GlobalCompleteCallback = std::function<void(const std::string& id, bool success)>;
-    
-    // Costruttore e distruttore
     DownloadManager();
     ~DownloadManager();
-    
-    // Avvia un download (versione semplice senza callback)
-    std::string startDownload(const std::string& title, const std::string& url);
-    
-    // Avvia un download con immagine
-    std::string startDownload(const std::string& title, const std::string& url, const std::string& imageUrl);
-    
-    // Avvia un download con callback
-    std::string startDownload(const std::string& title, const std::string& url,
-                             DownloadProgressCallback progressCallback,
-                             DownloadCompleteCallback completeCallback,
-                             DownloadErrorCallback errorCallback);
-                             
-    // Avvia un download con callback e immagine
-    std::string startDownload(const std::string& title, const std::string& url, const std::string& imageUrl,
-                             DownloadProgressCallback progressCallback,
-                             DownloadCompleteCallback completeCallback,
-                             DownloadErrorCallback errorCallback);
-    
-    // Pausa un download
-    void pauseDownload(const std::string& id);
-    
-    // Riprende un download
-    void resumeDownload(const std::string& id);
-    
-    // Cancella un download
-    void cancelDownload(const std::string& id);
-    
-    // Elimina un download completato
-    void deleteDownload(const std::string& id);
-    
-    // Pulisce i download problematici (bloccati, errori, ecc.)
-    void cleanupStaleDownloads();
-    
-    // Forza il riavvio di un download bloccato
-    void forceRestartDownload(const std::string& id);
-    
-    // Ottiene tutti i download
-    std::vector<DownloadItem> getAllDownloads() const;
-    
-    // Ottiene un download specifico
-    DownloadItem getDownload(const std::string& id) const;
-    
-    // Salva/carica lo stato dei download
-    void saveDownloads();
-    void loadDownloads();
-    
-    // Ottiene la directory dei download
-    std::string getDownloadDirectory() const;
-    
-    // Callback globali per tutti i download
-    void setGlobalProgressCallback(GlobalProgressCallback callback);
-    void setGlobalCompleteCallback(GlobalCompleteCallback callback);
-    bool hasGlobalProgressCallback() const;
 
-    // Membri pubblici per il callback di progresso
+    /// Adds a download and starts it when no other download runs; returns its id ("" when it cannot be added).
+    /// A url that is already in the list is not added twice: its id is returned.
+    std::string startDownload(const std::string& title, const std::string& url, const std::string& imageUrl);
+
+    void pauseDownload(const std::string& id);
+
+    /// Continues a paused or failed download
+    void resumeDownload(const std::string& id);
+
+    /// Stops the download and removes it with its file
+    void deleteDownload(const std::string& id);
+
+    std::vector<DownloadItem> getAllDownloads() const;
+
+    /// Empty item (no id) when the download does not exist
+    DownloadItem getDownload(const std::string& id) const;
+
+    /// The download that runs or waits to run, if there is one
+    bool getActiveDownload(DownloadItem& item) const;
+
+    /// The download of this url, if the list has one
+    bool findByUrl(const std::string& url, DownloadItem& item) const;
+
+    /// Changes whenever the list or the state of a download changes (the downloads screen watches it)
+    uint64_t getVersion() const { return version.load(); }
+
+    /// Reads downloads.json (only the first call does something)
+    void loadDownloads();
+
+    std::string getDownloadDirectory() const;
+
+    /// Called by curl while data arrives; false stops the transfer (download paused or deleted, app closing)
+    bool onTransferProgress(DownloadTransfer& transfer);
+
+private:
+    enum class TransferResult { DONE, STOPPED, NETWORK_ERROR, FATAL_ERROR };
+
+    // Starts the worker thread when a download waits and no worker runs
+    void runQueue();
+    // Worker thread: runs the waiting downloads one after the other
+    void workerLoop(std::string id);
+    // Downloads one item, retrying after network errors
+    void runDownload(const std::string& id);
+    // Saves the cover next to the video, so the downloads tab shows it without internet
+    void fetchCover(const std::string& id);
+    TransferResult transferOnce(const std::string& id, const std::string& url, const std::string& path,
+                                std::string& error, bool& madeProgress);
+    // True while the download exists, is not paused and the app is not closing
+    bool stillDownloading(const std::string& id) const;
+    // Sets the final state of a download and tells the user
+    void finishDownload(const std::string& id, DownloadStatus status, const std::string& error);
+    // Pauses the running download and waits a little for the worker (the app is closing)
+    void shutdown();
+
+    void saveLocked() const;  // downloadsMutex must be held
+    std::vector<DownloadItem>::iterator findDownload(const std::string& id);
+    std::vector<DownloadItem>::const_iterator findDownload(const std::string& id) const;
+    std::string generateDownloadId() const;
+    std::string getDownloadsStatePath() const;
+
     std::vector<DownloadItem> downloads;
     mutable std::mutex downloadsMutex;
-    
-    // Trova un download per ID (versione pubblica per il callback)
-    std::vector<DownloadItem>::iterator findDownload(const std::string& id);
+    std::atomic<uint64_t> version{1};
+    bool downloadsLoaded = false;
 
-public:
-    // Callback per-download
-    std::unordered_map<std::string, DownloadProgressCallback> downloadProgressCallbacks;
-    std::unordered_map<std::string, DownloadCompleteCallback> downloadCompleteCallbacks;
-    std::unordered_map<std::string, DownloadErrorCallback> downloadErrorCallbacks;
-    
-    // Callback globali (devono essere pubblici per il callback statico)
-    GlobalProgressCallback globalProgressCallback;
-    GlobalCompleteCallback globalCompleteCallback;
-    
-    // Flag di shutdown accessibile dai callback
+    std::thread worker;
+    bool workerBusy = false;  // guarded by downloadsMutex
     std::atomic<bool> shouldStop{false};
-    
-    // Set per tracciare i download completati ed evitare callback duplicati
-    std::set<std::string> completedDownloads;
-    mutable std::mutex completedDownloadsMutex;
-    
-    // Exit event subscription management
-    brls::Event<>::Subscription exitEventSubscription;
-    bool hasExitSubscription = false;
-    
-private:
-    
-    std::vector<std::thread> downloadThreads;
-    
-    // Thread worker per il download
-    void downloadWorker(const std::string& id);
-    
-    // Metodo per scaricare l'immagine/copertina
-    void downloadCoverImage(const std::string& id, const std::string& imageUrl, const std::string& imagePath);
-    
-#ifdef __SWITCH__
-    // Metodi per download a chunk (Switch)
-    bool shouldUseChunkedDownload(const std::string& url, size_t fileSize);
-    void setupChunkedDownload(DownloadItem& item, size_t totalSize);
-    void downloadChunkedFile(const std::string& id);
-    void downloadSingleChunk(const std::string& id, size_t chunkIndex);
-    bool assembleChunkedFile(const std::string& id);
-    void cleanupChunkFiles(const std::string& id);
-    
-    // Metodo di download semplificato in stile Tinfoil (fallback)
-    void downloadSimplified(const std::string& id, const std::string& url, const std::string& localPath, size_t downloadedSize);
-#endif
-    
-    // Genera un ID unico per il download
-    std::string generateDownloadId() const;
-    
-    // Trova un download per ID (versione const)
-    std::vector<DownloadItem>::const_iterator findDownload(const std::string& id) const;
-    
-    // Ottiene il path del file di stato
-    std::string getDownloadsStatePath() const;
-    
-#ifdef __SWITCH__
-    // Auto-riprende i download su Switch dopo il riavvio
-    void autoResumeDownloadsOnSwitch();
-#endif
+
+    brls::Event<>::Subscription exitSubscription;
 };

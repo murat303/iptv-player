@@ -1,40 +1,42 @@
 #pragma once
 
 #include <borealis/core/bind.hpp>
-#include <borealis/views/label.hpp>
-#include <borealis/views/progress_spinner.hpp>
-#include <borealis/views/slider.hpp>
 #include <borealis/views/image.hpp>
+#include <borealis/views/label.hpp>
+
 #include "view/recycling_grid.hpp"
 #include "core/DownloadManager.hpp"
 
+/// One row of the downloads tab: cover, title, state and progress
 class DownloadItemCell : public RecyclingGridItem {
 public:
     DownloadItemCell();
+
     ~DownloadItemCell() override;
 
+    /// Shows a download; the cover is loaded only when the download changes
     void setDownloadItem(const DownloadItem& item);
-    void updateProgress(float progress);
-    void updateStatus(DownloadStatus status);
-    
-    // Metodo per ottenere l'ID del download corrente
-    std::string getCurrentDownloadId() const { return currentItem.id; }
+
+    const std::string& getDownloadId() const { return downloadId; }
 
     static RecyclingGridItem* create();
 
     void prepareForReuse() override;
+
     void cacheForReuse() override;
 
-private:
-    BRLS_BIND(brls::Label, titleLabel, "download_item/title");
-    BRLS_BIND(brls::Label, statusLabel, "download_item/status");
-    BRLS_BIND(brls::Label, progressLabel, "download_item/progress");
-    BRLS_BIND(brls::Box, progressContainer, "download_item/progress_container");
-    BRLS_BIND(brls::Slider, progressBar, "download_item/progress_bar");
-    BRLS_BIND(brls::ProgressSpinner, spinner, "download_item/spinner");
-    BRLS_BIND(brls::Image, imageView, "download_item/image");
+    /// "1,2 GB" (the decimal comma of the Turkish text)
+    static std::string formatSize(size_t bytes);
 
-    DownloadItem currentItem;
-    std::string formatFileSize(size_t bytes);
-    std::string getStatusText(DownloadStatus status);
+private:
+    BRLS_BIND(brls::Image, image, "download_item/image");
+    BRLS_BIND(brls::Label, title, "download_item/title");
+    BRLS_BIND(brls::Label, status, "download_item/status");
+    BRLS_BIND(brls::Label, detail, "download_item/detail");
+    BRLS_BIND(brls::Box, bar, "download_item/bar");
+    BRLS_BIND(brls::Box, barFill, "download_item/bar/fill");
+
+    std::string downloadId;
+    std::string imageUrl;
+    std::string imagePath;
 };

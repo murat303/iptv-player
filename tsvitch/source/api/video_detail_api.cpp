@@ -1,3 +1,4 @@
+#include <atomic>
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <utility>
@@ -7,6 +8,11 @@
 #include <thread>
 #include <chrono>
 #include <unordered_map>
+#include <unordered_set>
+#include <mutex>
+#include <numeric>
+#include <iterator>
+#include <cstdlib>
 #include <memory>
 
 #include "tsvitch.h"
@@ -15,6 +21,8 @@
 #include "borealis/core/application.hpp"
 
 #include "tsvitch/result/home_live_result.h"
+#include "tsvitch/result/xtream_detail.h"
+#include "utils/text_fold.hpp"
 #include "utils/config_helper.hpp"
 
 namespace tsvitch {
@@ -48,30 +56,22 @@ static std::string safeGetIdString(const nlohmann::json& json, const std::string
     return "";
 }
 
-// Helper function to sanitize text for safe font rendering
+// Helper function to sanitize text for safe font rendering: control characters become spaces,
+// runs of spaces collapse into one and the ends are trimmed. A plain loop instead of std::regex,
+// which took seconds for the tens of thousands of titles of a movie list on the Switch.
 static std::string sanitizeText(const std::string& text) {
-    if (text.empty()) return text;
-    
-    std::string cleaned = text;
-    
-    // Rimuovi caratteri di controllo ASCII (0-31, eccetto tab, newline, carriage return)
-    cleaned.erase(std::remove_if(cleaned.begin(), cleaned.end(), [](unsigned char c) {
-        return (c < 32 && c != 9 && c != 10 && c != 13) || c == 127;
-    }), cleaned.end());
-    
-    // Sostituisci caratteri problematici con versioni sicure
-    std::replace(cleaned.begin(), cleaned.end(), '\n', ' ');
-    std::replace(cleaned.begin(), cleaned.end(), '\r', ' ');
-    std::replace(cleaned.begin(), cleaned.end(), '\t', ' ');
-    
-    // Rimuovi spazi multipli
-    std::regex multiple_spaces("\\s+");
-    cleaned = std::regex_replace(cleaned, multiple_spaces, " ");
-    
-    // Trim
-    cleaned.erase(0, cleaned.find_first_not_of(" \t\n\r\f\v"));
-    cleaned.erase(cleaned.find_last_not_of(" \t\n\r\f\v") + 1);
-    
+    std::string cleaned;
+    cleaned.reserve(text.size());
+    bool pendingSpace = false;
+    for (unsigned char c : text) {
+        if (c < 32 || c == 127 || c == ' ') {
+            pendingSpace = true;
+            continue;
+        }
+        if (pendingSpace && !cleaned.empty()) cleaned += ' ';
+        pendingSpace = false;
+        cleaned += static_cast<char>(c);
+    }
     return cleaned;
 }
 
@@ -403,13 +403,13 @@ void TsVitchClient::get_xtream_channels(const std::function<void(LiveM3u8ListRes
     get_xtream_channels_with_retry(callback, error, 3); // Max 3 retry attempts
 }
 
-// Shared category_id -> category_name map of the Xtream categories
-using XtreamCategoryMap = std::shared_ptr<std::unordered_map<std::string, std::string>>;
+// ---------------------------------------------------------------------------------------------
+// Xtream Codes
+// ---------------------------------------------------------------------------------------------
 
 /**
- * Describes which Xtream content to fetch. Live TV and Movies (VOD) share the exact
- * same fetch/parse pipeline and only differ in the API actions, the stream URL path
- * segment and the file extension, so a single implementation is parameterized by this.
+ * Describes which Xtream content to fetch. Live TV, movies and series share the same
+ * fetch/parse pipeline and only differ in the API actions and in how items become URLs.
  */
 struct XtreamContentKind {
     std::string categoriesAction;    // get_live_categories / get_vod_categories / get_series_categories
@@ -419,7 +419,7 @@ struct XtreamContentKind {
     std::string fallbackGroupTitle;  // group name when the category cannot be resolved
     std::string label;               // used only in logs
     bool isSeriesList;               // true -> series list (id=series_id, no player url)
-    int contentType;                 // 0 = live, 1 = movie, 2 = series (gravado no histórico)
+    int contentType;                 // 0 = live, 1 = movie, 2 = series
 };
 
 // URL scheme used as a sentinel for series items in the list (clicking opens the episodes)
@@ -432,453 +432,594 @@ static const XtreamContentKind XTREAM_MOVIES{
 static const XtreamContentKind XTREAM_SERIES{
     "get_series_categories", "get_series", "series", true, "Series", "series", true, 2};
 
-/**
- * Fetches the Xtream categories for the given content kind and builds a
- * category_id -> category_name map. On error it returns an empty map: the stream
- * fetch still proceeds using a fallback grouping.
- */
-static void fetchXtreamCategories(const std::string& serverUrl, const std::string& username,
-                                  const std::string& password, long timeoutMs,
-                                  const XtreamContentKind& kind,
-                                  const std::function<void(XtreamCategoryMap)>& done) {
-    std::string url = serverUrl;
-    if (url.back() != '/') url += "/";
-    url += "player_api.php?username=" + username + "&password=" + password + "&action=" + kind.categoriesAction;
+/// Categories of one content type, in the order the server lists them
+struct XtreamCategories {
+    std::unordered_map<std::string, std::string> names;  // category_id -> category_name
+    std::unordered_map<std::string, size_t> rank;        // category_id -> position in the server's list
+};
+using XtreamCategoryMap = std::shared_ptr<XtreamCategories>;
 
-    brls::Logger::debug("Fetching Xtream {} categories from: {}", kind.label, url);
+struct XtreamAccount {
+    std::string baseUrl;  // server url ending with '/'
+    std::string username;
+    std::string password;
+    int32_t timeoutMs = 45000;
+};
 
-    cpr::GetCallback(
-        [done, label = kind.label](const cpr::Response& r) {
-            auto categories = std::make_shared<std::unordered_map<std::string, std::string>>();
-            try {
-                if (!r.error && r.status_code == 200 && !r.text.empty()) {
-                    auto json_result = nlohmann::json::parse(r.text, nullptr, false);
-                    if (json_result.is_array()) {
-                        for (const auto& item : json_result) {
-                            if (!item.is_object()) continue;
-                            std::string id = safeGetIdString(item, "category_id");
-                            std::string name = sanitizeText(safeGetString(item, "category_name"));
-                            if (!id.empty() && !name.empty()) {
-                                (*categories)[id] = name;
-                            }
-                        }
-                    }
-                } else {
-                    brls::Logger::warning("Xtream {} categories fetch failed (status={}), continuing without category names",
-                                          label, r.status_code);
-                }
-            } catch (const std::exception& e) {
-                brls::Logger::warning("Xtream categories parse error: {}, continuing without category names", e.what());
-            }
-            brls::Logger::info("Xtream: loaded {} {} categories", categories->size(), label);
-            brls::sync([done, categories]() { done(categories); });
-        },
-        cpr::Url{url},
-        cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0_TLS},
-        cpr::Timeout{timeoutMs},
-        HTTP::HEADERS,
-        HTTP::COOKIES,
-        HTTP::PROXIES,
-        HTTP::VERIFY);
+/// Reads the account from the settings; returns false when it is incomplete
+static bool getXtreamAccount(XtreamAccount& account) {
+    account.baseUrl  = ProgramConfig::instance().getXtreamServerUrl();
+    account.username = ProgramConfig::instance().getXtreamUsername();
+    account.password = ProgramConfig::instance().getXtreamPassword();
+    if (account.baseUrl.empty() || account.username.empty() || account.password.empty()) return false;
+    if (account.baseUrl.back() != '/') account.baseUrl += "/";
+    account.timeoutMs = std::max<int32_t>(ProgramConfig::instance().getIntOption(SettingItem::M3U8_TIMEOUT), 45000);
+    return true;
 }
 
-// Forward declaration of the stream fetch with an already-resolved category map
-static void xtreamFetchStreamsWithRetry(const std::function<void(tsvitch::LiveM3u8ListResult)>& callback,
-                                        const ErrorCallback& error, int maxRetries,
-                                        XtreamCategoryMap categories, XtreamContentKind kind);
+/// Xtream sends numbers either as JSON numbers or as strings
+static double safeGetNumber(const nlohmann::json& json, const std::string& key) {
+    auto it = json.find(key);
+    if (it == json.end() || it->is_null()) return 0;
+    if (it->is_number()) return it->get<double>();
+    if (it->is_string()) {
+        const auto& text = it->get_ref<const std::string&>();
+        char* end        = nullptr;
+        double value     = std::strtod(text.c_str(), &end);
+        return end != text.c_str() ? value : 0;
+    }
+    return 0;
+}
+
+/// Requests of one kind go out one at a time with a short gap. Lists (big and slow) and everything else
+/// (information screens, account, programme guide) use separate lanes, so a screen never waits behind a
+/// list download.
+struct XtreamLane {
+    std::mutex mutex;
+    std::chrono::steady_clock::time_point lastRequest;
+};
+static XtreamLane xtreamListLane, xtreamInfoLane;
+
+/// Set when the app closes: waiting requests give up at once (closing waits for cpr's threads)
+static std::atomic<bool> xtreamStopping{false};
+
+void TsVitchClient::stopRequests() {
+    xtreamStopping = true;
+    brls::Logger::info("Xtream: requests stopped");
+}
+
+/// Sleeps in short steps; false when the app is closing
+static bool waitUnlessStopping(std::chrono::steady_clock::duration wait) {
+    auto until = std::chrono::steady_clock::now() + wait;
+    while (std::chrono::steady_clock::now() < until) {
+        if (xtreamStopping) return false;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    return !xtreamStopping;
+}
+
+/// The server sometimes closes the connection cleanly in the middle of a big list: a body that does not
+/// start and end like a JSON array/object was cut off and is retried like a network error
+static bool looksLikeCompleteJson(const std::string& body) {
+    auto first = body.find_first_not_of(" \t\r\n");
+    auto last  = body.find_last_not_of(" \t\r\n");
+    if (first == std::string::npos) return false;
+    return (body[first] == '[' && body[last] == ']') || (body[first] == '{' && body[last] == '}');
+}
+
+static bool isRetryableXtreamResponse(const cpr::Response& r) {
+    if (r.error || r.status_code == 0 || r.status_code == 429 || r.status_code == 461 || r.status_code >= 500)
+        return true;
+    return r.status_code == 200 && !looksLikeCompleteJson(r.text);
+}
 
 /**
- * Fetches Xtream content (Live TV or Movies) with automatic retry logic.
- * Timeout: 45+ seconds (Xtream servers typically slower than M3U8 sources)
- * Retries: 3 attempts with exponential backoff (1s network, 3s server errors)
- * Error Handling: Network errors retry, server errors 502/503 retry, 4xx no retry
- *
- * Before the streams it fetches the categories in order to resolve
- * category_id -> category_name (get_*_streams only exposes category_id),
- * enabling per-category grouping in the UI.
+ * Calls player_api.php on cpr's thread pool and hands the response to `done` on that thread.
+ * Some servers drop requests that arrive in quick succession (connection reset or HTTP 461 from
+ * their flood protection), so each lane sends one request at a time with a short gap and retries
+ * network errors, 429, 461 and 5xx with a growing delay.
+ * list: a big list (long timeout, more retries); otherwise a small request that must answer soon, so a
+ * server that does not respond shows an error after about a minute instead of several.
+ * The credentials travel only as query parameters and are never logged.
  */
-static void xtreamFetchContentWithRetry(const std::function<void(tsvitch::LiveM3u8ListResult)>& callback,
-                                        const ErrorCallback& error, int maxRetries,
-                                        const XtreamContentKind& kind) {
-    auto serverUrl = ProgramConfig::instance().getXtreamServerUrl();
-    auto username = ProgramConfig::instance().getXtreamUsername();
-    auto password = ProgramConfig::instance().getXtreamPassword();
+static void xtreamApiGet(const XtreamAccount& account, const std::string& action,
+                         const std::vector<std::pair<std::string, std::string>>& extra,
+                         std::function<void(cpr::Response)> done, bool list = false) {
+    cpr::async([account, action, extra, done, list]() {
+        static const int listRetryMs[] = {1500, 3000, 5000, 8000};
+        static const int infoRetryMs[] = {1500, 3000};
+        const int* retryDelaysMs       = list ? listRetryMs : infoRetryMs;
+        const size_t retries           = list ? std::size(listRetryMs) : std::size(infoRetryMs);
+        const int32_t timeoutMs        = list ? account.timeoutMs : 20000;
+        auto& lane                     = list ? xtreamListLane : xtreamInfoLane;
+        constexpr auto minGap          = std::chrono::milliseconds(800);
 
-    if (serverUrl.empty() || username.empty() || password.empty()) {
-        if (error) {
-            error("Xtream Codes credentials not configured properly", -1);
+        cpr::Parameters params{{"username", account.username}, {"password", account.password}};
+        if (!action.empty()) params.Add(cpr::Parameter{"action", action});
+        for (const auto& [key, value] : extra) params.Add(cpr::Parameter{key, value});
+
+        cpr::Response r;
+        {
+            std::lock_guard<std::mutex> lock(lane.mutex);
+            for (size_t attempt = 0;; attempt++) {
+                if (!waitUnlessStopping(lane.lastRequest + minGap - std::chrono::steady_clock::now())) return;
+                r = cpr::Get(cpr::Url{account.baseUrl + "player_api.php"}, params, cpr::Timeout{timeoutMs},
+                             cpr::ConnectTimeout{10000}, HTTP::HEADERS, HTTP::COOKIES, HTTP::PROXIES, HTTP::VERIFY,
+                             cpr::ProgressCallback([](...) -> bool { return !xtreamStopping.load(); }));
+                lane.lastRequest = std::chrono::steady_clock::now();
+                if (xtreamStopping) return;
+                if (!isRetryableXtreamResponse(r) || attempt >= retries) break;
+                brls::Logger::warning("Xtream {}: failed (status {}, {} bytes, {}), retry {} in {} ms", action,
+                                      r.status_code, r.text.size(), r.error.message, attempt + 1,
+                                      retryDelaysMs[attempt]);
+                if (!waitUnlessStopping(std::chrono::milliseconds(retryDelaysMs[attempt]))) return;
+            }
         }
+        done(std::move(r));
+    });
+}
+
+/// Fetches the categories of a content type; on failure the map stays empty and items keep a fallback group
+static void fetchXtreamCategories(const XtreamAccount& account, const XtreamContentKind& kind,
+                                  std::function<void(XtreamCategoryMap)> done) {
+    xtreamApiGet(account, kind.categoriesAction, {}, [done, label = kind.label](cpr::Response r) {
+        auto categories = std::make_shared<XtreamCategories>();
+        if (!r.error && r.status_code == 200) {
+            auto json = nlohmann::json::parse(r.text, nullptr, false);
+            if (json.is_array()) {
+                for (const auto& item : json) {
+                    if (!item.is_object()) continue;
+                    std::string id   = safeGetIdString(item, "category_id");
+                    std::string name = sanitizeText(safeGetString(item, "category_name"));
+                    if (id.empty() || name.empty() || categories->names.count(id)) continue;
+                    categories->rank[id]  = categories->names.size();
+                    categories->names[id] = name;
+                }
+            }
+        }
+        if (categories->names.empty())
+            brls::Logger::warning("Xtream {}: no categories (status {}), items keep a fallback group", label,
+                                  r.status_code);
+        done(categories);
+    }, true);
+}
+
+// Only these keys of the get_*_streams / get_series items are used. Dropping the rest while parsing
+// keeps big movie/series lists (tens of MB of JSON with plots, casts and backdrops) within the
+// Switch's memory.
+static bool keepXtreamStreamKey(const std::string& key) {
+    static const std::unordered_set<std::string> keys = {
+        "series_id", "cover",       "stream_id",           "stream_icon", "num",   "name",
+        "category_name", "category_id", "container_extension", "rating",      "added", "last_modified",
+        "releaseDate",   "release_date"};
+    return keys.count(key) > 0;
+}
+
+/// Downloads and parses the list of one content type, then calls back on the UI thread
+static void xtreamFetchContent(const std::function<void(LiveM3u8ListResult)>& callback,
+                               const ErrorCallback& error, const XtreamContentKind& kind) {
+    XtreamAccount account;
+    if (!getXtreamAccount(account)) {
+        if (error) error("Xtream Codes credentials not configured properly", -1);
         return;
     }
 
-    auto timeoutMs = ProgramConfig::instance().getIntOption(SettingItem::M3U8_TIMEOUT);
-    if (timeoutMs < 45000) timeoutMs = 45000;
+    fetchXtreamCategories(account, kind, [account, kind, callback, error](XtreamCategoryMap categories) {
+        xtreamApiGet(account, kind.streamsAction, {}, [account, kind, categories, callback, error](cpr::Response r) {
+            auto fail = [error](const std::string& message, int code) {
+                brls::Logger::error("Xtream: {}", message);
+                brls::sync([error, message, code]() {
+                    if (error) error(message, code);
+                });
+            };
+            if (r.error) return fail("Network error: " + r.error.message, -1);
+            if (r.status_code != 200) return fail("HTTP error " + std::to_string(r.status_code), r.status_code);
 
-    // Categories first, then streams (fetched once, reused across all retries)
-    fetchXtreamCategories(serverUrl, username, password, timeoutMs, kind,
-                          [callback, error, maxRetries, kind](XtreamCategoryMap categories) {
-        xtreamFetchStreamsWithRetry(callback, error, maxRetries, categories, kind);
+            auto parseStart = std::chrono::steady_clock::now();
+            nlohmann::json json;
+            try {
+                json = nlohmann::json::parse(
+                    r.text, [](int depth, nlohmann::json::parse_event_t event, nlohmann::json& parsed) {
+                        // depth 2 = keys of the item objects inside the top-level array
+                        if (event == nlohmann::json::parse_event_t::key && depth == 2)
+                            return keepXtreamStreamKey(parsed.get<std::string>());
+                        return true;
+                    });
+            } catch (const std::exception& e) {
+                brls::Logger::error("Xtream {}: {}", kind.label, e.what());
+                return fail(brls::getStr("tsvitch/xtream/bad_response"), -1);
+            }
+            // The raw JSON can be tens of MB: free it before building the list
+            std::string().swap(r.text);
+            if (!json.is_array()) return fail(brls::getStr("tsvitch/xtream/bad_response"), -1);
+
+            LiveM3u8ListResult result;
+            std::vector<size_t> ranks;
+            result.reserve(json.size());
+            ranks.reserve(json.size());
+            const size_t unknownRank = categories->names.size();
+            for (const auto& item : json) {
+                if (!item.is_object()) continue;
+                LiveM3u8 live;
+                live.id    = safeGetIdString(item, kind.isSeriesList ? "series_id" : "stream_id");
+                live.title = sanitizeText(safeGetString(item, "name"));
+                if (live.id.empty() || live.title.empty()) continue;
+                live.logo   = safeGetString(item, kind.isSeriesList ? "cover" : "stream_icon");
+                live.chno   = safeGetIdString(item, "num");
+                live.type   = kind.contentType;
+                live.rating = static_cast<float>(safeGetNumber(item, "rating"));
+                live.added  = static_cast<int64_t>(safeGetNumber(item, kind.isSeriesList ? "last_modified" : "added"));
+                if (kind.isSeriesList) {
+                    live.year = yearFromText(safeGetString(item, "releaseDate"));
+                    if (!live.year) live.year = yearFromText(safeGetString(item, "release_date"));
+                }
+                if (!live.year && kind.contentType != 0) live.year = yearFromText(live.title);
+
+                // get_*_streams only exposes category_id: the name comes from the category list
+                std::string categoryId   = safeGetIdString(item, "category_id");
+                std::string categoryName = safeGetString(item, "category_name");
+                auto name                = categories->names.find(categoryId);
+                if (categoryName.empty() && name != categories->names.end()) categoryName = name->second;
+                live.groupTitle = sanitizeText(categoryName.empty() ? kind.fallbackGroupTitle : categoryName);
+                auto rank       = categories->rank.find(categoryId);
+                ranks.push_back(rank != categories->rank.end() ? rank->second : unknownRank);
+
+                if (kind.isSeriesList) {
+                    // Sentinel url: selecting a series opens its episodes
+                    live.url = XTREAM_SERIES_SCHEME + live.id;
+                } else {
+                    std::string ext = kind.useContainerExtension ? safeGetString(item, "container_extension") : "ts";
+                    if (ext.empty()) ext = "mp4";
+                    live.url = account.baseUrl + kind.urlSegment + "/" + account.username + "/" + account.password +
+                               "/" + live.id + "." + ext;
+                }
+                result.push_back(std::move(live));
+            }
+            json = nullptr;
+
+            // Categories in the server's order; inside a category the server's item order is kept
+            std::vector<size_t> order(result.size());
+            std::iota(order.begin(), order.end(), 0);
+            std::stable_sort(order.begin(), order.end(), [&ranks](size_t a, size_t b) { return ranks[a] < ranks[b]; });
+            auto sorted = std::make_shared<LiveM3u8ListResult>();
+            sorted->reserve(result.size());
+            for (size_t i : order) sorted->push_back(std::move(result[i]));
+
+            brls::Logger::info("Xtream {}: {} items, {} categories, parsed in {} ms", kind.label, sorted->size(),
+                               categories->names.size(),
+                               std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   std::chrono::steady_clock::now() - parseStart)
+                                   .count());
+            brls::sync([callback, sorted]() {
+                if (callback) callback(std::move(*sorted));
+            });
+        }, true);
     });
 }
 
 void TsVitchClient::get_xtream_channels_with_retry(const std::function<void(LiveM3u8ListResult)>& callback,
-                                                  const ErrorCallback& error, int maxRetries) {
-    xtreamFetchContentWithRetry(callback, error, maxRetries, XTREAM_LIVE);
+                                                  const ErrorCallback& error, int) {
+    xtreamFetchContent(callback, error, XTREAM_LIVE);
 }
 
 void TsVitchClient::get_xtream_vod(const std::function<void(LiveM3u8ListResult)>& callback,
                                    const ErrorCallback& error) {
-    xtreamFetchContentWithRetry(callback, error, 3, XTREAM_MOVIES);
+    xtreamFetchContent(callback, error, XTREAM_MOVIES);
 }
 
 void TsVitchClient::get_xtream_series(const std::function<void(LiveM3u8ListResult)>& callback,
                                       const ErrorCallback& error) {
-    xtreamFetchContentWithRetry(callback, error, 3, XTREAM_SERIES);
+    xtreamFetchContent(callback, error, XTREAM_SERIES);
 }
 
 void TsVitchClient::get_xtream_category_names(int contentType,
                                               const std::function<void(std::vector<std::string>)>& callback,
                                               const ErrorCallback& error) {
     const XtreamContentKind& kind = contentType == 2 ? XTREAM_SERIES : contentType == 1 ? XTREAM_MOVIES : XTREAM_LIVE;
-    auto serverUrl = ProgramConfig::instance().getXtreamServerUrl();
-    auto username  = ProgramConfig::instance().getXtreamUsername();
-    auto password  = ProgramConfig::instance().getXtreamPassword();
-    if (serverUrl.empty() || username.empty() || password.empty()) {
+    XtreamAccount account;
+    if (!getXtreamAccount(account)) {
         if (error) error("Xtream Codes credentials not configured properly", -1);
         return;
     }
-    auto timeoutMs = ProgramConfig::instance().getIntOption(SettingItem::M3U8_TIMEOUT);
-    if (timeoutMs < 45000) timeoutMs = 45000;
-
-    fetchXtreamCategories(serverUrl, username, password, timeoutMs, kind, [callback](XtreamCategoryMap map) {
+    fetchXtreamCategories(account, kind, [callback](XtreamCategoryMap categories) {
         std::vector<std::string> names;
-        if (map) {
-            for (const auto& kv : *map) names.push_back(kv.second);
-            std::sort(names.begin(), names.end());
-        }
-        if (callback) callback(names);
+        for (const auto& kv : categories->names) names.push_back(kv.second);
+        std::sort(names.begin(), names.end());
+        brls::sync([callback, names]() {
+            if (callback) callback(names);
+        });
     });
 }
 
-/**
- * Fetches the episodes of a series (action=get_series_info). The response is an object
- * { seasons, info, episodes: { "<season>": [ {id, title, container_extension, ...} ] } }.
- * Converts it into a LiveM3u8ListResult where each episode is playable
- * (url = series/<user>/<pass>/<id>.<ext>) and grouped by season.
- */
-void TsVitchClient::get_xtream_series_info(const std::string& seriesId,
-                                           const std::function<void(LiveM3u8ListResult)>& callback,
-                                           const ErrorCallback& error) {
-    auto serverUrl = ProgramConfig::instance().getXtreamServerUrl();
-    auto username  = ProgramConfig::instance().getXtreamUsername();
-    auto password  = ProgramConfig::instance().getXtreamPassword();
-
-    if (serverUrl.empty() || username.empty() || password.empty() || seriesId.empty()) {
-        if (error) error("Xtream Codes credentials not configured properly", -1);
-        return;
+/// First picture of a backdrop_path field, which is an array, a string or a JSON text of an array
+static std::string firstBackdrop(const nlohmann::json& info) {
+    auto it = info.find("backdrop_path");
+    if (it == info.end()) return "";
+    nlohmann::json value = *it;
+    if (value.is_string() && !value.get_ref<const std::string&>().empty() &&
+        value.get_ref<const std::string&>()[0] == '[')
+        value = nlohmann::json::parse(value.get<std::string>(), nullptr, false);
+    if (value.is_string()) return value.get<std::string>();
+    if (value.is_array()) {
+        for (const auto& item : value)
+            if (item.is_string() && !item.get_ref<const std::string&>().empty()) return item.get<std::string>();
     }
-
-    std::string url = serverUrl;
-    if (url.back() != '/') url += "/";
-    url += "player_api.php?username=" + username + "&password=" + password +
-           "&action=get_series_info&series_id=" + seriesId;
-
-    auto timeoutMs = ProgramConfig::instance().getIntOption(SettingItem::M3U8_TIMEOUT);
-    if (timeoutMs < 45000) timeoutMs = 45000;
-
-    brls::Logger::debug("Fetching Xtream series info: {}", url);
-
-    cpr::GetCallback(
-        [callback, error, serverUrl, username, password](const cpr::Response& r) {
-            if (r.error || r.status_code != 200 || r.text.empty()) {
-                brls::Logger::error("Xtream series_info error: status={}", r.status_code);
-                if (error) error("Failed to fetch series episodes", r.status_code);
-                return;
-            }
-            brls::Threading::async([callback, error, responseText = std::move(r.text), serverUrl, username, password]() {
-                try {
-                    auto d = nlohmann::json::parse(responseText, nullptr, false);
-                    if (d.is_discarded() || !d.is_object() || !d.contains("episodes") || !d["episodes"].is_object()) {
-                        brls::sync([error]() { if (error) error("Invalid series episodes response", -1); });
-                        return;
-                    }
-
-                    // Season names (season_number -> name), when available
-                    std::unordered_map<std::string, std::string> seasonNames;
-                    if (d.contains("seasons") && d["seasons"].is_array()) {
-                        for (const auto& s : d["seasons"]) {
-                            if (!s.is_object()) continue;
-                            std::string num  = safeGetIdString(s, "season_number");
-                            std::string name = sanitizeText(safeGetString(s, "name"));
-                            if (!num.empty() && !name.empty()) seasonNames[num] = name;
-                        }
-                    }
-
-                    std::string base = serverUrl;
-                    if (base.back() != '/') base += "/";
-
-                    // Safety cap: guard against pathological/corrupt responses that could
-                    // explode memory usage (out-of-memory) while building the episode list.
-                    constexpr size_t MAX_EPISODES = 20000;
-
-                    LiveM3u8ListResult episodes;
-                    const auto& eps = d["episodes"];
-                    for (auto it = eps.begin(); it != eps.end() && episodes.size() < MAX_EPISODES; ++it) {
-                        const std::string& seasonKey = it.key();
-                        if (!it.value().is_array()) continue;
-                        std::string seasonLabel = seasonNames.count(seasonKey) ? seasonNames[seasonKey]
-                                                                              : ("Temporada " + seasonKey);
-                        for (const auto& ep : it.value()) {
-                            if (episodes.size() >= MAX_EPISODES) break;
-                            if (!ep.is_object()) continue;
-                            std::string id  = safeGetIdString(ep, "id");
-                            if (id.empty()) continue;
-                            std::string ext = safeGetString(ep, "container_extension");
-                            if (ext.empty()) ext = "mp4";
-
-                            LiveM3u8 e;
-                            e.id         = id;
-                            e.title      = sanitizeText(safeGetString(ep, "title"));
-                            if (e.title.empty()) e.title = seasonLabel + " - " + safeGetIdString(ep, "episode_num");
-                            e.groupTitle = sanitizeText(seasonLabel);
-                            e.url        = base + "series/" + username + "/" + password + "/" + id + "." + ext;
-                            episodes.push_back(std::move(e));
-                        }
-                    }
-
-                    brls::Logger::info("Xtream: parsed {} episodes", episodes.size());
-                    brls::sync([callback, episodes = std::move(episodes)]() {
-                        if (callback) callback(episodes);
-                    });
-                } catch (const std::exception& e) {
-                    brls::sync([error, e]() { if (error) error(std::string("Series parse error: ") + e.what(), -1); });
-                }
-            });
-        },
-        cpr::Url{url},
-        cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0_TLS},
-        cpr::Timeout{timeoutMs},
-        HTTP::HEADERS,
-        HTTP::COOKIES,
-        HTTP::PROXIES,
-        HTTP::VERIFY);
+    return "";
 }
 
 /**
- * Actual stream fetch. Receives the already-resolved category map and content kind;
- * retries call this function again without re-downloading the categories.
+ * Seasons and episodes of a get_series_info response
+ * { seasons, info, episodes: { "<season>": [ {id, title, episode_num, container_extension, info, ...} ] } }
+ * (some servers send `episodes` as an array of seasons instead). Each episode becomes a playable item
+ * (url = series/<user>/<pass>/<id>.<ext>) with its still as picture, or `fallbackLogo` when it has none.
  */
-static void xtreamFetchStreamsWithRetry(const std::function<void(tsvitch::LiveM3u8ListResult)>& callback,
-                                        const ErrorCallback& error, int maxRetries,
-                                        XtreamCategoryMap categories, XtreamContentKind kind) {
-    auto serverUrl = ProgramConfig::instance().getXtreamServerUrl();
-    auto username = ProgramConfig::instance().getXtreamUsername();
-    auto password = ProgramConfig::instance().getXtreamPassword();
-
-    // Construct Xtream API URL for getting all streams of this content kind
-    std::string xtreamUrl = serverUrl;
-    if (xtreamUrl.back() != '/') {
-        xtreamUrl += "/";
+static std::vector<XtreamSeason> parseXtreamSeasons(const nlohmann::json& d, const XtreamAccount& account,
+                                                    const std::string& fallbackLogo) {
+    // Season names (season_number -> name), when available
+    std::unordered_map<std::string, std::string> seasonNames;
+    if (d.contains("seasons") && d["seasons"].is_array()) {
+        for (const auto& s : d["seasons"]) {
+            if (!s.is_object()) continue;
+            std::string num  = safeGetIdString(s, "season_number");
+            std::string name = sanitizeText(safeGetString(s, "name"));
+            if (!num.empty() && !name.empty()) seasonNames[num] = name;
+        }
     }
-    xtreamUrl += "player_api.php?username=" + username + "&password=" + password + "&action=" + kind.streamsAction;
 
-    brls::Logger::debug("Fetching Xtream {} from: {} (retries left: {})", kind.label, xtreamUrl, maxRetries);
+    // Safety cap against corrupt responses that could exhaust the memory
+    constexpr size_t MAX_EPISODES = 20000;
+    size_t total                  = 0;
+    std::vector<XtreamSeason> seasons;
+    auto addSeason = [&](const std::string& seasonKey, const nlohmann::json& list) {
+        if (!list.is_array()) return;
+        XtreamSeason season;
+        season.number = std::atoi(seasonKey.c_str());
+        season.name   = seasonNames.count(seasonKey) ? seasonNames[seasonKey]
+                                                     : brls::getStr("tsvitch/xtream/season", seasonKey);
+        for (const auto& ep : list) {
+            if (!ep.is_object() || total >= MAX_EPISODES) continue;
+            std::string id = safeGetIdString(ep, "id");
+            if (id.empty()) continue;
+            std::string ext = safeGetString(ep, "container_extension");
+            if (ext.empty()) ext = "mp4";
+            static const nlohmann::json noInfo = nlohmann::json::object();
+            const auto& info = ep.contains("info") && ep["info"].is_object() ? ep["info"] : noInfo;
 
-    auto timeoutMs = ProgramConfig::instance().getIntOption(SettingItem::M3U8_TIMEOUT);
-    // Use longer timeout for Xtream API (typically slower than M3U8 sources)
-    if (timeoutMs < 45000) timeoutMs = 45000; // Minimum 45 seconds for Xtream
+            XtreamEpisode e;
+            e.number     = std::atoi(safeGetIdString(ep, "episode_num").c_str());
+            e.plot       = sanitizeText(safeGetString(info, "plot"));
+            e.duration   = safeGetString(info, "duration");
+            e.airDate    = safeGetString(info, "air_date");
+            auto& item   = e.item;
+            item.id      = id;
+            item.chno    = safeGetIdString(ep, "episode_num");
+            item.title   = sanitizeText(safeGetString(ep, "title"));
+            if (item.title.empty()) item.title = season.name + " - " + item.chno;
+            item.groupTitle = season.name;
+            item.logo       = safeGetString(info, "movie_image");
+            if (item.logo.empty()) item.logo = fallbackLogo;
+            item.type   = 2;
+            item.rating = static_cast<float>(safeGetNumber(info, "rating"));
+            item.added  = static_cast<int64_t>(safeGetNumber(ep, "added"));
+            item.url = account.baseUrl + "series/" + account.username + "/" + account.password + "/" + id + "." + ext;
+            season.episodes.push_back(std::move(e));
+            total++;
+        }
+        // Episodes in playing order inside the season
+        std::stable_sort(season.episodes.begin(), season.episodes.end(),
+                         [](const XtreamEpisode& a, const XtreamEpisode& b) { return a.number < b.number; });
+        if (!season.episodes.empty()) seasons.push_back(std::move(season));
+    };
 
-    // Use cpr::GetCallback per migliori prestazioni asincrono
-    cpr::GetCallback(
-        [callback, error, maxRetries, xtreamUrl, timeoutMs, serverUrl, username, password, categories, kind](const cpr::Response& r) {
-            try {
-                brls::Logger::info("Xtream response: status={}, size={}KB", r.status_code, r.text.length()/1024);
-                
-                // Handle network errors
-                if (r.error) {
-                    brls::Logger::error("Xtream network error: {}", r.error.message);
-                    if (maxRetries > 0) {
-                        brls::Logger::info("Retrying Xtream request due to network error (retries left: {})", maxRetries - 1);
-                        brls::Threading::async([callback, error, maxRetries, categories, kind]() {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                            xtreamFetchStreamsWithRetry(callback, error, maxRetries - 1, categories, kind);
+    const auto& eps = d["episodes"];
+    if (eps.is_object()) {
+        // Object keys come back sorted as text ("10" before "2"): order the seasons by number
+        std::vector<std::string> keys;
+        for (auto it = eps.begin(); it != eps.end(); ++it) keys.push_back(it.key());
+        std::stable_sort(keys.begin(), keys.end(), [](const std::string& a, const std::string& b) {
+            return std::atoi(a.c_str()) < std::atoi(b.c_str());
+        });
+        for (const auto& key : keys) addSeason(key, eps[key]);
+    } else if (eps.is_array()) {
+        for (size_t i = 0; i < eps.size(); i++) addSeason(std::to_string(i + 1), eps[i]);
+    }
+    return seasons;
+}
+
+/// Calls player_api.php and parses the JSON object it returns, off the UI thread
+static void xtreamGetObject(const std::string& action, const std::vector<std::pair<std::string, std::string>>& params,
+                            const ErrorCallback& error,
+                            std::function<void(const nlohmann::json&, const XtreamAccount&)> done) {
+    XtreamAccount account;
+    if (!getXtreamAccount(account)) {
+        if (error) error("Xtream Codes credentials not configured properly", -1);
+        return;
+    }
+    xtreamApiGet(account, action, params, [account, action, error, done](cpr::Response r) {
+        nlohmann::json d;
+        if (!r.error && r.status_code == 200) d = nlohmann::json::parse(r.text, nullptr, false);
+        if (d.is_discarded() || !d.is_object()) {
+            brls::Logger::error("Xtream {}: invalid response (status {})", action, r.status_code);
+            brls::sync([error, code = r.status_code]() {
+                if (error) error(brls::getStr("tsvitch/xtream/bad_response"), code);
+            });
+            return;
+        }
+        done(d, account);
+    });
+}
+
+void TsVitchClient::get_xtream_series_info(const std::string& seriesId,
+                                           const std::function<void(LiveM3u8ListResult)>& callback,
+                                           const ErrorCallback& error, const std::string& fallbackLogo) {
+    if (seriesId.empty()) {
+        if (error) error("Missing series id", -1);
+        return;
+    }
+    xtreamGetObject("get_series_info", {{"series_id", seriesId}}, error,
+                    [callback, fallbackLogo](const nlohmann::json& d, const XtreamAccount& account) {
+                        auto episodes = std::make_shared<LiveM3u8ListResult>();
+                        if (d.contains("episodes")) {
+                            for (auto& season : parseXtreamSeasons(d, account, fallbackLogo))
+                                for (auto& e : season.episodes) episodes->push_back(std::move(e.item));
+                        }
+                        brls::Logger::info("Xtream: parsed {} episodes", episodes->size());
+                        brls::sync([callback, episodes]() {
+                            if (callback) callback(std::move(*episodes));
                         });
-                        return;
-                    }
-                    if (error) {
-                        error("Network error: " + r.error.message, -1);
-                    }
-                    return;
-                }
-                
-                // Handle HTTP errors with retry for 503 and 502
-                if ((r.status_code == 503 || r.status_code == 502) && maxRetries > 0) {
-                    brls::Logger::warning("Xtream server returned {} - server temporarily unavailable, retrying in 3 seconds (retries left: {})", r.status_code, maxRetries - 1);
-                    brls::Threading::async([callback, error, maxRetries, categories, kind]() {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(3000)); // Wait 3 seconds for server errors
-                        xtreamFetchStreamsWithRetry(callback, error, maxRetries - 1, categories, kind);
                     });
-                    return;
-                }
-                
-                if (r.status_code != 200) {
-                    brls::Logger::error("Xtream API error: HTTP {}, body: {}", r.status_code, r.text.substr(0, 500));
-                    if (error) {
-                        error("HTTP error " + std::to_string(r.status_code) + ": " + r.text.substr(0, 200), r.status_code);
-                    }
-                    return;
-                }
-                
-                if (r.text.empty()) {
-                    brls::Logger::error("Xtream API returned empty response");
-                    if (error) {
-                        error("Empty response from Xtream server", -1);
-                    }
-                    return;
-                }
-                
-                // Sposta il parsing JSON in un thread asincrono per non bloccare la UI
-                brls::Threading::async([callback, error, responseText = std::move(r.text), serverUrl, username, password, categories, kind]() {
-                    try {
-                        auto parse_start = std::chrono::high_resolution_clock::now();
-                        
-                        nlohmann::json json_result;
-                        try {
-                            json_result = nlohmann::json::parse(responseText);
-                        } catch (const nlohmann::json::parse_error& e) {
-                            brls::Logger::error("Failed to parse Xtream JSON: {}", e.what());
-                            brls::sync([error]() {
-                                if (error) error("Invalid JSON response from Xtream server", -1);
-                            });
-                            return;
-                        }
-                        
-                        if (!json_result.is_array()) {
-                            brls::Logger::error("Xtream response is not an array, type: {}", json_result.type_name());
-                            brls::sync([error]() {
-                                if (error) error("Invalid response format from Xtream server", -1);
-                            });
-                            return;
-                        }
-                        
-                        LiveM3u8ListResult result;
-                        result.reserve(json_result.size()); // Pre-allocazione per prestazioni
-                        
-                        size_t processed = 0, skipped = 0;
-                        for (size_t i = 0; i < json_result.size(); i++) {
-                            const auto& item = json_result[i];
-                            if (!item.is_object()) {
-                                skipped++;
-                                continue;
-                            }
-                            
-                            try {
-                                LiveM3u8 live;
+}
 
-                                // Series use series_id + cover; Live/Movies use stream_id + stream_icon
-                                if (kind.isSeriesList) {
-                                    live.id   = safeGetIdString(item, "series_id");
-                                    live.logo = safeGetString(item, "cover");
-                                } else {
-                                    live.id = safeGetIdString(item, "stream_id");
-                                    live.logo = safeGetString(item, "stream_icon");
-                                }
+/// Xtream sends programme titles and descriptions base64 encoded; text that does not decode to readable
+/// UTF-8 is returned unchanged
+static std::string decodeBase64Text(const std::string& text) {
+    static const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    if (text.empty() || text.size() % 4 != 0) return text;
+    std::string out;
+    unsigned int buffer = 0;
+    int bits            = 0;
+    for (char c : text) {
+        if (c == '=') break;
+        auto pos = chars.find(c);
+        if (pos == std::string::npos) return text;
+        buffer = (buffer << 6) | static_cast<unsigned int>(pos);
+        bits += 6;
+        if (bits >= 8) {
+            bits -= 8;
+            out.push_back(static_cast<char>((buffer >> bits) & 0xFF));
+        }
+    }
+    // Valid UTF-8 without control characters, or it was not base64 after all
+    for (size_t i = 0; i < out.size();) {
+        auto c = static_cast<unsigned char>(out[i]);
+        size_t length = c < 0x80 ? 1 : (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : (c >> 3) == 0x1E ? 4 : 0;
+        if (length == 0 || i + length > out.size()) return text;
+        if (length == 1 && c < 0x20 && c != '\n' && c != '\t' && c != '\r') return text;
+        for (size_t k = 1; k < length; k++)
+            if ((static_cast<unsigned char>(out[i + k]) & 0xC0) != 0x80) return text;
+        i += length;
+    }
+    return out;
+}
 
-                                if (item.contains("num") && !item["num"].is_null()) {
-                                    if (item["num"].is_string()) {
-                                        live.chno = item["num"].get<std::string>();
-                                    } else if (item["num"].is_number()) {
-                                        live.chno = std::to_string(item["num"].get<int>());
-                                    }
-                                }
-
-                                live.title = sanitizeText(safeGetString(item, "name"));
-                                
-                                // get_*_streams only exposes category_id: resolve the name from the
-                                // category map; fall back to category_name (if present) and then the kind default.
-                                std::string categoryName = safeGetString(item, "category_name");
-                                if (categoryName.empty() && categories) {
-                                    std::string categoryId = safeGetIdString(item, "category_id");
-                                    if (!categoryId.empty()) {
-                                        auto it = categories->find(categoryId);
-                                        if (it != categories->end()) {
-                                            categoryName = it->second;
-                                        }
-                                    }
-                                }
-                                live.groupTitle = sanitizeText(categoryName.empty() ? kind.fallbackGroupTitle : categoryName);
-                                live.type       = kind.contentType;
-
-                                // Item URL.
-                                // Series: sentinel xtream-series://<id> (clicking opens the episodes).
-                                // Live -> live/.../id.ts ; Movies (VOD) -> movie/.../id.<container_extension>
-                                if (!live.id.empty()) {
-                                    if (kind.isSeriesList) {
-                                        live.url = XTREAM_SERIES_SCHEME + live.id;
-                                    } else {
-                                        std::string streamUrl = serverUrl;
-                                        if (streamUrl.back() != '/') {
-                                            streamUrl += "/";
-                                        }
-                                        std::string ext;
-                                        if (kind.useContainerExtension) {
-                                            ext = safeGetString(item, "container_extension");
-                                            if (ext.empty()) ext = "mp4";
-                                        } else {
-                                            ext = "ts";
-                                        }
-                                        streamUrl += kind.urlSegment + "/" + username + "/" + password + "/" + live.id + "." + ext;
-                                        live.url = streamUrl;
-                                    }
-                                }
-                                
-                                // Only add channels that have required fields
-                                if (!live.id.empty() && !live.title.empty() && !live.url.empty()) {
-                                    result.push_back(std::move(live));
-                                    processed++;
-                                }
-                                
-                            } catch (const std::exception& e) {
-                                brls::Logger::error("Exception processing Xtream item at index {}: {}", i, e.what());
-                                skipped++;
-                                continue;
+void TsVitchClient::get_xtream_short_epg(const std::string& streamId, int limit,
+                                         const std::function<void(std::vector<XtreamEpgEntry>)>& callback,
+                                         const ErrorCallback& error) {
+    if (streamId.empty()) {
+        if (error) error("Missing stream id", -1);
+        return;
+    }
+    xtreamGetObject("get_short_epg", {{"stream_id", streamId}, {"limit", std::to_string(limit)}}, error,
+                    [callback](const nlohmann::json& d, const XtreamAccount&) {
+                        auto entries = std::make_shared<std::vector<XtreamEpgEntry>>();
+                        if (d.contains("epg_listings") && d["epg_listings"].is_array()) {
+                            for (const auto& e : d["epg_listings"]) {
+                                if (!e.is_object()) continue;
+                                XtreamEpgEntry entry;
+                                entry.title       = sanitizeText(decodeBase64Text(safeGetString(e, "title")));
+                                entry.description = sanitizeText(decodeBase64Text(safeGetString(e, "description")));
+                                entry.start       = static_cast<int64_t>(safeGetNumber(e, "start_timestamp"));
+                                entry.end         = static_cast<int64_t>(safeGetNumber(e, "stop_timestamp"));
+                                if (entry.title.empty() || entry.start <= 0 || entry.end <= entry.start) continue;
+                                entries->push_back(std::move(entry));
                             }
                         }
-                        
-                        auto parse_end = std::chrono::high_resolution_clock::now();
-                        auto parse_duration = std::chrono::duration_cast<std::chrono::milliseconds>(parse_end - parse_start);
-                        brls::Logger::info("Xtream parsing completed in {}ms - processed: {}, skipped: {}, total: {}", 
-                                         parse_duration.count(), processed, skipped, json_result.size());
-                        
-                        brls::sync([callback, result = std::move(result)]() {
-                            if (callback) {
-                                callback(result);
-                            }
+                        std::sort(entries->begin(), entries->end(),
+                                  [](const XtreamEpgEntry& a, const XtreamEpgEntry& b) { return a.start < b.start; });
+                        brls::sync([callback, entries]() {
+                            if (callback) callback(std::move(*entries));
                         });
-                        
-                    } catch (const std::exception& e) {
-                        brls::Logger::error("Exception in Xtream async processing: {}", e.what());
-                        brls::sync([error, e]() {
-                            if (error) {
-                                error("Failed to parse Xtream channels response: " + std::string(e.what()), -1);
-                            }
+                    });
+}
+
+void TsVitchClient::get_xtream_account_info(const std::function<void(XtreamAccountInfo)>& callback,
+                                            const ErrorCallback& error) {
+    xtreamGetObject("", {}, error, [callback, error](const nlohmann::json& d, const XtreamAccount&) {
+        if (!d.contains("user_info") || !d["user_info"].is_object()) {
+            brls::sync([error]() {
+                if (error) error(brls::getStr("tsvitch/xtream/bad_response"), 200);
+            });
+            return;
+        }
+        const auto& user = d["user_info"];
+        auto info        = std::make_shared<XtreamAccountInfo>();
+        info->status            = safeGetString(user, "status");
+        info->expiresAt         = static_cast<int64_t>(safeGetNumber(user, "exp_date"));
+        info->createdAt         = static_cast<int64_t>(safeGetNumber(user, "created_at"));
+        info->activeConnections = static_cast<int>(safeGetNumber(user, "active_cons"));
+        info->maxConnections    = static_cast<int>(safeGetNumber(user, "max_connections"));
+        info->trial             = safeGetNumber(user, "is_trial") > 0;
+        brls::sync([callback, info]() {
+            if (callback) callback(*info);
+        });
+    });
+}
+
+void TsVitchClient::get_xtream_series_detail(const std::string& seriesId,
+                                             const std::function<void(XtreamDetail)>& callback,
+                                             const ErrorCallback& error) {
+    if (seriesId.empty()) {
+        if (error) error("Missing series id", -1);
+        return;
+    }
+    xtreamGetObject("get_series_info", {{"series_id", seriesId}}, error,
+                    [callback](const nlohmann::json& d, const XtreamAccount& account) {
+                        static const nlohmann::json noInfo = nlohmann::json::object();
+                        const auto& info = d.contains("info") && d["info"].is_object() ? d["info"] : noInfo;
+                        auto detail      = std::make_shared<XtreamDetail>();
+                        detail->title    = sanitizeText(safeGetString(info, "name"));
+                        detail->plot     = sanitizeText(safeGetString(info, "plot"));
+                        detail->genre    = sanitizeText(safeGetString(info, "genre"));
+                        detail->cast     = sanitizeText(safeGetString(info, "cast"));
+                        detail->director = sanitizeText(safeGetString(info, "director"));
+                        detail->cover    = safeGetString(info, "cover");
+                        detail->backdrop = firstBackdrop(info);
+                        detail->rating   = static_cast<float>(safeGetNumber(info, "rating"));
+                        detail->year     = yearFromText(safeGetString(info, "releaseDate"));
+                        if (!detail->year) detail->year = yearFromText(safeGetString(info, "release_date"));
+                        if (!detail->year) detail->year = yearFromText(detail->title);
+                        if (d.contains("episodes")) detail->seasons = parseXtreamSeasons(d, account, detail->cover);
+                        brls::sync([callback, detail]() {
+                            if (callback) callback(std::move(*detail));
                         });
-                    }
-                });
-            } catch (const std::exception& e) {
-                brls::Logger::error("Exception in Xtream response handler: {}", e.what());
-                if (error) {
-                    error("Failed to process Xtream response: " + std::string(e.what()), -1);
-                }
-            }
-        },
-        cpr::Url{xtreamUrl},
-        cpr::HttpVersion{cpr::HttpVersionCode::VERSION_2_0_TLS},
-        cpr::Timeout{timeoutMs},
-        HTTP::HEADERS,
-        HTTP::COOKIES,
-        HTTP::PROXIES,
-        HTTP::VERIFY);
+                    });
+}
+
+void TsVitchClient::get_xtream_movie_detail(const std::string& vodId,
+                                            const std::function<void(XtreamDetail)>& callback,
+                                            const ErrorCallback& error) {
+    if (vodId.empty()) {
+        if (error) error("Missing movie id", -1);
+        return;
+    }
+    xtreamGetObject("get_vod_info", {{"vod_id", vodId}}, error,
+                    [callback](const nlohmann::json& d, const XtreamAccount&) {
+                        static const nlohmann::json noInfo = nlohmann::json::object();
+                        const auto& info  = d.contains("info") && d["info"].is_object() ? d["info"] : noInfo;
+                        const auto& movie = d.contains("movie_data") && d["movie_data"].is_object() ? d["movie_data"]
+                                                                                                   : noInfo;
+                        auto detail   = std::make_shared<XtreamDetail>();
+                        detail->title = sanitizeText(safeGetString(info, "name"));
+                        if (detail->title.empty()) detail->title = sanitizeText(safeGetString(movie, "name"));
+                        detail->originalTitle = sanitizeText(safeGetString(info, "o_name"));
+                        detail->plot          = sanitizeText(safeGetString(info, "plot"));
+                        if (detail->plot.empty()) detail->plot = sanitizeText(safeGetString(info, "description"));
+                        detail->genre = sanitizeText(safeGetString(info, "genre"));
+                        detail->cast  = sanitizeText(safeGetString(info, "cast"));
+                        if (detail->cast.empty()) detail->cast = sanitizeText(safeGetString(info, "actors"));
+                        detail->director = sanitizeText(safeGetString(info, "director"));
+                        detail->country  = sanitizeText(safeGetString(info, "country"));
+                        detail->duration = safeGetString(info, "duration");
+                        detail->cover    = safeGetString(info, "movie_image");
+                        if (detail->cover.empty()) detail->cover = safeGetString(info, "cover_big");
+                        detail->backdrop = firstBackdrop(info);
+                        detail->rating   = static_cast<float>(safeGetNumber(info, "rating"));
+                        detail->year     = yearFromText(safeGetString(info, "releasedate"));
+                        if (!detail->year) detail->year = yearFromText(detail->title);
+                        brls::sync([callback, detail]() {
+                            if (callback) callback(std::move(*detail));
+                        });
+                    });
 }
 
 void TsVitchClient::get_live_channels(const std::function<void(LiveM3u8ListResult)>& callback,

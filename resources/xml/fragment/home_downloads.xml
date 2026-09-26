@@ -1,33 +1,45 @@
 <brls:Box
         axis="column"
-        marginTop="20"
-        marginBottom="8"
         width="auto"
-        height="auto">
+        height="auto"
+        paddingTop="30"
+        paddingLeft="40"
+        paddingRight="40">
 
-    <brls:Box
-            height="60"
-            width="100%"
-            paddingTop="20"
-            paddingLeft="40"
-            paddingRight="40"
-            justifyContent="center"
-            alignItems="center">
-
-        <brls:Label
-                fontSize="24"
-                text="Downloads" />
-    </brls:Box>
+    <brls:Label
+            fontSize="28"
+            marginBottom="16"
+            text="@i18n/tsvitch/download/title"/>
 
     <RecyclingGrid
             id="home/downloads/recyclingGrid"
             grow="1"
-            marginLeft="40"
-            marginRight="40"
-            marginBottom="20"
             spanCount="1"
-            itemHeight="100"
-            paddingTop="10"
-            paddingBottom="10" />
+            itemHeight="120"
+            itemSpace="14"
+            paddingBottom="20"/>
 
+    <brls:Box
+            id="home/downloads/empty"
+            axis="column"
+            grow="1"
+            alignItems="center"
+            justifyContent="center"
+            visibility="gone">
+        <brls:Image
+                width="96"
+                height="96"
+                image="@res/svg/ico-downloads.svg"/>
+        <brls:Label
+                fontSize="24"
+                marginTop="20"
+                text="@i18n/tsvitch/download/empty"/>
+        <brls:Label
+                fontSize="17"
+                marginTop="10"
+                width="560"
+                horizontalAlign="center"
+                textColor="@theme/brls/text_disabled"
+                text="@i18n/tsvitch/download/empty_hint"/>
+    </brls:Box>
 </brls:Box>

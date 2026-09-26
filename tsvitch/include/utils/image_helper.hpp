@@ -29,6 +29,12 @@ public:
     static void clear(brls::Image* view);
 
     static void setRequestThreads(size_t num);
+
+    /// Called when the app closes: pictures still loading stop at once
+    static void stopRequests();
+
+    /// TMDB pictures in the small size (w185) that a poster card needs; other urls stay as they are
+    static std::string smallPoster(const std::string& url);
 #ifdef USE_WEBP
 #ifdef __PSV__
     inline static std::string h_ext           = "@224w_126h_1c.webp";

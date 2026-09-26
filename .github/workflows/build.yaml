@@ -1,224 +1,28 @@
-name: Build TsVitch
+name: Build
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
-    inputs:
-      universal_macos:
-        description: "build macos (universal)"
-        required: false
-        default: "false"
-      release:
-        description: "Push a new release"
-        required: false
-        default: "true"
-      version:
-        description: "Version"
-        required: false
-        default: "0.0.0"
-      disable_unity_build:
-        description: "Disable unity build"
-        required: false
-        default: "false"
 
-env:
-  GA_ID: ${{ secrets.GA_ID }}
-  GA_KEY: ${{ secrets.GA_KEY }}
-  SERVER_URL: ${{ secrets.SERVER_URL }}
-  SERVER_TOKEN: ${{ secrets.SERVER_TOKEN }}
-  M3U8_URL: ${{ secrets.M3U8_URL }}
+permissions:
+  contents: read
 
 jobs:
-  version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.info.outputs.version }}
-      standard_version: ${{ steps.info.outputs.standard_version }}
-      DIST_NRO: ${{ steps.info.outputs.DIST_NRO }}
-      DIST_DMG_PREFIX: ${{ steps.info.outputs.DIST_DMG_PREFIX }}
-      DIST_INTEL_DMG: ${{ steps.info.outputs.DIST_INTEL_DMG }}
-      DIST_ARM_DMG: ${{ steps.info.outputs.DIST_ARM_DMG }}
-      DIST_UNIVERSAL_DMG: ${{ steps.info.outputs.DIST_UNIVERSAL_DMG }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Debug version
-        run: |
-          export VERSION=`git rev-parse --short HEAD`
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-
-      - name: Release version
-        if: github.event.inputs.release == 'true' && github.event.inputs.release != 'false' && !cancelled()
-        run: |
-          export VERSION="${{ github.event.inputs.version }}"
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-
-      - name: Version
-        id: info
-        env:
-          VERSION: ${{ env.VERSION }}
-        run: |
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "DIST_NRO=TsVitch-NintendoSwitch-${VERSION}" >> $GITHUB_OUTPUT
-          echo "DIST_DMG_PREFIX=TsVitch-macOS" >> $GITHUB_OUTPUT
-          echo "DIST_INTEL_DMG=TsVitch-macOS-IntelChip-${VERSION}" >> $GITHUB_OUTPUT
-          echo "DIST_ARM_DMG=TsVitch-macOS-AppleSilicon-${VERSION}" >> $GITHUB_OUTPUT
-          echo "DIST_UNIVERSAL_DMG=TsVitch-macOS-Universal-${VERSION}" >> $GITHUB_OUTPUT
-          echo $VERSION
-          echo "${{  github.event.inputs.version }}"
-
-      - name: Create tag if not exists
-        if: github.event.inputs.release == 'true' && github.event.inputs.version != '' && !cancelled()
-        run: |
-          git fetch --tags
-          if ! git rev-parse "v${{ github.event.inputs.version }}" >/dev/null 2>&1; then
-            git tag "v${{ github.event.inputs.version }}"
-            git push origin "v${{ github.event.inputs.version }}"
-          else
-            echo "Tag v${{ github.event.inputs.version }} already exists"
-          fi
-
-  release:
-    needs: [build-switch, build-macos, version]
-    permissions:
-      contents: write
+  switch:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0
 
-      - name: Download Artifact
-        if: github.event.inputs.release == 'true' && !cancelled()
-        uses: actions/download-artifact@v4
+      - name: Build iptv-player.nro
+        run: docker run --platform linux/amd64 --rm -v "$(pwd):/data" devkitpro/devkita64:latest bash /data/scripts/build_switch.sh
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        with:
-          make_latest: true
-          tag_name: v${{ github.event.inputs.version }}
-          files: |
-            ${{ needs.version.outputs.DIST_NRO }}/TsVitch.nro
-            ${{ needs.version.outputs.DIST_INTEL_DMG }}/${{ needs.version.outputs.DIST_INTEL_DMG }}.dmg
-            ${{ needs.version.outputs.DIST_ARM_DMG }}/${{ needs.version.outputs.DIST_ARM_DMG }}.dmg
-            ${{ needs.version.outputs.DIST_UNIVERSAL_DMG }}/${{ needs.version.outputs.DIST_UNIVERSAL_DMG }}.dmg
-          draft: true
-          prerelease: false
-          body_path: "CHANGELOG.md"
-
-  build-switch:
-    needs: [version]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { driver: opengl }
-        driver: [opengl]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Build Nro
-        run: |
-          docker run --platform linux/amd64 --rm \
-            -e GA_ID="${GA_ID}" \
-            -e GA_KEY="${GA_KEY}" \
-            -e SERVER_URL="${SERVER_URL}" \
-            -e SERVER_TOKEN="${SERVER_TOKEN}" \
-            -e M3U8_URL="${M3U8_URL}" \
-            -e GITHUB_TOKEN="${{ secrets.GH_PAT }}" \
-            -v $(pwd):/data devkitpro/devkita64:latest \
-            bash -c "/data/scripts/build_switch${{ matrix.shuffix }}.sh"
-
-      - name: Upload dist
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ needs.version.outputs.DIST_NRO }}${{ matrix.shuffix }}
-          path: "cmake-build-switch/TsVitch.nro"
-
-  build-macos:
-    needs: [version]
-    runs-on: macos-14
-    strategy:
-      matrix:
-        include:
-          - { arch: IntelChip, name: IntelChip }
-          - { arch: AppleSilicon, name: AppleSilicon }
-          - { arch: Universal, name: Universal }
-      # Don't fail the whole workflow if one architecture fails
-      fail-fast: false
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: install deps
-        if: matrix.arch != 'Universal' || ( matrix.arch == 'Universal' && github.event.inputs.universal_macos == 'true')
-        run: |
-          brew install create-dmg dylibbundler
-          brew tap xfangfang/wiliwili
-          brew install -v mpv-wiliwili
-
-      - name: Update gamepad mappings
-        if: matrix.arch != 'Universal' || ( matrix.arch == 'Universal' && github.event.inputs.universal_macos == 'true')
-        id: gamepad
-        run: |
-          BRLS_GLFW="library/borealis/library/lib/extern/glfw"
-          cmake -P ${BRLS_GLFW}/CMake/GenerateMappings.cmake  ${BRLS_GLFW}/src/mappings.h.in  ${BRLS_GLFW}/src/mappings.h
-
-      - name: Build
-        if: matrix.arch != 'Universal' || ( matrix.arch == 'Universal' && github.event.inputs.universal_macos == 'true')
-        id: compile
-        run: |
-          cmake -B build \
-            -DPLATFORM_DESKTOP=ON \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DMAC_${{ matrix.arch }}=ON \
-            -DMAC_DOWNLOAD_DYLIB=ON \
-            -DBRLS_UNITY_BUILD=${{ github.event.inputs.disable_unity_build == 'true' && 'OFF' || 'ON' }} \
-            -DCMAKE_UNITY_BUILD_BATCH_SIZE=16 \
-            -DANALYTICS=ON \
-            -DANALYTICS_ID="${GA_ID}" \
-            -DANALYTICS_KEY="${GA_KEY}" \
-            -DSERVER_URL="${SERVER_URL}" \
-            -DSERVER_TOKEN="${SERVER_TOKEN}" \
-            -DM3U8_URL="${M3U8_URL}" \
-            -DGITHUB_TOKEN="${{ secrets.GH_PAT }}"
-          make -C build TsVitch.app -j$(sysctl -n hw.ncpu)
-
-      - name: Name
-        if: matrix.arch != 'Universal' || ( matrix.arch == 'Universal' && github.event.inputs.universal_macos == 'true')
-        id: name
-        run: |
-          echo "DMG=${{ needs.version.outputs.DIST_DMG_PREFIX }}-${{ matrix.name }}-${{ needs.version.outputs.version }}"  >> $GITHUB_OUTPUT
-
-      - name: Bundle
-        if: matrix.arch != 'Universal' || ( matrix.arch == 'Universal' && github.event.inputs.universal_macos == 'true')
-        id: bundle
-        run: |
-          mkdir -p dist
-          mv build/TsVitch.app dist/
-          cp ./scripts/mac/readme.txt dist/readme.txt
-          create-dmg --window-pos 200 120 --window-size 800 400 \
-            --icon-size 100 --icon "TsVitch.app" 200 190 \
-            --icon "readme.txt" 400 100 --hide-extension "TsVitch.app" \
-            --app-drop-link 600 185  --volicon ./scripts/mac/dmg.icns \
-            --volname "TsVitch (${{ needs.version.outputs.version }})" ${{ steps.name.outputs.DMG }}.dmg "dist/"
-
-      - name: Upload dist
-        if: matrix.arch != 'Universal' || ( matrix.arch == 'Universal' && github.event.inputs.universal_macos == 'true')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.name.outputs.DMG }}
-          path: "${{ steps.name.outputs.DMG }}.dmg"
+          name: iptv-player
+          path: cmake-build-switch/iptv-player.nro

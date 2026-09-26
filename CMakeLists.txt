@@ -29,19 +29,26 @@ option(DEBUG_SANITIZER "Turn on sanitizers (only available in debug build)" OFF)
 # Google Analytics
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GoogleAnalytics.cmake)
 
-# Server URL
-option(SERVER_URL "URL del server" "")
-if (NOT DEFINED SERVER_URL OR "${SERVER_URL}" STREQUAL "")
-    message(FATAL_ERROR "SERVER_URL not defined")
-else()
+# Disable every analytics report (no events are queued or sent)
+option(DISABLE_ANALYTICS "Disable all analytics reports" ON)
+if (DISABLE_ANALYTICS)
+    list(APPEND APP_PLATFORM_OPTION -DNO_GA)
+endif ()
+
+# Custom builds must not compare themselves with the official releases
+option(DISABLE_UPDATE_CHECK "Do not check the releases for updates" ON)
+if (DISABLE_UPDATE_CHECK)
+    list(APPEND APP_PLATFORM_OPTION -DDISABLE_UPDATE_CHECK)
+endif ()
+
+# Server URL / Token (optional: without them registration and ads are skipped)
+set(SERVER_URL "" CACHE STRING "URL del server")
+if (NOT "${SERVER_URL}" STREQUAL "")
     list(APPEND APP_PLATFORM_OPTION -DSERVER_URL="${SERVER_URL}")
 endif()
 
-# Server Token
-option(SERVER_TOKEN "Token del server" "")
-if (NOT DEFINED SERVER_TOKEN OR "${SERVER_TOKEN}" STREQUAL "")
-    message(FATAL_ERROR "SERVER_TOKEN not defined")
-else()
+set(SERVER_TOKEN "" CACHE STRING "Token del server")
+if (NOT "${SERVER_TOKEN}" STREQUAL "")
     list(APPEND APP_PLATFORM_OPTION -DSERVER_TOKEN="${SERVER_TOKEN}")
 endif()
 
@@ -99,15 +106,18 @@ list(APPEND APP_PLATFORM_OPTION -DBUILD_TAG_VERSION=${GIT_TAG_VERSION} -DBUILD_T
 add_definitions(-DFONS_HASH_LUT_SIZE=4096)
 
 # Project Info
-project(TsVitch)
-set(VERSION_MAJOR "0")
-set(VERSION_MINOR "3")
-set(VERSION_REVISION "1")
+project(iptv_player)
+set(VERSION_MAJOR "1")
+set(VERSION_MINOR "0")
+set(VERSION_REVISION "0")
 if (NOT VERSION_BUILD)
     set(VERSION_BUILD "0")
 endif ()
-set(PROJECT_AUTHOR "giovannimirulla")
-set(PACKAGE_NAME com.giovannimirulla.tsvitch)
+set(PROJECT_AUTHOR "muratgokce")
+# Name shown to the user, and the name of the .nro, the log and the data folder
+set(APP_TITLE "IPTV Player")
+set(APP_FILE_NAME "iptv-player")
+set(PACKAGE_NAME io.github.murat303.iptvplayer)
 set(VITA_TITLEID "TSVITCH0")
 set(PSN_TITLE_ID "TVSI00000")
 set(VITA_VERSION "00.21")
@@ -273,7 +283,7 @@ elseif (PLATFORM_IOS)
             "${CMAKE_CURRENT_SOURCE_DIR}/library/borealis/demo/ios/iphoneos/Splash.storyboard"
             "${CMAKE_CURRENT_SOURCE_DIR}/library/borealis/demo/ios/Images.xcassets"
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ios/iOSBundleInfo.plist.in"
-            "tsvitch"
+            "${APP_FILE_NAME}"
             "${APP_VERSION}")
 elseif (PLATFORM_PSV)
     set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d ATTRIBUTE2=12") # max heap size mode
@@ -300,7 +310,7 @@ elseif (PLATFORM_PS4)
     add_pkg(${PROJECT_NAME}
             ${CMAKE_BINARY_DIR}/ps4
             ${PSN_TITLE_ID}
-            "TsVitch"
+            "${APP_TITLE}"
             ${VITA_VERSION}
             8388608
     )
@@ -315,6 +325,9 @@ elseif (PLATFORM_PS4)
     add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}.data)
 elseif (PLATFORM_SWITCH)
     set(BUILD_FONT_DIR ${CMAKE_BINARY_DIR}/resources/font)
+    # Title shown in the homebrew menu (lets a custom build sit next to the official one)
+    set(NACP_TITLE "${APP_TITLE}" CACHE STRING "Title stored in the NRO's NACP")
+    set(NACP_AUTHOR "${PROJECT_AUTHOR}" CACHE STRING "Author stored in the NRO's NACP")
     if (GIT_TAG_VERSION)
         string(SUBSTRING ${GIT_TAG_VERSION} 1 -1 APP_VERSION)
     endif ()
@@ -324,20 +337,20 @@ elseif (PLATFORM_SWITCH)
     if (USE_DEKO3D)
         gen_dksh("${PROJECT_RESOURCES}/shaders")
     endif ()
-    add_custom_target(${PROJECT_NAME}.nro
+    add_custom_target(${APP_FILE_NAME}.nro
         DEPENDS ${PROJECT_NAME}
-        COMMAND ${NX_NACPTOOL_EXE} --create ${PROJECT_NAME} ${PROJECT_AUTHOR} ${APP_VERSION} ${PROJECT_NAME}.nacp
+        COMMAND ${NX_NACPTOOL_EXE} --create "${NACP_TITLE}" "${NACP_AUTHOR}" ${APP_VERSION} ${APP_FILE_NAME}.nacp
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_RESOURCES} ${CMAKE_BINARY_DIR}/resources
         COMMAND ${CMAKE_COMMAND} -E remove -f ${BUILD_FONT_DIR}/*.txt ${BUILD_FONT_DIR}/switch_font.ttf
             ${BUILD_FONT_DIR}/keymap*.ttf
-        COMMAND ${NX_ELF2NRO_EXE} ${PROJECT_NAME}.elf ${PROJECT_NAME}.nro --icon=${PROJECT_ICON}
-            --nacp=${PROJECT_NAME}.nacp --romfsdir=${CMAKE_BINARY_DIR}/resources
+        COMMAND ${NX_ELF2NRO_EXE} ${PROJECT_NAME}.elf ${APP_FILE_NAME}.nro --icon=${PROJECT_ICON}
+            --nacp=${APP_FILE_NAME}.nacp --romfsdir=${CMAKE_BINARY_DIR}/resources
         ALL
     )
 endif ()
 
 target_include_directories(${PROJECT_NAME} PRIVATE tsvitch/include tsvitch/include/api ${APP_PLATFORM_INCLUDE})
-target_compile_definitions(${PROJECT_NAME} PRIVATE APP_NAME="${PROJECT_NAME}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE APP_NAME="${APP_FILE_NAME}" APP_TITLE="${APP_TITLE}")
 target_compile_options(${PROJECT_NAME} PRIVATE -ffunction-sections -fdata-sections -Wunused-variable ${APP_PLATFORM_OPTION})
 target_link_libraries(${PROJECT_NAME} PRIVATE wiliwiliLibExtra borealis lunasvg pystring z ${APP_PLATFORM_LIB})
 target_link_options(${PROJECT_NAME} PRIVATE ${APP_PLATFORM_LINK_OPTION})

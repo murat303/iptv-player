@@ -1,7 +1,7 @@
 {
-  "title": "TsVitch",
-  "github": "https://github.com/giovannimirulla/TsVitch",
-  "github_release": "https://github.com/giovannimirulla/TsVitch/releases/latest",
+  "title": "IPTV Player",
+  "github": "https://github.com/murat303/iptv-player",
+  "github_release": "https://github.com/murat303/iptv-player/releases/latest",
   "setting": {
     "quit_hint": "Você está prestes a sair do aplicativo. As configurações terão efeito após o próximo início",
     "app": {
@@ -20,11 +20,12 @@
         "auto_loop": "Repetir vídeo atual",
         "auto_no": "Pausar após a reprodução",
         "auto_hint": "\"Reprodução automática de vídeos recomendados\" irá reproduzir automaticamente vídeos recomendados após o episódio.",
-        "sleep": "Desligamento programado",
+        "sleep": "Temporizador",
         "video_codec": "Codec de vídeo",
         "audio_quality": "Qualidade do áudio",
         "video_format": "Formato de vídeo",
-        "player": "Player"
+        "player": "Player",
+        "auto_next": "Reproduzir o próximo episódio automaticamente"
       },
       "image": {
         "header": "Imagem",
@@ -74,7 +75,7 @@
         },
         "language": {
           "header": "Idioma (reinício necessário)",
-          "auto": "Auto",
+          "auto": "Idioma do console",
           "chinese_s": "Chinês Simplificado",
           "chinese_t": "Chinês Tradicional",
           "english": "Inglês",
@@ -91,7 +92,8 @@
           "ps": "PlayStation",
           "keyboard": "Teclado",
           "swap": "Trocar botões"
-        }
+        },
+        "always_on_top_hint": "Manter a janela acima das outras"
       }
     },
     "tools": {
@@ -99,7 +101,8 @@
       "m3u8": {
         "header": "Playlist M3U8",
         "input": "Playlist personalizada",
-        "hint": "http://example.com/playlist.m3u8"
+        "hint": "http://example.com/playlist.m3u8",
+        "timeout": "Tempo limite de download (segundos)"
       },
       "proxy": {
         "header": "Configurações de Proxy",
@@ -142,15 +145,20 @@
       "tab": "Sobre",
       "brief_header": "Introdução",
       "repository": "Repositório",
-      "brief": "A TV finalmente no Switch",
+      "brief": "Player de IPTV para Nintendo Switch: TV ao vivo, filmes e séries (Xtream Codes e listas M3U8).",
       "repo_header": "Repositório",
       "author_header": "Nota do autor",
       "author": "Como é bom assistir TV no banheiro",
       "contrib_header": "Contribuição e Patrocínio",
-      "contrib_text": "TsVitch é um projeto open-source: contribuições, relatórios de bugs e sugestões são bem-vindos. Se você gosta do projeto e deseja apoiá-lo, considere se tornar um patrocinador. Você encontra todos os detalhes e opções no repositório do GitHub.",
+      "contrib_text": "O IPTV Player é de código aberto (GPL-3.0). Relatos de erros e sugestões são bem-vindos no GitHub: github.com/murat303/iptv-player",
       "contributors_header": "Contribuidores",
       "sponsors_header": "Patrocinadores",
-      "sponsor_qr": "Torne-se um Patrocinador"
+      "sponsor_qr": "Torne-se um Patrocinador",
+      "developer_header": "Desenvolvedor",
+      "credits_header": "Baseado em",
+      "credits": "TsVitch de giovannimirulla, suporte a filmes e séries Xtream de ratk, wiliwili de xfangfang e a biblioteca de interface borealis.",
+      "license_header": "Licença",
+      "license": "GPL-3.0: software livre, fornecido sem nenhuma garantia. Código-fonte: github.com/murat303/iptv-player"
     },
     "opensource": {
       "tab": "Opensource"
@@ -163,7 +171,7 @@
       "font_q1": "Como definir fonte ou ícone personalizado",
       "font_a1": "1. Baixe a fonte ou ícone desejado\n2. Renomeie a fonte para: font.ttf; Renomeie o ícone para: icon.ttf\n3. Coloque os arquivos na pasta de configuração\n4. Reinicie o aplicativo",
       "font_q2": "Perguntas frequentes",
-      "font_a2": "1. O tsvitch prioriza fontes personalizadas, com fontes integradas como fallback\n2. \"Configurações - Ferramentas - Outros\" oferece um menu para abrir rapidamente a pasta de configuração\n3. No Linux, o tsvitch usa xdg-open para abrir a pasta. Se a pasta não abrir corretamente, considere instalar esta ferramenta"
+      "font_a2": "1. O IPTV Player usa primeiro as fontes personalizadas e, na falta delas, as fontes integradas\n2. Em \"Configurações - Ferramentas - Outros\" há um item para abrir rapidamente a pasta de configuração\n3. No Linux, o IPTV Player abre a pasta com o xdg-open. Se a pasta não abrir, instale essa ferramenta"
     },
     "hot_keys": {
       "common_header": "Comuns",
@@ -182,13 +190,26 @@
         "ip": "Endereço IP",
         "dns": "Endereço DNS"
       }
+    },
+    "iptv": {
+      "mode": "Modo IPTV",
+      "m3u8_timeout": "Tempo limite do M3U8",
+      "server": "URL do servidor",
+      "username": "Nome de usuário",
+      "password": "Senha",
+      "account": "Informações da conta",
+      "tab": "IPTV",
+      "header": "Configurações de IPTV",
+      "server_hint": "Digite o endereço do servidor Xtream Codes",
+      "username_hint": "Digite seu nome de usuário",
+      "password_hint": "Digite sua senha"
     }
   },
   "hints": {
     "hint1": "Selecione um jogo na tela inicial",
     "hint2": "Segure  e pressione  para entrar no hbmenu",
-    "hint3": "No hbmenu, selecione tsvitch",
-    "hint4": "Opcional: use o forwarder NSP fornecido (Coloque tsvitch.nro em /switch/tsvitch.nro)",
+    "hint3": "No hbmenu, selecione o IPTV Player",
+    "hint4": "Opcional: use um forwarder NSP (o iptv-player.nro deve estar em /switch/iptv-player/)",
     "hint_nsp": "Pressione  para instalar o forwarder NSP",
     "hint_confirm": "Instalar o forwarder NSP pode causar banimento\nVocê confirma?",
     "hint_right": "As imagens são da Internet, direitos autorais pertencem à Nintendo Co., Ltd"
@@ -276,7 +297,7 @@
       "logout": "Sair da conta atual \n(o app será fechado)",
       "scan": "Escaneie o QR code para fazer login",
       "loading": "Carregando QR code...",
-      "hint": "Use o cliente TsVitch para escanear o QR code",
+      "hint": "Escaneie o código QR com o celular",
       "network_error": "Erro de rede, tente novamente",
       "qr_not_available": "QR code inválido, reabra a janela",
       "need_confirm": "Aguardando confirmação",
@@ -454,6 +475,45 @@
       "related": "{} respostas no total",
       "end": "Não há mais comentários.",
       "delete": "Após excluir o comentário, todas as respostas abaixo dele serão excluídas\n\nDeseja continuar?"
+    },
+    "tracks": {
+      "header": "Áudio e legendas",
+      "audio": "Áudio",
+      "subtitle": "Legendas",
+      "none": "Nenhuma",
+      "track": "Faixa {}",
+      "sub_size": "Tamanho do texto",
+      "size_small": "Pequeno",
+      "size_normal": "Normal",
+      "size_big": "Grande",
+      "size_huge": "Muito grande",
+      "sub_color": "Cor do texto",
+      "color_white": "Branco",
+      "color_yellow": "Amarelo",
+      "sub_background": "Fundo do texto",
+      "background_half": "Translúcido",
+      "background_black": "Preta",
+      "sub_position": "Posição do texto",
+      "position_bottom": "Embaixo",
+      "position_higher": "Mais acima",
+      "position_high": "No alto",
+      "sub_delay": "Atraso da legenda",
+      "seconds": "{} s"
+    },
+    "next_episode": {
+      "title": "Próximo episódio",
+      "countdown": "Começa em {} s",
+      "play_now": "Reproduzir agora"
+    },
+    "epg": {
+      "now": "Agora",
+      "next": "A seguir"
+    },
+    "hint": {
+      "channels": "{}  Canal anterior      {}  Próximo canal",
+      "episodes": "{}  Episódio anterior      {}  Próximo episódio",
+      "videos": "{}  Vídeo anterior      {}  Próximo vídeo",
+      "seek": "{} {}  10 s para trás / para frente"
     }
   },
   "dialog": {
@@ -474,15 +534,42 @@
       "live": "canais",
       "movies": "filmes",
       "series": "séries"
+    },
+    "season": "Temporada {}",
+    "group": {
+      "all": "Todos",
+      "recent": "★ Adicionados recentemente"
+    },
+    "search_results": "{} resultados para \"{}\"",
+    "no_results": "Nenhum resultado para \"{}\"",
+    "bad_response": "O servidor enviou uma resposta incompleta. Pressione Atualizar para tentar de novo.",
+    "sort": {
+      "title": "Ordenar",
+      "label": "Ordenar: {}",
+      "server": "Ordem do servidor",
+      "recent": "Adicionados recentemente",
+      "rating": "Avaliação",
+      "name": "Nome (A-Z)",
+      "year": "Ano"
+    },
+    "search_label": {
+      "live": "Buscar canais",
+      "movies": "Buscar filmes",
+      "series": "Buscar séries"
+    },
+    "refresh_label": {
+      "live": "Atualizar canais",
+      "movies": "Atualizar filmes",
+      "series": "Atualizar séries"
     }
   },
   "download": {
     "started": "Download iniciado",
     "completed": "Download concluído!",
-    "already": "Arquivo já baixado!",
+    "already": "Este vídeo já foi baixado. Assista pela aba Downloads.",
     "error": "Erro no download",
     "start_error": "Erro ao iniciar o download",
-    "action": "Baixar vídeo",
+    "action": "Baixar",
     "live_error": "Não é possível baixar uma transmissão ao vivo.\nO download está disponível apenas para conteúdo on-demand.",
     "error_title": "Erro",
     "in_progress": "Baixando...",
@@ -490,17 +577,37 @@
     "resume": "Retomar",
     "play": "Reproduzir",
     "delete": "Excluir",
-    "exit_warning": "Há um download em andamento. Se sair, ele será cancelado. Deseja sair?",
+    "exit_warning": "Há um download em andamento. Se você sair, ele será pausado e poderá continuar depois na aba Downloads. Sair?",
     "status": {
-      "queued": "Na fila...",
-      "downloading": "Baixando...",
+      "queued": "Na fila",
+      "downloading": "Baixando",
       "paused": "Pausado",
-      "completed": "Concluído",
+      "completed": "Baixado",
       "failed": "Falha no download",
       "cancelled": "Cancelado",
       "unknown": "Desconhecido",
       "error": "Erro"
-    }
+    },
+    "title": "Downloads",
+    "started_title": "Download iniciado: {}\nAcompanhe na aba Downloads.",
+    "completed_title": "Download concluído: {}",
+    "failed_title": "Download interrompido: {}\nVocê pode tentar de novo na aba Downloads.",
+    "already_running": "Este vídeo já está sendo baixado.",
+    "busy_download": "“{}” está sendo baixado agora.\nSeu provedor permite uma conexão por vez, então outro download não pode começar. Espere terminar ou pause na aba Downloads.",
+    "busy_watch": "“{}” está sendo baixado agora.\nSeu provedor permite uma conexão por vez, então não é possível assistir durante o download.",
+    "pause_and_watch": "Pausar download e assistir",
+    "close": "Cancelar",
+    "delete_confirm": "Excluir “{}”?\nO arquivo de vídeo também será removido do cartão SD.",
+    "file_missing": "O arquivo de vídeo não foi encontrado no cartão SD.",
+    "empty": "Nenhum download ainda",
+    "empty_hint": "Use o botão Baixar na tela de um filme ou episódio. Os vídeos baixados são reproduzidos sem internet.",
+    "speed": "{}/s",
+    "time_left_m": "faltam {} min",
+    "time_left_h": "faltam {} h {} min",
+    "time_left_less": "falta menos de um minuto",
+    "error_file": "Não foi possível gravar no cartão SD (pode estar cheio)",
+    "error_network": "Conexão perdida",
+    "error_not_video": "O servidor enviou uma página de erro em vez do vídeo"
   },
   "parental": {
     "enter_pin": "Digite o PIN",
@@ -519,5 +626,65 @@
     "clear_history": "Limpar histórico",
     "clear_history_all": "Tudo",
     "history_cleared": "Histórico limpo"
+  },
+  "detail": {
+    "play": "Reproduzir",
+    "resume": "Continuar ({})",
+    "restart": "Recomeçar",
+    "favorite_add": "Adicionar aos favoritos",
+    "favorite_remove": "Remover dos favoritos",
+    "play_episode": "Reproduzir T{} E{}",
+    "resume_episode": "Continuar T{} E{}",
+    "next_episode": "Próximo: T{} E{}",
+    "episode_title": "{}. {}",
+    "episode_count": "{} episódios",
+    "season_count": "Temporadas: {}  ·  Episódios: {}",
+    "season_pick": "Temporada",
+    "director": "Direção: {}",
+    "cast": "Elenco: {}",
+    "hours_minutes": "{} h {} min",
+    "minutes": "{} min",
+    "load_error": "Não foi possível carregar os detalhes",
+    "episode": "Episódio {}",
+    "download": "Baixar",
+    "download_series_hint": "Abra a série e pressione ZR em um episódio para baixá-lo",
+    "download_pick_episode": "Selecione um episódio para baixá-lo",
+    "load_error_retry": "Não foi possível carregar os detalhes. O provedor pode não estar respondendo agora.",
+    "retry": "Tentar de novo",
+    "previous_season": "Temporada anterior",
+    "next_season": "Próxima temporada"
+  },
+  "cast": {
+    "live_download_error": "Download indisponível",
+    "live_download_error_desc": "Não é possível baixar uma transmissão ao vivo em andamento.\nO download só está disponível para filmes e episódios."
+  },
+  "account": {
+    "title": "Informações da conta",
+    "loading": "Carregando as informações da conta...",
+    "error": "Não foi possível carregar as informações da conta. Verifique a conexão com a internet e as configurações de IPTV.",
+    "status": "Status: {}",
+    "status_active": "Ativa",
+    "status_expired": "Expirada",
+    "status_banned": "Bloqueada",
+    "status_disabled": "Desativada",
+    "expires": "Termina em: {}",
+    "days_left": "faltam {} dias",
+    "unlimited": "Termina em: sem data de término",
+    "connections": "Conexões: {} de {} em uso",
+    "trial": "Conta de teste: {}",
+    "yes": "Sim",
+    "no": "Não",
+    "created": "Criada em: {}",
+    "ends_soon": "Sua assinatura termina em {} dias ({}).",
+    "ends_today": "Sua assinatura termina hoje.",
+    "ended": "Sua assinatura terminou."
+  },
+  "history": {
+    "title": "Histórico",
+    "clear_all": "Limpar tudo",
+    "remove": "Remover",
+    "removed": "Removido do histórico",
+    "clear_confirm": "Limpar todo o histórico?",
+    "empty": "Nada assistido ainda"
   }
 }

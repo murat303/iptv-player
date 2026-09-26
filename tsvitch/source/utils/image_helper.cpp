@@ -11,6 +11,13 @@
 #include <webp/decode.h>
 #endif
 
+#include <atomic>
+
+/// Set when the app closes: pictures still loading stop at once
+static std::atomic<bool> stopping{false};
+
+void ImageHelper::stopRequests() { stopping = true; }
+
 class ImageThreadPool : public cpr::ThreadPool, public brls::Singleton<ImageThreadPool> {
 public:
     ImageThreadPool() : cpr::ThreadPool(1, ImageHelper::REQUEST_THREADS, std::chrono::milliseconds(5000)) {
@@ -82,7 +89,8 @@ void ImageHelper::requestImage() {
     brls::Logger::verbose("request Image 2: {} {}", this->imageUrl, this->isCancel);
 
     cpr::Response r = cpr::Get(tsvitch::HTTP::VERIFY, tsvitch::HTTP::PROXIES, cpr::Url{this->imageUrl},
-                               cpr::ProgressCallback([this](...) -> bool { return !this->isCancel; }));
+                               cpr::Timeout{20000}, cpr::ConnectTimeout{10000},
+                               cpr::ProgressCallback([this](...) -> bool { return !this->isCancel && !stopping; }));
 
     if (r.status_code != 200 || r.downloaded_bytes == 0 || this->isCancel) {
         brls::Logger::verbose("request undone: {} {} {} {}", r.status_code, r.downloaded_bytes, this->isCancel,
@@ -194,6 +202,18 @@ void ImageHelper::clear(brls::Image* view) {
 void ImageHelper::cancel() {
     brls::Logger::verbose("Cancel request: {}", this->imageUrl);
     this->isCancel = true;
+}
+
+// TMDB serves every poster in several sizes: a card only needs a small one, which loads and decodes
+// much faster than the 600x900 originals most Xtream servers link to
+std::string ImageHelper::smallPoster(const std::string& url) {
+    static const std::string tmdb = "image.tmdb.org/t/p/";
+    auto start                    = url.find(tmdb);
+    if (start == std::string::npos) return url;
+    start += tmdb.size();
+    auto end = url.find('/', start);
+    if (end == std::string::npos) return url;
+    return url.substr(0, start) + "w185" + url.substr(end);
 }
 
 void ImageHelper::setRequestThreads(size_t num) {

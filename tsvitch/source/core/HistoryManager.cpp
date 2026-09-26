@@ -15,10 +15,14 @@ HistoryManager* HistoryManager::get() {
     return &instance;
 }
 
+/// A series itself is not watched: its episodes go to the history
+static bool isSeriesPage(const tsvitch::LiveM3u8& item) { return item.url.rfind("xtream-series://", 0) == 0; }
+
 void HistoryManager::add(const tsvitch::LiveM3u8& channel) {
-    // Rimuovi eventuali duplicati (basato su id)
+    if (isSeriesPage(channel)) return;
+    // The same video only once; ids repeat across channels, movies and episodes, urls do not
     ring_.erase(
-        std::remove_if(ring_.begin(), ring_.end(), [&](const tsvitch::LiveM3u8& c) { return c.id == channel.id; }),
+        std::remove_if(ring_.begin(), ring_.end(), [&](const tsvitch::LiveM3u8& c) { return c.url == channel.url; }),
         ring_.end());
     // Inserisci in testa
     ring_.push_front(channel);
@@ -38,6 +42,12 @@ void HistoryManager::clearByType(int type) {
     save();
 }
 
+void HistoryManager::remove(const std::string& url) {
+    ring_.erase(std::remove_if(ring_.begin(), ring_.end(), [&](const tsvitch::LiveM3u8& c) { return c.url == url; }),
+                ring_.end());
+    save();
+}
+
 void HistoryManager::clearAll() {
     ring_.clear();
     save();
@@ -49,11 +59,18 @@ void HistoryManager::save() const {
 }
 
 void HistoryManager::load() {
-    if (std::ifstream in{file_}; in) {
-        json j;
-        in >> j;
+    std::ifstream in{file_};
+    if (!in) return;
+    json j = json::parse(in, nullptr, false);
+    if (!j.is_array()) return;  // a damaged file starts an empty history
+    try {
         ring_ = j.get<decltype(ring_)>();
-        // Se il file contiene più di MAX_ITEMS, tronca la coda
-        while (ring_.size() > MAX_ITEMS) ring_.pop_back();
+    } catch (const std::exception& e) {
+        brls::Logger::error("HistoryManager: damaged history: {}", e.what());
+        ring_.clear();
+        return;
     }
+    // Series pages saved by older versions
+    ring_.erase(std::remove_if(ring_.begin(), ring_.end(), isSeriesPage), ring_.end());
+    while (ring_.size() > MAX_ITEMS) ring_.pop_back();
 }

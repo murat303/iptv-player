@@ -1,5 +1,8 @@
 #include <utility>
+#include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
+#include <cpr/async.h>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/views/dialog.hpp>
 #include <borealis/core/thread.hpp>
@@ -12,6 +15,7 @@
 #include "view/grid_dropdown.hpp"
 #include "utils/image_helper.hpp"
 #include "utils/activity_helper.hpp"
+#include "activity/live_player_activity.hpp"
 #include "view/custom_button.hpp"
 
 #include "core/HistoryManager.hpp"
@@ -19,9 +23,12 @@
 #include "core/ChannelManager.hpp"
 #include "core/DownloadManager.hpp"
 #include "utils/stream_helper.hpp"
-#include "core/DownloadProgressManager.hpp"
 
 #include "utils/config_helper.hpp"
+#include "utils/text_fold.hpp"
+#include "utils/video_download.hpp"
+#include "utils/xtream_account.hpp"
+#include "core/XtreamStore.hpp"
 #include "tsvitch.h"
 
 #include <borealis/core/box.hpp>
@@ -80,6 +87,9 @@ public:
     }
 
     size_t getItemCount() override { return list.size(); }
+
+    // Highlights a row without selecting it (the caller shows its content)
+    void markSelected(size_t index) { selectedIndex = index; }
 
     void setSelectedIndex(RecyclingGrid* recycler, size_t index) {
         brls::Logger::debug("setSelectedIndex: {}", index);
@@ -198,12 +208,15 @@ protected:
 
 class DataSourceLiveVideoList : public RecyclingGridDataSource {
 public:
-    explicit DataSourceLiveVideoList(const tsvitch::LiveM3u8ListResult& result) : videoList(result) {}
+    // showGroup: category tag under each channel (for lists that mix categories: "All", search results)
+    explicit DataSourceLiveVideoList(tsvitch::LiveM3u8ListResult result, bool showGroup = true)
+        : videoList(std::move(result)), showGroup(showGroup) {}
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
         tsvitch::LiveM3u8& r = this->videoList[index];
-        // brls::Logger::info("cellForRow: {} [{}]", r.title, index);
-        RecyclingGridItemLiveVideoCard* item = (RecyclingGridItemLiveVideoCard*)recycler->dequeueReusableCell("Cell");
-        item->setChannel(r);
+        // Movies and series use the big poster card
+        bool poster = r.type == 1 || r.type == 2;
+        auto* item  = (RecyclingGridItemLiveVideoCard*)recycler->dequeueReusableCell(poster ? "Poster" : "Cell");
+        item->setChannel(r, showGroup);
         return item;
     }
 
@@ -211,16 +224,16 @@ public:
 
     void onItemSelected(RecyclingGrid* recycler, size_t index) override {
         const tsvitch::LiveM3u8& item = videoList[index];
-        // Series items (sentinel url) open the episodes instead of playing
-        if (g_xtreamSeriesHandler && item.url.rfind(XTREAM_SERIES_SCHEME, 0) == 0) {
-            g_xtreamSeriesHandler(item);
+        // Movies and series open their information screen (series items carry a sentinel url)
+        if (item.type == 1 || item.url.rfind(XTREAM_SERIES_SCHEME, 0) == 0) {
+            Intent::openXtreamDetail(item);
             return;
         }
         // Não registra no histórico conteúdo de categoria adulta (privacidade)
         if (!ProgramConfig::instance().isAdultCategory(item.groupTitle)) {
             HistoryManager::get()->add(item);
         }
-        Intent::openLive(videoList, index, [recycler]() { recycler->reloadData(); });
+        Intent::openLive(videoList, index, [recycler]() { recycler->reloadWithFocus(LiveActivity::lastPlayedIndex()); });
     }
 
     void appendData(const tsvitch::LiveM3u8ListResult& data) {
@@ -231,15 +244,26 @@ public:
 
 private:
     tsvitch::LiveM3u8ListResult videoList;
+    bool showGroup = true;
 };
+
+static const std::string UNCATEGORIZED = "Uncategorized";
+static constexpr size_t RECENT_LIMIT   = 300;  // items in the virtual "Recently added" category
+
+static const std::string& groupOf(const tsvitch::LiveM3u8& item) {
+    return item.groupTitle.empty() ? UNCATEGORIZED : item.groupTitle;
+}
+
+static std::string allGroupLabel() { return "tsvitch/xtream/group/all"_i18n; }
+static std::string recentGroupLabel() { return "tsvitch/xtream/group/recent"_i18n; }
 
 HomeLive::HomeLive() {
     this->inflateFromXMLRes("xml/fragment/home_live.xml");
     brls::Logger::info("Fragment HomeLive: constructor called");
-    
+
     // Inizializza il flag di validità
     validityFlag = std::make_shared<std::atomic<bool>>(true);
-    
+
     // Sottoscrivi all'evento di uscita per cancellare tutti i task asincroni
     exitEventSubscription = brls::Application::getExitEvent()->subscribe([this]() {
         brls::Logger::info("HomeLive: Exit event received, canceling all async operations");
@@ -248,8 +272,9 @@ HomeLive::HomeLive() {
         }
     });
     hasExitSubscription = true;
-    
+
     recyclingGrid->registerCell("Cell", []() { return RecyclingGridItemLiveVideoCard::create(); });
+    recyclingGrid->registerCell("Poster", []() { return RecyclingGridItemLiveVideoCard::createPoster(); });
 
     upRecyclingGrid->registerCell("Cell", []() { return DynamicGroupChannels::create(); });
 
@@ -259,7 +284,7 @@ HomeLive::HomeLive() {
     hubLive->registerClickAction([this](brls::View*) { this->enterContentType(0); return true; });
     hubMovies->registerClickAction([this](brls::View*) { this->enterContentType(1); return true; });
     hubSeries->registerClickAction([this](brls::View*) { this->enterContentType(2); return true; });
-    backButton->registerClickAction([this](brls::View*) { this->showContentHub(); return true; });
+    backButton->registerClickAction([this](brls::View*) { this->goBack(); return true; });
 
     // Enable touch/tap on the cards and the back button (gamepad click alone is not enough)
     hubLive->addGestureRecognizer(new brls::TapGestureRecognizer(hubLive));
@@ -271,10 +296,23 @@ HomeLive::HomeLive() {
     refreshButton->registerClickAction([this](brls::View*) { this->refreshCurrent(); return true; });
     refreshButton->addGestureRecognizer(new brls::TapGestureRecognizer(refreshButton));
 
+    // Sort button (movies and series)
+    sortMode = ProgramConfig::instance().getSettingItem(SettingItem::XTREAM_SORT_MODE, 0);
+    sortButton->registerClickAction([this](brls::View*) { this->pickSort(); return true; });
+    sortButton->addGestureRecognizer(new brls::TapGestureRecognizer(sortButton));
+
+    // The search box opens the keyboard (Y does the same)
+    searchField->registerClickAction([this](brls::View*) { this->search(); return true; });
+    searchField->addGestureRecognizer(new brls::TapGestureRecognizer(searchField));
+
     // Source reload: in Xtream go back to the hub, in M3U8 reload directly
     auto reloadOnSourceChange = [this]() {
         isXtreamMode = ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0) == 1;
         ChannelManager::get()->remove();
+        // The lists of the previous account/source are no longer valid
+        contentCache.clear();
+        episodesCache.clear();
+        XtreamStore::clear();
         if (isXtreamMode) {
             this->showContentHub();
         } else {
@@ -295,6 +333,13 @@ HomeLive::HomeLive() {
         brls::Logger::info("HomeLive constructor: Xtream mode -> showing content hub");
         this->showContentHub();
         isInitialLoadInProgress = false;
+        // Lists never downloaded before are fetched while the user looks at the hub
+        auto isValid = validityFlag;
+        brls::delay(3000, [this, isValid]() {
+            if (isValid->load()) this->prefetchMissingLists();
+        });
+        // Reminder before the subscription ends (the server is asked at most once a day)
+        brls::delay(6000, []() { tsvitch::checkXtreamExpiry(); });
     } else {
         // M3U8: skeleton + smart cache (original behavior)
         brls::Logger::debug("HomeLive constructor: M3U8 mode, using intelligent caching");
@@ -331,13 +376,14 @@ void HomeLive::showContentHub() {
     recyclingGrid->setVisibility(brls::Visibility::GONE);
     searchField->setVisibility(brls::Visibility::GONE);
     refreshButton->setVisibility(brls::Visibility::GONE);
+    sortButton->setVisibility(brls::Visibility::GONE);
     backButton->setVisibility(brls::Visibility::GONE);
     contentHub->setVisibility(brls::Visibility::VISIBLE);
 
     brls::Application::giveFocus(hubLive);
 }
 
-void HomeLive::enterContentType(int contentType) {
+void HomeLive::enterContentType(int contentType, int groupIndex) {
     brls::Logger::info("HomeLive: entering Xtream content type {}", contentType);
     inHubMode        = false;
     inSeriesEpisodes = false;
@@ -363,63 +409,148 @@ void HomeLive::enterContentType(int contentType) {
     recyclingGrid->setVisibility(brls::Visibility::VISIBLE);
     searchField->setVisibility(brls::Visibility::VISIBLE);
     refreshButton->setVisibility(brls::Visibility::VISIBLE);
+    sortButton->setVisibility(contentType == 0 ? brls::Visibility::GONE : brls::Visibility::VISIBLE);
     backButton->setVisibility(brls::Visibility::VISIBLE);
+    this->updateSortLabel();
 
-    ProgramConfig::instance().setSettingItem(SettingItem::GROUP_SELECTED_INDEX, 0);
-    {
-        std::lock_guard<std::mutex> lock(groupCacheMutex);
-        groupCache.clear();
-    }
+    // Live TV opens its first real category (after "All"); movies and series open "Recently added"
+    int defaultIndex = contentType == 0 ? 1 : 0;
+    ProgramConfig::instance().setSettingItem(SettingItem::GROUP_SELECTED_INDEX,
+                                             groupIndex >= 0 ? groupIndex : defaultIndex);
     channelsList.clear();
-    isSearchActive     = false;
-    selectedGroupIndex = 0;
+    isSearchActive      = false;
+    selectedGroupIndex  = 0;
+    focusGridOnNextList = true;
 
-    // Cache hit: renderiza sem refazer o fetch
-    auto cached = contentCache.find(contentType);
-    if (cached != contentCache.end() && !cached->second.empty()) {
-        brls::Logger::info("HomeLive: content type {} served from cache ({} items)", contentType, cached->second.size());
-        this->onLiveList(cached->second, false);
-        brls::Application::giveFocus(recyclingGrid);
-        return;
+    // The hub card that had the focus is hidden now: keep the focus on a visible control
+    // until the list is shown (the empty grid cannot take it)
+    brls::Application::giveFocus(backButton);
+    this->loadXtreamContent(contentType, false);
+}
+
+void HomeLive::loadXtreamContent(int contentType, bool forceNetwork) {
+    int serial = ++xtreamLoadSerial;
+    if (!forceNetwork) {
+        auto cached = contentCache.find(contentType);
+        if (cached != contentCache.end() && !cached->second.empty()) {
+            brls::Logger::info("HomeLive: content type {} from memory ({} items)", contentType, cached->second.size());
+            this->onLiveList(cached->second, false);
+            return;
+        }
     }
 
     recyclingGrid->showSkeleton();
     upRecyclingGrid->setVisibility(brls::Visibility::GONE);
-    this->requestLiveList();
-    brls::Application::giveFocus(recyclingGrid);
+    if (forceNetwork) {
+        this->fetchXtreamContent(contentType, serial, false);
+        return;
+    }
+
+    // The list saved on the SD card is read off the UI thread
+    auto isValid = validityFlag;
+    cpr::async([this, contentType, serial, isValid]() {
+        auto list       = std::make_shared<tsvitch::LiveM3u8ListResult>();
+        int64_t savedAt = 0;
+        bool found      = XtreamStore::load(contentType, *list, savedAt);
+        brls::sync([this, contentType, serial, isValid, list, found, savedAt]() {
+            if (!isValid->load() || serial != xtreamLoadSerial) return;
+            if (!found || list->empty()) {
+                this->fetchXtreamContent(contentType, serial, false);
+                return;
+            }
+            this->onLiveList(std::move(*list), false);
+            // An old list stays usable while a fresh one is downloaded for the next visit
+            if (XtreamStore::isStale(savedAt)) this->fetchXtreamContent(contentType, serial, true);
+        });
+    });
+}
+
+void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) {
+    if (fetchingTypes.count(contentType)) {
+        // Already downloading (prefetch or refresh): the screen shows that result when it arrives
+        if (!background) {
+            waitingType   = contentType;
+            waitingSerial = serial;
+        }
+        return;
+    }
+    fetchingTypes.insert(contentType);
+
+    auto isValid = validityFlag;
+    // Whether the screen still shows this content type and asked for this download (or waits for it)
+    auto wanted = [this, contentType, serial, background]() {
+        bool waited = waitingType == contentType && waitingSerial == xtreamLoadSerial;
+        if (waited) waitingType = -1;
+        bool onScreen = currentLoadType == contentType && !inHubMode && !inSeriesEpisodes;
+        return onScreen && ((serial == xtreamLoadSerial && !background) || waited);
+    };
+    auto onDone = [this, contentType, wanted, isValid](tsvitch::LiveM3u8ListResult result) {
+        if (!isValid->load()) return;
+        fetchingTypes.erase(contentType);
+        if (!result.empty()) {
+            auto toSave = std::make_shared<tsvitch::LiveM3u8ListResult>(result);
+            cpr::async([contentType, toSave]() { XtreamStore::save(contentType, *toSave); });
+        }
+        if (!wanted()) {
+            // Not on screen (or a background download): keep it for the next visit
+            if (!result.empty()) contentCache[contentType] = std::move(result);
+            return;
+        }
+        this->onLiveList(std::move(result), false);
+    };
+    auto onFail = [this, contentType, wanted, isValid](const std::string& error, int) {
+        if (!isValid->load()) return;
+        fetchingTypes.erase(contentType);
+        if (wanted()) this->onError(error);
+    };
+
+    if (contentType == 2)
+        CLIENT::get_xtream_series(onDone, onFail);
+    else if (contentType == 1)
+        CLIENT::get_xtream_vod(onDone, onFail);
+    else
+        CLIENT::get_xtream_channels(onDone, onFail);
+}
+
+void HomeLive::prefetchMissingLists() {
+    if (prefetchStarted || !isXtreamMode) return;
+    prefetchStarted = true;
+    // Small lists first; the server gets one request at a time anyway
+    for (int type : {0, 2, 1}) {
+        if (contentCache.count(type) || XtreamStore::exists(type)) continue;
+        brls::Logger::info("HomeLive: downloading list type {} in the background", type);
+        this->fetchXtreamContent(type, 0, true);
+    }
 }
 
 void HomeLive::updateActionLabels() {
     if (!isXtreamMode) return;
-    const char* nounKey = currentLoadType == 2   ? "tsvitch/xtream/noun/series"
-                          : currentLoadType == 1 ? "tsvitch/xtream/noun/movies"
-                                                 : "tsvitch/xtream/noun/live";
-    std::string noun = brls::getStr(nounKey);
-    searchLabel->setText(brls::getStr("tsvitch/xtream/action/search") + " " + noun);
-    refreshLabel->setText(brls::getStr("tsvitch/xtream/action/refresh") + " " + noun);
+    // Whole phrases per type ("Search movies" / "Film ara"): word order differs between languages
+    const char* type = currentLoadType == 2 ? "series" : currentLoadType == 1 ? "movies" : "live";
+    searchLabel->setText(brls::getStr(std::string("tsvitch/xtream/search_label/") + type));
+    refreshLabel->setText(brls::getStr(std::string("tsvitch/xtream/refresh_label/") + type));
 }
 
 void HomeLive::refreshCurrent() {
+    if (inHubMode) return;
     brls::Logger::info("HomeLive: refresh requested (episodes={}, type={})", inSeriesEpisodes, currentLoadType);
-    isSearchActive = false;
-    {
-        std::lock_guard<std::mutex> lock(groupCacheMutex);
-        groupCache.clear();
-    }
-    recyclingGrid->showSkeleton();
-    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+    isSearchActive      = false;
+    focusGridOnNextList = true;
 
     if (inSeriesEpisodes) {
-        // Recarrega os episódios da série atual
         episodesCache.erase(currentSeriesId);
-        tsvitch::LiveM3u8 series;
-        series.id    = currentSeriesId;
-        series.title = currentSeriesTitle;
-        this->openSeriesEpisodes(series);
+        this->requestEpisodes();
         return;
     }
 
-    if (isXtreamMode) contentCache.erase(currentLoadType);
+    if (isXtreamMode) {
+        contentCache.erase(currentLoadType);
+        this->loadXtreamContent(currentLoadType, true);
+        return;
+    }
+
+    recyclingGrid->showSkeleton();
+    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
     channelsList.clear();
     ChannelManager::get()->remove();
     this->requestLiveList();
@@ -430,41 +561,45 @@ void HomeLive::openSeriesEpisodes(const tsvitch::LiveM3u8& series) {
 
     // In the episodes view items are playable: disable the series handler
     g_xtreamSeriesHandler = nullptr;
-    isSearchActive        = false;
-    selectedGroupIndex    = 0;
-    currentSeriesId       = series.id;
-    currentSeriesTitle    = series.title;
+    // The category of the series list is restored when going back
+    seriesListGroupIndex = ProgramConfig::instance().getSettingItem(SettingItem::GROUP_SELECTED_INDEX, 0);
+    ProgramConfig::instance().setSettingItem(SettingItem::GROUP_SELECTED_INDEX, 0);
+    isSearchActive      = false;
+    selectedGroupIndex  = 0;
+    currentSeriesId     = series.id;
+    currentSeriesTitle  = series.title;
+    currentSeriesLogo   = series.logo;
+    focusGridOnNextList = true;
     // Marca já como "em episódios" para que Voltar durante o carregamento
     // retorne à lista de séries (e não ao hub)
-    inSeriesEpisodes      = true;
-    {
-        std::lock_guard<std::mutex> lock(groupCacheMutex);
-        groupCache.clear();
-    }
+    inSeriesEpisodes = true;
+    backLabel->setText(series.title);
 
     // Cache hit: episódios já carregados desta série
     auto cachedEps = episodesCache.find(series.id);
     if (cachedEps != episodesCache.end() && !cachedEps->second.empty()) {
-        brls::Logger::info("HomeLive: episodes for series {} served from cache ({} items)", series.id, cachedEps->second.size());
-        inSeriesEpisodes = true;
-        backLabel->setText(series.title);
+        brls::Logger::info("HomeLive: episodes for series {} served from cache ({} items)", series.id,
+                           cachedEps->second.size());
         this->onLiveList(cachedEps->second, false);
         return;
     }
+    this->requestEpisodes();
+}
 
+void HomeLive::requestEpisodes() {
     recyclingGrid->showSkeleton();
     upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+    // The focused card is gone while loading
+    brls::Application::giveFocus(backButton);
 
-    std::string seriesTitle = series.title;
-    std::string seriesId    = series.id;
-    auto isValid            = validityFlag;
+    std::string seriesId = currentSeriesId;
+    auto isValid         = validityFlag;
     CLIENT::get_xtream_series_info(
         seriesId,
-        [this, seriesTitle, seriesId, isValid](tsvitch::LiveM3u8ListResult episodes) {
+        [this, seriesId, isValid](tsvitch::LiveM3u8ListResult episodes) {
             if (!isValid || !isValid->load()) return;
             // Se o usuário já voltou/trocou de série, ignora este resultado tardio
             if (!inSeriesEpisodes || currentSeriesId != seriesId) return;
-            backLabel->setText(seriesTitle);
             if (episodes.empty()) {
                 recyclingGrid->setEmpty();
                 upRecyclingGrid->setVisibility(brls::Visibility::GONE);
@@ -477,7 +612,24 @@ void HomeLive::openSeriesEpisodes(const tsvitch::LiveM3u8& series) {
             if (!isValid || !isValid->load()) return;
             if (!inSeriesEpisodes || currentSeriesId != seriesId) return;
             this->onError(error);
-        });
+        },
+        currentSeriesLogo);
+}
+
+bool HomeLive::goBack() {
+    if (isSearchActive) {
+        this->cancelSearch();
+    } else if (inSeriesEpisodes) {
+        // From the episodes, back returns to the series list, on the series that was open
+        restoreFocusId = currentSeriesId;
+        this->enterContentType(2, seriesListGroupIndex);
+    } else if (isXtreamMode && !inHubMode) {
+        // In Xtream, back returns to the 3-card hub instead of quitting the app
+        this->showContentHub();
+    } else {
+        return false;
+    }
+    return true;
 }
 
 void HomeLive::onError(const std::string& error) {
@@ -493,6 +645,161 @@ void HomeLive::onError(const std::string& error) {
     dialog->open();
 }
 
+std::vector<std::string> HomeLive::buildGroupTitles() {
+    // Categories in the order of the list (the server's order in Xtream)
+    std::vector<std::string> titles;
+    std::unordered_set<std::string> seen;
+    hasAddedDates = false;
+    for (const auto& item : this->channelsList) {
+        if (seen.insert(groupOf(item)).second) titles.push_back(groupOf(item));
+        if (item.added > 0) hasAddedDates = true;
+    }
+    // M3U8 keeps its alphabetical order
+    if (!isXtreamMode) std::sort(titles.begin(), titles.end());
+
+    // The PIN check is done once per category, not once per item
+    hiddenGroups.clear();
+    for (const auto& title : titles) {
+        if (ProgramConfig::instance().isCategoryLocked(title) && !unlockedCategories.count(title))
+            hiddenGroups.insert(title);
+    }
+
+    if (isXtreamMode && !inSeriesEpisodes) {
+        ProgramConfig::instance().addKnownCategories(titles);
+        if (titles.size() > 1) {
+            std::vector<std::string> virtualGroups;
+            if (currentLoadType != 0 && hasAddedDates) virtualGroups.push_back(recentGroupLabel());
+            virtualGroups.push_back(allGroupLabel());
+            titles.insert(titles.begin(), virtualGroups.begin(), virtualGroups.end());
+        }
+    }
+    return titles;
+}
+
+tsvitch::LiveM3u8ListResult HomeLive::itemsForGroup(const std::string& group) const {
+    tsvitch::LiveM3u8ListResult out;
+    bool virtualGroups = isXtreamMode && !inSeriesEpisodes;
+    if (virtualGroups && group == allGroupLabel()) {
+        out.reserve(channelsList.size());
+        for (const auto& item : channelsList)
+            if (!hiddenGroups.count(groupOf(item))) out.push_back(item);
+    } else if (virtualGroups && group == recentGroupLabel()) {
+        std::vector<const tsvitch::LiveM3u8*> recent;
+        for (const auto& item : channelsList)
+            if (item.added > 0 && !hiddenGroups.count(groupOf(item))) recent.push_back(&item);
+        size_t count = std::min(RECENT_LIMIT, recent.size());
+        std::partial_sort(recent.begin(), recent.begin() + count, recent.end(),
+                          [](const tsvitch::LiveM3u8* a, const tsvitch::LiveM3u8* b) { return a->added > b->added; });
+        out.reserve(count);
+        for (size_t i = 0; i < count; i++) out.push_back(*recent[i]);
+    } else {
+        for (const auto& item : channelsList)
+            if (groupOf(item) == group) out.push_back(item);
+    }
+    this->sortItems(out);
+    return out;
+}
+
+void HomeLive::sortItems(tsvitch::LiveM3u8ListResult& items) const {
+    if (!isXtreamMode || currentLoadType == 0 || inSeriesEpisodes || sortMode == 0) return;
+    auto by = [&items](auto better) { std::stable_sort(items.begin(), items.end(), better); };
+    switch (sortMode) {
+        case 1:
+            by([](const tsvitch::LiveM3u8& a, const tsvitch::LiveM3u8& b) { return a.added > b.added; });
+            break;
+        case 2:
+            by([](const tsvitch::LiveM3u8& a, const tsvitch::LiveM3u8& b) { return a.rating > b.rating; });
+            break;
+        case 3: {
+            // A-Z with Turkish letters folded: every title is folded once, not on each comparison
+            std::vector<std::pair<std::string, size_t>> keys;
+            keys.reserve(items.size());
+            for (size_t i = 0; i < items.size(); i++) keys.emplace_back(tsvitch::foldForSearch(items[i].title), i);
+            std::stable_sort(keys.begin(), keys.end(),
+                             [](const auto& a, const auto& b) { return a.first < b.first; });
+            tsvitch::LiveM3u8ListResult sorted;
+            sorted.reserve(items.size());
+            for (const auto& key : keys) sorted.push_back(std::move(items[key.second]));
+            items.swap(sorted);
+            break;
+        }
+        case 4:
+            by([](const tsvitch::LiveM3u8& a, const tsvitch::LiveM3u8& b) { return a.year > b.year; });
+            break;
+        default:
+            break;
+    }
+}
+
+static const char* SORT_KEYS[] = {"tsvitch/xtream/sort/server", "tsvitch/xtream/sort/recent",
+                                  "tsvitch/xtream/sort/rating", "tsvitch/xtream/sort/name",
+                                  "tsvitch/xtream/sort/year"};
+
+void HomeLive::updateSortLabel() {
+    int mode = sortMode >= 0 && sortMode < 5 ? sortMode : 0;
+    sortLabel->setText(brls::getStr("tsvitch/xtream/sort/label", brls::getStr(SORT_KEYS[mode])));
+}
+
+void HomeLive::pickSort() {
+    std::vector<std::string> names;
+    for (const char* key : SORT_KEYS) names.push_back(brls::getStr(key));
+    auto isValid = validityFlag;
+    BaseDropdown::text(
+        "tsvitch/xtream/sort/title"_i18n, names,
+        [this, isValid](int mode) {
+            if (!isValid->load() || mode < 0 || mode == sortMode) return;
+            sortMode = mode;
+            ProgramConfig::instance().setSettingItem(SettingItem::XTREAM_SORT_MODE, mode);
+            this->updateSortLabel();
+            this->refreshVisibleItems();
+        },
+        sortMode);
+}
+
+void HomeLive::refreshVisibleItems() {
+    if (channelsList.empty()) return;
+    if (isSearchActive && !lastSearch.empty()) {
+        this->filter(lastSearch);
+        return;
+    }
+    int index = ProgramConfig::instance().getSettingItem(SettingItem::GROUP_SELECTED_INDEX, 0);
+    if (index >= 0 && index < (int)currentGroups.size()) this->selectGroupContent(currentGroups[index]);
+}
+
+void HomeLive::applyGridLayout() {
+    bool posters                      = isXtreamMode && currentLoadType != 0 && !inSeriesEpisodes;
+    recyclingGrid->spanCount          = posters ? 5 : 4;
+    recyclingGrid->estimatedRowHeight = posters ? 305 : 200;
+
+    // L opens the sort menu where sorting exists
+    if (posters && sortActionId < 0) {
+        sortActionId = this->registerAction("tsvitch/xtream/sort/title"_i18n, brls::BUTTON_LB, [this](...) {
+            this->pickSort();
+            return true;
+        });
+    } else if (!posters && sortActionId >= 0) {
+        this->unregisterAction(sortActionId);
+        sortActionId = -1;
+    }
+}
+
+brls::View* HomeLive::getDefaultFocus() {
+    if (isXtreamMode && inHubMode) return hubLive;
+    if (auto* view = recyclingGrid->getDefaultFocus()) return view;
+    if (auto* view = upRecyclingGrid->getDefaultFocus()) return view;
+    if (backButton->getVisibility() == brls::Visibility::VISIBLE) return backButton;
+    return AttachedView::getDefaultFocus();
+}
+
+void HomeLive::focusContent() {
+    if (recyclingGrid->getDefaultFocus())
+        brls::Application::giveFocus(recyclingGrid);
+    else if (upRecyclingGrid->getVisibility() == brls::Visibility::VISIBLE && upRecyclingGrid->getDefaultFocus())
+        brls::Application::giveFocus(upRecyclingGrid);
+    else if (backButton->getVisibility() == brls::Visibility::VISIBLE)
+        brls::Application::giveFocus(backButton);
+}
+
 void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
     brls::Logger::info("Fragment HomeLive: onLiveList - received {} channels", result.size());
     if (result.empty()) {
@@ -502,45 +809,20 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
     }
 
     this->registerAction("hints/back"_i18n, brls::BUTTON_B, [this](...) {
-        if (isSearchActive) {
-            this->cancelSearch();
-        } else if (inSeriesEpisodes) {
-            // From the episodes, back returns to the series list
-            this->enterContentType(2);
-        } else if (isXtreamMode && !inHubMode) {
-            // In Xtream, back returns to the 3-card hub instead of quitting the app
-            this->showContentHub();
-        } else {
-            // Se houver download em andamento, avisa que sair irá cancelá-lo
-            auto downloads = DownloadManager::instance().getAllDownloads();
-            bool hasActive = false;
-            for (const auto& d : downloads) {
-                if (d.status == DownloadStatus::DOWNLOADING || d.status == DownloadStatus::PENDING ||
-                    d.status == DownloadStatus::PAUSED) {
-                    hasActive = true;
-                    break;
-                }
-            }
+        if (this->goBack()) return true;
 
-            if (hasActive) {
-                auto dialog = new brls::Dialog("tsvitch/download/exit_warning"_i18n);
-                dialog->addButton("hints/cancel"_i18n, []() {});
-                dialog->addButton("hints/ok"_i18n, [downloads]() {
-                    // Cancela os downloads ativos antes de sair (evita travar/erro no fechamento)
-                    for (const auto& d : downloads) {
-                        if (d.status != DownloadStatus::COMPLETED) {
-                            DownloadManager::instance().cancelDownload(d.id);
-                        }
-                    }
-                    brls::Application::quit();
-                });
-                dialog->open();
-            } else {
-                auto dialog = new brls::Dialog("hints/exit_hint"_i18n);
-                dialog->addButton("hints/cancel"_i18n, []() {});
-                dialog->addButton("hints/ok"_i18n, []() { brls::Application::quit(); });
-                dialog->open();
-            }
+        // A running download is paused when the app closes; it continues from the downloads screen later
+        DownloadItem active;
+        if (DownloadManager::instance().getActiveDownload(active)) {
+            auto dialog = new brls::Dialog("tsvitch/download/exit_warning"_i18n);
+            dialog->addButton("hints/cancel"_i18n, []() {});
+            dialog->addButton("hints/ok"_i18n, []() { brls::Application::quit(); });
+            dialog->open();
+        } else {
+            auto dialog = new brls::Dialog("hints/exit_hint"_i18n);
+            dialog->addButton("hints/cancel"_i18n, []() {});
+            dialog->addButton("hints/ok"_i18n, []() { brls::Application::quit(); });
+            dialog->open();
         }
         return true;
     });
@@ -555,13 +837,21 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return true;
     });
 
-    this->registerAction("tsvitch/download/action"_i18n, brls::BUTTON_RT, [this](...) {
-        this->downloadVideo();
+    // Live channels cannot be downloaded: the button only explains that, so it gets no hint there
+    this->registerAction(
+        "tsvitch/download/action"_i18n, brls::BUTTON_RT,
+        [this](...) {
+            this->downloadVideo();
+            return true;
+        },
+        isXtreamMode && currentLoadType == 0);
+
+    this->registerAction("tsvitch/xtream/action/refresh"_i18n, brls::BUTTON_RB, [this](...) {
+        this->refreshCurrent();
         return true;
     });
 
-    // Salva channelsList SUBITO per accesso thread-safe
-    this->channelsList = std::move(result); // Move invece di copy!
+    this->channelsList = std::move(result);
 
     // Guarda em cache (em memória) para não refazer o fetch ao voltar (só no Xtream)
     if (isXtreamMode) {
@@ -572,144 +862,76 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         }
     }
 
-    // Fai il grouping e UI update SUL MAIN THREAD per evitare il delay di 36s del brls::sync()
-    // Meglio bloccare 600ms che aspettare 36 secondi!
     auto isValidFlag = validityFlag;
     brls::sync([this, isValidFlag, firstLoad]() {
-        if (!isValidFlag->load()) return;
-        
-        auto grouping_start = std::chrono::high_resolution_clock::now();
-        
-        // Raggruppa i canali per groupTitle - unica passata
-        std::unordered_map<std::string, std::vector<size_t>> groupIndices;
-        groupIndices.reserve(100);
-        
-        for (size_t i = 0; i < this->channelsList.size(); ++i) {
-            std::string groupTitle = this->channelsList[i].groupTitle;
-            // Assegna un nome di default ai canali senza gruppo
-            if (groupTitle.empty()) {
-                groupTitle = "Uncategorized";
-            }
-            groupIndices[groupTitle].push_back(i);
-        }
-        
-        std::vector<std::string> groupTitles;
-        groupTitles.reserve(groupIndices.size());
-        for (const auto& pair : groupIndices) {
-            groupTitles.push_back(pair.first);
-        }
-        
-        // Ordina alfabeticamente
-        std::sort(groupTitles.begin(), groupTitles.end());
-        
-        auto grouping_end = std::chrono::high_resolution_clock::now();
-        auto grouping_duration = std::chrono::duration_cast<std::chrono::milliseconds>(grouping_end - grouping_start);
-        brls::Logger::info("HomeLive: Grouping completed in {}ms - Found {} groups", grouping_duration.count(), groupTitles.size());
+        if (!isValidFlag->load() || this->channelsList.empty()) return;
 
-        // Memoriza os nomes das categorias (para a tela de controle parental)
-        if (isXtreamMode && !inSeriesEpisodes) {
-            ProgramConfig::instance().addKnownCategories(groupTitles);
-        }
+        auto groupTitles    = this->buildGroupTitles();
+        this->currentGroups = groupTitles;
+        this->applyGridLayout();
 
-        // Leggi lastIndex dal config
         int lastIndex = ProgramConfig::instance().getSettingItem(SettingItem::GROUP_SELECTED_INDEX, 0);
-        if (lastIndex >= (int)groupTitles.size()) lastIndex = 0;
+        if (lastIndex < 0 || lastIndex >= (int)groupTitles.size()) lastIndex = 0;
         // Não abrir automaticamente uma categoria bloqueada: escolhe a primeira liberada
-        if (!groupTitles.empty() && ProgramConfig::instance().isCategoryLocked(groupTitles[lastIndex]) &&
-            !unlockedCategories.count(groupTitles[lastIndex])) {
+        if (hiddenGroups.count(groupTitles[lastIndex])) {
             for (size_t i = 0; i < groupTitles.size(); ++i) {
-                if (!ProgramConfig::instance().isCategoryLocked(groupTitles[i]) ||
-                    unlockedCategories.count(groupTitles[i])) {
+                if (!hiddenGroups.count(groupTitles[i])) {
                     lastIndex = (int)i;
                     break;
                 }
             }
         }
-        std::string selectedGroup = groupTitles.empty() ? "" : groupTitles[lastIndex];
-        
-        // Prepara il gruppo selezionato (não revela se estiver bloqueado)
-        bool selectedLocked = ProgramConfig::instance().isCategoryLocked(selectedGroup) &&
-                              !unlockedCategories.count(selectedGroup);
-        tsvitch::LiveM3u8ListResult filtered;
-        if (!selectedLocked && !selectedGroup.empty() && groupIndices.count(selectedGroup)) {
-            const auto& indices = groupIndices[selectedGroup];
-            filtered.reserve(indices.size());
-            for (size_t idx : indices) {
-                filtered.push_back(this->channelsList[idx]);
+        const std::string selectedGroup = groupTitles[lastIndex];
+        selectedGroupIndex              = lastIndex;
+        ProgramConfig::instance().setSettingItem(SettingItem::GROUP_SELECTED_INDEX, lastIndex);
+
+        auto filtered = hiddenGroups.count(selectedGroup) ? tsvitch::LiveM3u8ListResult{}
+                                                          : this->itemsForGroup(selectedGroup);
+        brls::Logger::info("HomeLive: {} groups, selected '{}' with {} items", groupTitles.size(), selectedGroup,
+                           filtered.size());
+
+        // Position of the item to focus again (the series that was open before its episodes)
+        size_t focusIndex = 0;
+        bool restoreFocus = false;
+        if (!restoreFocusId.empty()) {
+            for (size_t i = 0; i < filtered.size(); i++) {
+                if (filtered[i].id == restoreFocusId) {
+                    focusIndex   = i;
+                    restoreFocus = true;
+                    break;
+                }
             }
+            restoreFocusId.clear();
         }
-        
-        brls::Logger::info("HomeLive: Selected group '{}' with {} channels", selectedGroup, filtered.size());
-        
-        // Cache il gruppo selezionato
-        {
-            std::lock_guard<std::mutex> lock(groupCacheMutex);
-            groupCache.clear();
-            groupCache[selectedGroup] = filtered;
-        }
-        
-        // Imposta il DataSource principale (già sul main thread, no brls::sync necessario)
-        brls::Logger::info("HomeLive: Setting DataSource with {} filtered channels", filtered.size());
+
         if (filtered.empty())
             recyclingGrid->setEmpty();
         else
-            recyclingGrid->setDataSource(new DataSourceLiveVideoList(std::move(filtered)));
-        
-        // Setup UI gruppi
+            recyclingGrid->setDataSource(
+                new DataSourceLiveVideoList(std::move(filtered), this->isVirtualGroup(selectedGroup)));
+
         if (groupTitles.size() > 1) {
             upRecyclingGrid->setVisibility(brls::Visibility::VISIBLE);
             auto* upList = new DataSourceUpList(groupTitles, [this](const std::string& group) {
                 this->selectGroupContent(group);
             });
+            upList->markSelected(lastIndex);
             upRecyclingGrid->setDataSource(upList);
-            this->selectGroupIndex(static_cast<size_t>(lastIndex));
+            upRecyclingGrid->selectRowAt(lastIndex, false);
         } else {
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
         }
-        
-        // Precarica gli altri gruppi in background - IN UN THREAD ASYNC SEPARATO per non bloccare l'UI
-        brls::Threading::async([this, groupTitles = std::move(groupTitles), groupIndices = std::move(groupIndices), 
-                                selectedGroup, isValidFlag]() {
-            if (groupTitles.size() <= 1) return;
-            
-            auto preload_start = std::chrono::high_resolution_clock::now();
-            size_t groupsProcessed = 0;
-            
-            for (const auto& group : groupTitles) {
-                if (!isValidFlag->load()) return;
-                if (group == selectedGroup) continue;
-                
-                tsvitch::LiveM3u8ListResult filteredBg;
-                if (groupIndices.count(group)) {
-                    const auto& indices = groupIndices.at(group);
-                    filteredBg.reserve(indices.size());
-                    
-                    for (size_t idx : indices) {
-                        if (idx < this->channelsList.size()) {
-                            filteredBg.push_back(this->channelsList[idx]);
-                        }
-                    }
-                }
-                
-                {
-                    std::lock_guard<std::mutex> lock(groupCacheMutex);
-                    groupCache[group] = std::move(filteredBg);
-                }
-                
-                groupsProcessed++;
-                if (groupsProcessed % 10 == 0) {
-                    std::this_thread::yield();
-                }
-            }
-            
-            auto preload_end = std::chrono::high_resolution_clock::now();
-            auto preload_duration = std::chrono::duration_cast<std::chrono::milliseconds>(preload_end - preload_start);
-            brls::Logger::info("HomeLive: Background group preloading completed in {}ms ({} groups)", preload_duration.count(), groupsProcessed);
-        });
-        
-        // Salva in background se firstLoad (non blocca UI)
-        if (firstLoad) {
-            brls::Logger::info("HomeLive: First load detected, will save {} channels with timestamp (async)", this->channelsList.size());
+
+        if (restoreFocus) recyclingGrid->selectRowAt(focusIndex, false);
+        if (focusGridOnNextList) {
+            focusGridOnNextList = false;
+            this->focusContent();
+        }
+
+        // M3U8: salva in background con timestamp (non blocca UI)
+        if (firstLoad && !isXtreamMode) {
+            brls::Logger::info("HomeLive: First load detected, will save {} channels with timestamp (async)",
+                               this->channelsList.size());
             auto toSave = this->channelsList;
             brls::Threading::async([data = std::move(toSave)]() {
                 try {
@@ -739,31 +961,25 @@ void HomeLive::selectGroupIndex(size_t index) {
 
 void HomeLive::selectGroupContent(const std::string& group) {
     // Bloqueio parental: categoria travada e não liberada nesta sessão pede o PIN
-    if (ProgramConfig::instance().isCategoryLocked(group) && !unlockedCategories.count(group)) {
+    if (hiddenGroups.count(group)) {
         recyclingGrid->setEmpty();
         this->promptCategoryPin(group, [this, group]() {
             unlockedCategories.insert(group);
+            hiddenGroups.erase(group);
             this->selectGroupContent(group);
         });
         return;
     }
 
-    tsvitch::LiveM3u8ListResult filtered;
-    {
-        std::lock_guard<std::mutex> lock(groupCacheMutex);
-        if (groupCache.count(group)) {
-            filtered = groupCache[group];
-        } else {
-            for (const auto& item : this->channelsList) {
-                if (item.groupTitle == group) filtered.push_back(item);
-            }
-            groupCache[group] = filtered;
-        }
-    }
+    auto filtered = this->itemsForGroup(group);
     if (filtered.empty())
         recyclingGrid->setEmpty();
     else
-        recyclingGrid->setDataSource(new DataSourceLiveVideoList(filtered));
+        recyclingGrid->setDataSource(new DataSourceLiveVideoList(std::move(filtered), this->isVirtualGroup(group)));
+}
+
+bool HomeLive::isVirtualGroup(const std::string& group) const {
+    return isXtreamMode && !inSeriesEpisodes && (group == allGroupLabel() || group == recentGroupLabel());
 }
 
 void HomeLive::promptCategoryPin(const std::string& category, std::function<void()> onUnlock) {
@@ -779,6 +995,7 @@ void HomeLive::promptCategoryPin(const std::string& category, std::function<void
 }
 
 void HomeLive::toggleFavorite() {
+    if (inHubMode) return;
     //get focus item
     auto* item = dynamic_cast<RecyclingGridItemLiveVideoCard*>(this->recyclingGrid->getFocusedItem());
     if (!item) return;
@@ -796,48 +1013,52 @@ void HomeLive::toggleFavorite() {
 }
 
 void HomeLive::search() {
+    // Nothing to search in the hub (the last list stays in memory behind it)
+    if (inHubMode || this->channelsList.empty()) return;
+    // The dialog says what is searched: channels, movies or series
+    const char* title = currentLoadType == 2   ? "tsvitch/xtream/search_label/series"
+                        : currentLoadType == 1 ? "tsvitch/xtream/search_label/movies"
+                                               : "tsvitch/xtream/search_label/live";
     brls::Application::getImeManager()->openForText([this](const std::string& text) { this->filter(text); },
-                                                    "tsvitch/home/common/search"_i18n, "", 32, "", 0);
+                                                    brls::getStr(title), "", 32, "", 0);
 }
 
 void HomeLive::cancelSearch() {
     isSearchActive = false;
-    this->recyclingGrid->setDataSource(new DataSourceLiveVideoList(this->channelsList));
-    upRecyclingGrid->setVisibility(brls::Visibility::VISIBLE);
-    this->selectGroupIndex(this->selectedGroupIndex);
+    if (currentGroups.empty()) return;
+    int index = ProgramConfig::instance().getSettingItem(SettingItem::GROUP_SELECTED_INDEX, 0);
+    if (index < 0 || index >= (int)currentGroups.size()) index = 0;
+    upRecyclingGrid->setVisibility(currentGroups.size() > 1 ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    this->selectGroupContent(currentGroups[index]);
+    this->focusContent();
 }
 
 void HomeLive::filter(const std::string& key) {
-    if (key.empty()) return;
+    // Case and Turkish letters do not matter: "ates" finds "Ateş"
+    std::string needle = tsvitch::foldForSearch(key);
+    needle.erase(0, needle.find_first_not_of(' '));
+    needle.erase(needle.find_last_not_of(' ') + 1);
+    if (needle.empty()) return;
 
     isSearchActive = true;
+    lastSearch     = key;
+    tsvitch::LiveM3u8ListResult found;
+    for (const auto& item : this->channelsList) {
+        // Categories locked by the PIN stay hidden in the results too
+        if (hiddenGroups.count(groupOf(item))) continue;
+        if (tsvitch::foldForSearch(item.title).find(needle) != std::string::npos) found.push_back(item);
+    }
 
-    brls::Threading::sync([this, key]() {
-        auto* datasource = dynamic_cast<DataSourceLiveVideoList*>(recyclingGrid->getDataSource());
-        if (datasource) {
-            tsvitch::LiveM3u8ListResult filtered;
-            std::string lowerKey = key;
-            std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-            for (const auto& item : this->channelsList) {
-                std::string lowerTitle = item.title;
-                std::transform(lowerTitle.begin(), lowerTitle.end(), lowerTitle.begin(),
-                               [](unsigned char c) { return std::tolower(c); });
-                std::string lowerGroupTitle = item.groupTitle;
-                std::transform(lowerGroupTitle.begin(), lowerGroupTitle.end(), lowerGroupTitle.begin(),
-                               [](unsigned char c) { return std::tolower(c); });
-                if (lowerTitle.find(lowerKey) != std::string::npos ||
-                    lowerGroupTitle.find(lowerKey) != std::string::npos)
-                    filtered.push_back(item);
-            }
-            if (filtered.empty()) {
-                recyclingGrid->setEmpty();
-            } else {
-                recyclingGrid->setDataSource(new DataSourceLiveVideoList(filtered));
-            }
-            upRecyclingGrid->setVisibility(brls::Visibility::GONE);
-        }
-    });
+    this->sortItems(found);
+    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+    if (found.empty()) {
+        recyclingGrid->setEmpty();
+        brls::Application::notify(brls::getStr("tsvitch/xtream/no_results", key));
+    } else {
+        brls::Application::notify(brls::getStr("tsvitch/xtream/search_results", found.size(), key));
+        recyclingGrid->setDataSource(new DataSourceLiveVideoList(std::move(found)));
+    }
+    this->focusContent();
 }
 
 void HomeLive::onShow() {
@@ -848,6 +1069,10 @@ void HomeLive::onShow() {
         brls::Logger::debug("HomeLive onShow: hub visible, skipping load");
         return;
     }
+
+    // Xtream lists are cached in memory and on the SD card: nothing to reload when coming back
+    // (the old check looked at the M3U8 cache and downloaded the whole list again)
+    if (isXtreamMode) return;
 
     // Se il caricamento iniziale è ancora in corso, non fare nulla
     if (isInitialLoadInProgress) {
@@ -973,86 +1198,12 @@ brls::View* HomeLive::create() {
 }
 
 void HomeLive::downloadVideo() {
+    if (inHubMode) return;
     // Ottieni l'item attualmente focalizzato
     auto* item = dynamic_cast<RecyclingGridItemLiveVideoCard*>(this->recyclingGrid->getFocusedItem());
     if (!item) {
         brls::Logger::warning("HomeLive::downloadVideo: No focused item");
         return;
     }
-
-    // Ottieni il canale
-    tsvitch::LiveM3u8 channel = item->getChannel();
-    
-    // Controlla se è una live stream in corso
-    if (tsvitch::isLiveStream(channel.url, channel.title)) {
-        brls::Logger::warning("HomeLive: Cannot download live streams");
-        tsvitch::showLiveStreamDownloadError();
-        return;
-    }
-    
-    // Avvia il download
-    std::string downloadId = DownloadManager::instance().startDownload(
-        channel.title, 
-        channel.url, 
-        channel.logo,  // URL dell'immagine
-        [](const std::string& id, float progress, size_t downloaded, size_t total) {
-            // Callback di progresso - aggiorna il manager globale
-            std::string progressText = fmt::format("{:.1f}%", progress);
-            std::string statusText = fmt::format("{} / {} bytes", downloaded, total);
-            
-            brls::sync([id, progress, progressText, statusText]() {
-                tsvitch::DownloadProgressManager::getInstance()->updateProgress(
-                    id, progress, statusText, progressText
-                );
-            });
-            
-            brls::Logger::debug("Download {}: {:.1f}% ({}/{} bytes)", id, progress, downloaded, total);
-        },
-        [](const std::string& id, const std::string& filePath) {
-            // Callback di completamento
-            brls::Logger::info("Download {} completed: {}", id, filePath);
-            
-            brls::sync([id, filePath]() {
-                // Nascondi l'overlay
-                tsvitch::DownloadProgressManager::getInstance()->hideDownloadProgress(id);
-                
-                // Non mostrare notifica se è un download già completato (duplicato)
-                if (filePath != "Already completed") {
-                    brls::Application::notify("tsvitch/download/completed"_i18n);
-                } else {
-                    brls::Application::notify("tsvitch/download/already"_i18n);
-                }
-            });
-        },
-        [](const std::string& id, const std::string& error) {
-            // Callback di errore
-            brls::Logger::error("Download {} failed: {}", id, error);
-            brls::sync([id, error]() {
-                // Nascondi l'overlay
-                tsvitch::DownloadProgressManager::getInstance()->hideDownloadProgress(id);
-                brls::Application::notify("tsvitch/download/error"_i18n + std::string(": ") + error);
-            });
-        }
-    );
-    
-    if (!downloadId.empty()) {
-        // Controlla lo stato del download per vedere se è già completato
-        auto downloadItem = DownloadManager::instance().getDownload(downloadId);
-        
-        if (downloadItem.status == DownloadStatus::COMPLETED) {
-            // È un download già completato, non mostrare overlay
-            brls::Logger::info("HomeLive: Skipped showing overlay for already completed download {} ({})", downloadId, channel.title);
-        } else {
-            // È un nuovo download o uno in corso, mostra l'overlay
-            tsvitch::DownloadProgressManager::getInstance()->showDownloadProgress(
-                downloadId, channel.title, channel.url
-            );
-            
-            brls::Application::notify("tsvitch/download/started"_i18n + std::string(": ") + channel.title);
-            brls::Logger::info("HomeLive: Started download {} for {}", downloadId, channel.title);
-        }
-    } else {
-        brls::Application::notify("tsvitch/download/start_error"_i18n);
-        brls::Logger::error("HomeLive: Failed to start download for {}", channel.title);
-    }
+    tsvitch::startVideoDownload(item->getChannel());
 }

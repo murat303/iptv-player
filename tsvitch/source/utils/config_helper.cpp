@@ -12,6 +12,8 @@
 #include <cstdlib>
 #include <algorithm>
 #include <set>
+#include <filesystem>
+#include <fstream>
 #include <borealis/core/application.hpp>
 #include <borealis/core/i18n.hpp>
 #include <borealis/core/cache_helper.hpp>
@@ -24,6 +26,7 @@
 #include "utils/thread_helper.hpp"
 #include "utils/image_helper.hpp"
 #include "utils/config_helper.hpp"
+#include "utils/text_fold.hpp"
 #include "utils/crash_helper.hpp"
 #include "utils/vibration_helper.hpp"
 #include "utils/activity_helper.hpp"
@@ -92,17 +95,14 @@ std::unordered_map<SettingItem, ProgramOption> ProgramConfig::SETTING_MAP = {
     {SettingItem::APP_LANG,
      {"app_lang",
       {
+          // English by default; only languages that have the app's own texts
+          brls::LOCALE_EN_US, "tr", brls::LOCALE_IT, brls::LOCALE_PT_BR,
 #if defined(__SWITCH__) || defined(__PSV__) || defined(PS4)
           brls::LOCALE_AUTO,
 #endif
-          brls::LOCALE_EN_US, brls::LOCALE_JA, brls::LOCALE_RYU, brls::LOCALE_ZH_HANT, brls::LOCALE_ZH_HANS,
-          brls::LOCALE_Ko, brls::LOCALE_IT, brls::LOCALE_PT_BR},
+      },
       {},
-#if defined(__SWITCH__) || defined(__PSV__) || defined(PS4)
       0}},
-#else
-      4}},
-#endif
     {SettingItem::APP_THEME, {"app_theme", {"auto", "light", "dark"}, {}, 0}},
     {SettingItem::APP_RESOURCES, {"app_resources", {}, {}, 0}},
     {SettingItem::APP_UI_SCALE,
@@ -186,7 +186,7 @@ std::unordered_map<SettingItem, ProgramOption> ProgramConfig::SETTING_MAP = {
 #if defined(__SWITCH__) || defined(__PSV__)
       {"1", "2", "3", "4"},
       {1, 2, 3, 4},
-      1}},
+      3}},
 #else
       {"1", "2", "3", "4", "8", "12", "16"},
       {1, 2, 3, 4, 8, 12, 16},
@@ -232,6 +232,15 @@ std::unordered_map<SettingItem, ProgramOption> ProgramConfig::SETTING_MAP = {
     {SettingItem::PARENTAL_CONFIGURED, {"parental_configured", {}, {}, 0}},
     {SettingItem::PARENTAL_LOCKED_CATEGORIES, {"parental_locked_categories", {}, {}, 0}},
     {SettingItem::KNOWN_CATEGORIES, {"known_categories", {}, {}, 0}},
+    {SettingItem::XTREAM_SORT_MODE, {"xtream_sort_mode", {}, {}, 0}},
+    {SettingItem::PLAYER_LANGUAGE, {"player_language", {}, {}, 0}},
+    {SettingItem::PLAYER_SUB_LANGUAGE, {"player_sub_language", {}, {}, 0}},
+    {SettingItem::PLAYER_SUB_SIZE, {"player_sub_size", {}, {}, 0}},
+    {SettingItem::PLAYER_SUB_COLOR, {"player_sub_color", {}, {}, 0}},
+    {SettingItem::PLAYER_SUB_BACKGROUND, {"player_sub_background", {}, {}, 0}},
+    {SettingItem::PLAYER_SUB_POSITION, {"player_sub_position", {}, {}, 0}},
+    {SettingItem::PLAYER_AUTO_NEXT, {"player_auto_next", {}, {}, 1}},
+    {SettingItem::XTREAM_ACCOUNT_CHECKED, {"xtream_account_checked", {}, {}, 0}},
 };
 
 ProgramConfig::ProgramConfig() = default;
@@ -255,7 +264,10 @@ void ProgramConfig::setProgramConfig(const ProgramConfig& conf) {
     this->setting = conf.setting;
     this->client  = conf.client;
     this->device  = conf.device;
-    brls::Logger::info("setting: {}", conf.setting.dump());
+    // Only the keys: the values include the Xtream password
+    std::string settingKeys;
+    for (auto it = conf.setting.begin(); it != conf.setting.end(); ++it) settingKeys += it.key() + " ";
+    brls::Logger::info("setting keys: {}", settingKeys);
 }
 
 std::string ProgramConfig::getClientID() {
@@ -319,7 +331,8 @@ void ProgramConfig::saveHomeWindowState() {
 }
 
 void ProgramConfig::load() {
-    const std::string path = this->getConfigDir() + "/tsvitch_config.json";
+    this->importLegacyConfig();
+    const std::string path = this->getConfigDir() + "/" + CONFIG_FILE;
 
     std::ifstream readFile(path);
     if (readFile) {
@@ -430,12 +443,9 @@ void ProgramConfig::load() {
 #endif
     brls::PanGestureRecognizer::panFactor = scrollSpeed * 0.01f;
 
-    std::set<std::string> i18nData{
-        brls::LOCALE_AUTO,    brls::LOCALE_EN_US,   brls::LOCALE_JA,  brls::LOCALE_RYU,
-        brls::LOCALE_ZH_HANS, brls::LOCALE_ZH_HANT, brls::LOCALE_Ko,  brls::LOCALE_IT,
-        brls::LOCALE_PT_BR,
-    };
-    std::string langData = getSettingItem(SettingItem::APP_LANG, brls::LOCALE_AUTO);
+    std::set<std::string> i18nData{brls::LOCALE_AUTO, brls::LOCALE_EN_US, brls::LOCALE_IT, brls::LOCALE_PT_BR, "tr"};
+    // English unless the user picked another language
+    std::string langData = getSettingItem(SettingItem::APP_LANG, brls::LOCALE_EN_US);
 
     if (langData != brls::LOCALE_AUTO && i18nData.count(langData)) {
         brls::Platform::APP_LOCALE_DEFAULT = langData;
@@ -590,7 +600,7 @@ int ProgramConfig::getStringOptionIndex(SettingItem item) {
 }
 
 void ProgramConfig::save() {
-    const std::string path = this->getConfigDir() + "/tsvitch_config.json";
+    const std::string path = this->getConfigDir() + "/" + CONFIG_FILE;
 
 #ifndef IOS
     cpr::fs::create_directories(this->getConfigDir());
@@ -631,7 +641,7 @@ void ProgramConfig::checkOnTop() {
 }
 
 void ProgramConfig::init() {
-    brls::Logger::info("tsvitch {}", APPVersion::instance().git_tag);
+    brls::Logger::info("{} {}", APP_TITLE, APPVersion::instance().git_tag);
     tsvitch::initCrashDump();
 
     brls::Application::getWindowSizeChangedEvent()->subscribe([]() { ProgramConfig::instance().checkOnTop(); });
@@ -705,11 +715,12 @@ std::string ProgramConfig::getHomePath() {
 
 std::string ProgramConfig::getConfigDir() {
 #ifdef __SWITCH__
-    return "/config/tsvitch";
+    // Everything of the app sits next to its .nro
+    return "/switch/iptv-player";
 #elif defined(PS4)
-    return "/data/tsvitch";
+    return "/data/iptv-player";
 #elif defined(__PSV__)
-    return "ux0:/data/tsvitch";
+    return "ux0:/data/iptv-player";
 #elif defined(IOS)
     CFURLRef homeURL = CFCopyHomeDirectoryURL();
     if (homeURL != nullptr) {
@@ -725,30 +736,129 @@ std::string ProgramConfig::getConfigDir() {
     char currentPathBuffer[PATH_MAX];
     std::string currentPath = getcwd(currentPathBuffer, sizeof(currentPathBuffer));
 #ifdef _WIN32
-    return currentPath + "\\config\\tsvitch";
+    return currentPath + "\\config\\iptv-player";
 #else
-    return currentPath + "/config/tsvitch";
+    return currentPath + "/config/iptv-player";
 #endif
 #else
 #ifdef __APPLE__
-    return std::string(getenv("HOME")) + "/Library/Application Support/tsvitch";
+    return std::string(getenv("HOME")) + "/Library/Application Support/iptv-player";
 #endif
 #ifdef __linux__
     std::string config = "";
     char* config_home  = getenv("XDG_CONFIG_HOME");
     if (config_home) config = std::string(config_home);
     if (config.empty()) config = std::string(getenv("HOME")) + "/.config";
-    return config + "/tsvitch";
+    return config + "/iptv-player";
 #endif
 #ifdef _WIN32
     WCHAR wpath[MAX_PATH];
     std::vector<char> lpath(MAX_PATH);
     SHGetSpecialFolderPathW(0, wpath, CSIDL_LOCAL_APPDATA, false);
     WideCharToMultiByte(CP_UTF8, 0, wpath, std::wcslen(wpath), lpath.data(), lpath.size(), nullptr, nullptr);
-    return std::string(lpath.data()) + "\\giovannimirulla\\tsvitch";
+    return std::string(lpath.data()) + "\\muratgokce\\iptv-player";
 #endif
 #endif
 #endif
+}
+
+std::string ProgramConfig::getLegacyConfigDir() {
+#ifdef __SWITCH__
+    return "/config/tsvitch";
+#elif defined(__linux__) && !defined(_DEBUG) && !defined(IOS)
+    std::string dir = getConfigDir();
+    return dir.substr(0, dir.size() - std::string("iptv-player").size()) + "tsvitch";
+#else
+    return "";
+#endif
+}
+
+namespace {
+
+bool copyFileContents(const std::filesystem::path& from, const std::filesystem::path& to) {
+    std::ifstream in(from, std::ios::binary);
+    std::ofstream out(to, std::ios::binary | std::ios::trunc);
+    if (!in || !out) return false;
+    out << in.rdbuf();
+    return out.good();
+}
+
+// Copies a folder tree; files that already exist in the target are kept
+size_t copyTree(const std::filesystem::path& from, const std::filesystem::path& to) {
+    std::error_code ec;
+    size_t copied = 0;
+    std::filesystem::create_directories(to, ec);
+    for (auto it = std::filesystem::recursive_directory_iterator(from, ec);
+         !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
+        std::filesystem::path target = to / std::filesystem::relative(it->path(), from, ec);
+        if (it->is_directory(ec)) {
+            std::filesystem::create_directories(target, ec);
+        } else if (!std::filesystem::exists(target, ec) && copyFileContents(it->path(), target)) {
+            copied++;
+        }
+    }
+    return copied;
+}
+
+}  // namespace
+
+// The first start takes over the files of TsVitch, whose folder this app used before 1.0: the settings with the
+// IPTV account, favorites, history, positions, the provider's lists and the download list. Everything is copied,
+// nothing is moved, so TsVitch keeps its files. Downloaded videos stay where they are: the copied download list
+// still points at them.
+void ProgramConfig::importLegacyConfig() {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path from = getLegacyConfigDir();
+    const fs::path to   = getConfigDir();
+    if (from.empty() || fs::exists(to / CONFIG_FILE, ec) || !fs::exists(from / "tsvitch_config.json", ec)) return;
+
+    brls::Logger::info("Importing the settings of {}", from.string());
+    fs::create_directories(to, ec);
+    size_t copied = 0;
+    for (const auto& entry : fs::directory_iterator(from, ec)) {
+        std::error_code entryError;
+        const std::string name = entry.path().filename().string();
+        if (entry.is_directory(entryError)) {
+            // the provider's lists (downloading them again takes minutes) and custom themes
+            if (name == "xtream" || name == "theme") copied += copyTree(entry.path(), to / name);
+        } else if (name == "tsvitch_config.json") {
+            nlohmann::json content;
+            {
+                std::ifstream in(entry.path());
+                content = nlohmann::json::parse(in, nullptr, false);
+            }
+            if (content.is_discarded() || !content.is_object()) {
+                brls::Logger::warning("Import: the old settings are damaged");
+                continue;
+            }
+            // Builds before 1.0 opened in Turkish when no language was picked: their users keep it
+            auto setting = content.find("setting");
+            if (setting != content.end() && setting->is_object() && !setting->contains("app_lang")) {
+                for (const char* key : {"player_auto_next", "player_sub_size", "player_sub_color", "xtream_account_checked"}) {
+                    if (setting->contains(key)) {
+                        (*setting)["app_lang"] = "tr";
+                        break;
+                    }
+                }
+            }
+            std::ofstream out(to / CONFIG_FILE, std::ios::trunc);
+            out << content.dump(2);
+            if (out.good()) copied++;
+        } else if (name != "subfont.ttf" && !fs::exists(to / name, entryError)) {
+            // subfont.ttf is made again from the system font when a subtitle needs it
+            if (copyFileContents(entry.path(), to / name)) copied++;
+        }
+    }
+    // The download list; the videos and covers it points at stay in the old folder
+    const fs::path downloads = from / "downloads" / "downloads.json";
+    if (fs::exists(downloads, ec)) {
+        fs::create_directories(to / "downloads", ec);
+        if (!fs::exists(to / "downloads" / "downloads.json", ec) &&
+            copyFileContents(downloads, to / "downloads" / "downloads.json"))
+            copied++;
+    }
+    brls::Logger::info("Imported {} files into {}", copied, to.string());
 }
 
 void ProgramConfig::exit(char* argv[]) {
@@ -918,11 +1028,9 @@ void ProgramConfig::setParentalPin(const std::string& pin) {
 
 bool ProgramConfig::isAdultCategory(const std::string& name) {
     if (name.empty()) return false;
-    std::string lower = name;
-    std::transform(lower.begin(), lower.end(), lower.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
-    static const char* keywords[] = {"adult", "adulto", "xxx", "+18", "18+", "porn",
-                                     "erotic", "erotico", "erótico", " sex", "sexo", "hot "};
+    std::string lower = tsvitch::foldForSearch(name);
+    static const char* keywords[] = {"adult", "adulto", "xxx", "+18", "18+", "porn", "erotic", "erotico",
+                                     "erótico", "erotik", "yetiskin", " sex", "sexo", "hot "};
     for (const char* kw : keywords) {
         if (lower.find(kw) != std::string::npos) return true;
     }

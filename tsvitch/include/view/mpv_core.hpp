@@ -154,6 +154,29 @@ public:
     int64_t getInt(const std::string &key);
     std::unordered_map<std::string, mpv_node> getNodeMap(const std::string &key);
 
+    /// An audio or subtitle track of the current file
+    struct Track {
+        int64_t id = 0;
+        std::string title;
+        std::string lang;
+        std::string codec;
+        int64_t channels = 0;
+        bool selected    = false;
+    };
+
+    /// Tracks of one type ("audio" or "sub") of the current file
+    std::vector<Track> getTracks(const std::string &type);
+
+    /// Preferred languages for the next files (ISO codes such as "tur" or "en"): the audio language, and
+    /// the subtitle language ("" keeps mpv's choice). Does not change the tracks of the playing file.
+    void setPreferredLanguages(const std::string &audio, const std::string &subtitle);
+
+    /// Subtitle size, color, background and position from the settings, as mpv options
+    static std::vector<std::pair<std::string, std::string>> subtitleStyleOptions();
+
+    /// Applies the subtitle settings to the playing file
+    void applySubtitleStyle();
+
     void setUrl(const std::string &url, const std::string &extra = "", const std::string &method = "replace");
 
     void setVolume(int64_t value);
@@ -240,6 +263,9 @@ public:
     bool video_seeking     = false;
     bool video_playing     = false;
     bool video_eof         = false;
+    // False from the moment a new video is requested until its first picture is shown: the video area
+    // stays black meanwhile instead of showing the last picture of the previous video
+    bool videoFrameReady = false;
     float video_aspect     = -1;
     double playback_time   = 0;
     double percent_pos     = 0;

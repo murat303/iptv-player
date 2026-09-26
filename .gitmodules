@@ -1,6 +1,7 @@
 [submodule "library/borealis"]
 	path = library/borealis
-	url = https://github.com/xfangfang/borealis
+	url = https://github.com/murat303/borealis
+	branch = iptv-player
 [submodule "library/QR-Code-generator"]
 	path = library/QR-Code-generator
 	url = https://github.com/nayuki/QR-Code-generator

@@ -24,6 +24,7 @@ android-project
 *.deb
 *.dmp
 *.log
+.packages/
 /supabase
 .env
 otherScripts/

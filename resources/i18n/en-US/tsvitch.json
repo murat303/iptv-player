@@ -1,7 +1,7 @@
 {
-  "title": "TsVitch",
-  "github": "https://github.com/giovannimirulla/TsVitch",
-  "github_release": "https://github.com/giovannimirulla/TsVitch/releases/latest",
+  "title": "IPTV Player",
+  "github": "https://github.com/murat303/iptv-player",
+  "github_release": "https://github.com/murat303/iptv-player/releases/latest",
   "setting": {
     "quit_hint": "You are about to exit the application. Settings will take effect after the next launch",
     "app": {
@@ -24,7 +24,8 @@
         "video_codec": "Video codec",
         "audio_quality": "Audio quality",
         "video_format": "Video format",
-        "player": "Player"
+        "player": "Player",
+        "auto_next": "Play the next episode automatically"
       },
       "image": {
         "header": "Image",
@@ -74,7 +75,7 @@
         },
         "language": {
           "header": "Language (restart required)",
-          "auto": "Auto",
+          "auto": "Console language",
           "chinese_s": "Simplified Chinese",
           "chinese_t": "Traditional Chinese",
           "english": "English",
@@ -91,7 +92,8 @@
           "ps": "PlayStation",
           "keyboard": "Keyboard",
           "swap": "Swap buttons"
-        }
+        },
+        "always_on_top_hint": "Keep the window above other windows"
       }
     },
     "tools": {
@@ -143,15 +145,20 @@
       "tab": "About",
       "brief_header": "Introduction",
       "repository": "Repository",
-      "brief": "TV finally on Switch",
+      "brief": "IPTV player for Nintendo Switch: live TV, movies and series (Xtream Codes and M3U8 playlists).",
       "repo_header": "Repository",
       "author_header": "Author's note",
       "author": "How nice it is to watch TV in the bathroom",
       "contrib_header": "Contributing & Sponsorship",
-      "contrib_text": "TsVitch is an open-source project: contributions, bug reports, and suggestions are welcome. If you like the project and want to support it, please consider becoming a sponsor. You can find all details and options in the GitHub repository.",
+      "contrib_text": "IPTV Player is open source (GPL-3.0). Bug reports and suggestions are welcome on GitHub: github.com/murat303/iptv-player",
       "contributors_header": "Contributors",
       "sponsors_header": "Sponsors",
-      "sponsor_qr": "Become a Sponsor"
+      "sponsor_qr": "Become a Sponsor",
+      "developer_header": "Developer",
+      "credits_header": "Based on",
+      "credits": "TsVitch by giovannimirulla, Xtream movies/series support by ratk, wiliwili by xfangfang and the borealis UI library.",
+      "license_header": "License",
+      "license": "GPL-3.0: free software, provided without any warranty. Source code: github.com/murat303/iptv-player"
     },
     "opensource": {
       "tab": "Opensource"
@@ -164,7 +171,7 @@
       "font_q1": "How to set a custom font or icon",
       "font_a1": "1. Download the font or icon you want\n2. Rename the font to: font.ttf; Rename the icon to: icon.ttf\n3. Put the files in the configuration folder\n4. Restart the application",
       "font_q2": "Frequently asked questions",
-      "font_a2": "1. TsVitch prioritizes custom fonts, with built-in fonts as fallback\n2. \"Settings - Tools - Others\" offers a menu item to quickly open the configuration folder\n3. On Linux, TsVitch uses xdg-open to open the folder. If the folder does not open correctly, consider installing this tool"
+      "font_a2": "1. IPTV Player prioritizes custom fonts, with built-in fonts as fallback\n2. \"Settings - Tools - Others\" offers a menu item to quickly open the configuration folder\n3. On Linux, IPTV Player uses xdg-open to open the folder. If the folder does not open correctly, consider installing this tool"
     },
     "hot_keys": {
       "common_header": "Common",
@@ -183,13 +190,26 @@
         "ip": "IP address",
         "dns": "DNS address"
       }
+    },
+    "iptv": {
+      "mode": "IPTV mode",
+      "m3u8_timeout": "M3U8 timeout",
+      "server": "Server URL",
+      "username": "Username",
+      "password": "Password",
+      "account": "Account info",
+      "tab": "IPTV",
+      "header": "IPTV settings",
+      "server_hint": "Enter the Xtream Codes server address",
+      "username_hint": "Enter your username",
+      "password_hint": "Enter your password"
     }
   },
   "hints": {
     "hint1": "Select a game from the home screen",
     "hint2": "Hold  and press  to enter hbmenu",
-    "hint3": "In hbmenu, select TsVitch",
-    "hint4": "Optional: use the provided NSP forwarder (Put TsVitch.nro in /switch/TsVitch.nro)",
+    "hint3": "In hbmenu, select IPTV Player",
+    "hint4": "Optional: use an NSP forwarder (iptv-player.nro must be in /switch/iptv-player/)",
     "hint_nsp": "Press  to install the NSP forwarder",
     "hint_confirm": "Installing the NSP forwarder may cause a ban\nDo you confirm?",
     "hint_right": "Images are from the Internet, copyright belongs to Nintendo Co., Ltd"
@@ -277,7 +297,7 @@
       "logout": "Log out of the current account \n(the app will close)",
       "scan": "Scan the QR code to log in",
       "loading": "Loading QR code...",
-      "hint": "Use the TsVitch client to scan the QR code",
+      "hint": "Scan the QR code with your phone",
       "network_error": "Network error, please try again",
       "qr_not_available": "Invalid QR code, re-enter the dialog",
       "need_confirm": "Waiting for confirmation",
@@ -455,6 +475,45 @@
       "related": "{} total replies",
       "end": "No more comments.",
       "delete": "After deleting the comment, all replies under the comment will be deleted\n\nDo you want to continue?"
+    },
+    "tracks": {
+      "header": "Audio and subtitles",
+      "audio": "Audio",
+      "subtitle": "Subtitles",
+      "none": "None",
+      "track": "Track {}",
+      "sub_size": "Subtitle size",
+      "size_small": "Small",
+      "size_normal": "Normal",
+      "size_big": "Big",
+      "size_huge": "Very big",
+      "sub_color": "Subtitle color",
+      "color_white": "White",
+      "color_yellow": "Yellow",
+      "sub_background": "Subtitle box",
+      "background_half": "Translucent",
+      "background_black": "Black",
+      "sub_position": "Subtitle position",
+      "position_bottom": "Bottom",
+      "position_higher": "A bit up",
+      "position_high": "Up",
+      "sub_delay": "Subtitle delay",
+      "seconds": "{} s"
+    },
+    "next_episode": {
+      "title": "Next episode",
+      "countdown": "Starts in {} s",
+      "play_now": "Play now"
+    },
+    "epg": {
+      "now": "Now",
+      "next": "Next"
+    },
+    "hint": {
+      "channels": "{}  Previous channel      {}  Next channel",
+      "episodes": "{}  Previous episode      {}  Next episode",
+      "videos": "{}  Previous video      {}  Next video",
+      "seek": "{} {}  10 s back / forward"
     }
   },
   "dialog": {
@@ -475,15 +534,42 @@
       "live": "channels",
       "movies": "movies",
       "series": "series"
+    },
+    "season": "Season {}",
+    "group": {
+      "all": "All",
+      "recent": "★ Recently added"
+    },
+    "search_results": "{} results for \"{}\"",
+    "no_results": "No results for \"{}\"",
+    "bad_response": "The server sent an incomplete answer. Press Refresh to try again.",
+    "sort": {
+      "title": "Sort",
+      "label": "Sort: {}",
+      "server": "Server order",
+      "recent": "Recently added",
+      "rating": "Rating",
+      "name": "Name (A-Z)",
+      "year": "Year"
+    },
+    "search_label": {
+      "live": "Search channels",
+      "movies": "Search movies",
+      "series": "Search series"
+    },
+    "refresh_label": {
+      "live": "Refresh channels",
+      "movies": "Refresh movies",
+      "series": "Refresh series"
     }
   },
   "download": {
     "started": "Download started",
     "completed": "Download completed!",
-    "already": "File already downloaded!",
+    "already": "This video is already downloaded. Watch it from the Downloads tab.",
     "error": "Download error",
     "start_error": "Failed to start the download",
-    "action": "Download video",
+    "action": "Download",
     "live_error": "Cannot download a live stream.\nDownload is only available for on-demand content.",
     "error_title": "Error",
     "in_progress": "Downloading...",
@@ -491,17 +577,37 @@
     "resume": "Resume",
     "play": "Play",
     "delete": "Delete",
-    "exit_warning": "A download is in progress. If you exit it will be cancelled. Exit anyway?",
+    "exit_warning": "A download is running. If you exit it is paused, and you can continue it later in the Downloads tab. Exit?",
     "status": {
-      "queued": "Queued...",
-      "downloading": "Downloading...",
+      "queued": "Queued",
+      "downloading": "Downloading",
       "paused": "Paused",
-      "completed": "Completed",
+      "completed": "Downloaded",
       "failed": "Download failed",
       "cancelled": "Cancelled",
       "unknown": "Unknown",
       "error": "Error"
-    }
+    },
+    "title": "Downloads",
+    "started_title": "Download started: {}\nFollow it in the Downloads tab.",
+    "completed_title": "Download completed: {}",
+    "failed_title": "Download stopped: {}\nYou can try again in the Downloads tab.",
+    "already_running": "This video is already downloading.",
+    "busy_download": "“{}” is downloading now.\nYour provider allows one connection at a time, so another download cannot start. Wait until it finishes or pause it in the Downloads tab.",
+    "busy_watch": "“{}” is downloading now.\nYour provider allows one connection at a time, so you cannot watch while it downloads.",
+    "pause_and_watch": "Pause download and watch",
+    "close": "Cancel",
+    "delete_confirm": "Delete “{}”?\nThe video file is removed from the SD card too.",
+    "file_missing": "The video file was not found on the SD card.",
+    "empty": "No downloads yet",
+    "empty_hint": "Use the Download button on a movie or episode screen. Downloaded videos play without internet.",
+    "speed": "{}/s",
+    "time_left_m": "{} min left",
+    "time_left_h": "{} h {} min left",
+    "time_left_less": "less than a minute left",
+    "error_file": "Could not write to the SD card (it may be full)",
+    "error_network": "Connection lost",
+    "error_not_video": "The server sent an error page instead of the video"
   },
   "parental": {
     "enter_pin": "Enter PIN",
@@ -520,5 +626,65 @@
     "clear_history": "Clear history",
     "clear_history_all": "All",
     "history_cleared": "History cleared"
+  },
+  "detail": {
+    "play": "Play",
+    "resume": "Resume ({})",
+    "restart": "Start over",
+    "favorite_add": "Add to favorites",
+    "favorite_remove": "Remove from favorites",
+    "play_episode": "Play S{} E{}",
+    "resume_episode": "Resume S{} E{}",
+    "next_episode": "Next: S{} E{}",
+    "episode_title": "{}. {}",
+    "episode_count": "{} episodes",
+    "season_count": "Seasons: {}  ·  Episodes: {}",
+    "season_pick": "Season",
+    "director": "Director: {}",
+    "cast": "Cast: {}",
+    "hours_minutes": "{} h {} min",
+    "minutes": "{} min",
+    "load_error": "The details could not be loaded",
+    "episode": "Episode {}",
+    "download": "Download",
+    "download_series_hint": "Open the series and press ZR on an episode to download it",
+    "download_pick_episode": "Select an episode to download it",
+    "load_error_retry": "The details could not be loaded. The provider may not be answering right now.",
+    "retry": "Try again",
+    "previous_season": "Previous season",
+    "next_season": "Next season"
+  },
+  "cast": {
+    "live_download_error": "Download unavailable",
+    "live_download_error_desc": "Cannot download a live stream in progress.\nDownload is only available for movies and episodes."
+  },
+  "account": {
+    "title": "Account info",
+    "loading": "Loading account info...",
+    "error": "Account info could not be loaded. Check the internet connection and the IPTV settings.",
+    "status": "Status: {}",
+    "status_active": "Active",
+    "status_expired": "Expired",
+    "status_banned": "Banned",
+    "status_disabled": "Disabled",
+    "expires": "Ends on: {}",
+    "days_left": "{} days left",
+    "unlimited": "Ends on: no end date",
+    "connections": "Connections: {} of {} in use",
+    "trial": "Trial account: {}",
+    "yes": "Yes",
+    "no": "No",
+    "created": "Created on: {}",
+    "ends_soon": "Your subscription ends in {} days ({}).",
+    "ends_today": "Your subscription ends today.",
+    "ended": "Your subscription has ended."
+  },
+  "history": {
+    "title": "Watch history",
+    "clear_all": "Clear all",
+    "remove": "Remove",
+    "removed": "Removed from the history",
+    "clear_confirm": "Clear the whole watch history?",
+    "empty": "Nothing watched yet"
   }
 }

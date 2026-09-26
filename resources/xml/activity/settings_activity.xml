@@ -132,7 +132,7 @@
                                 </brls:ScrollingFrame>
                         </Tab>
 
-                        <Tab label="IPTV Settings"
+                        <Tab label="@i18n/tsvitch/setting/iptv/tab"
                                 style="inline"
                                 icon="@res/svg/setting_tools.svg"
                                 iconActivate="@res/svg/setting_tools_active.svg"
@@ -156,7 +156,7 @@
                                                 <brls:Header
                                                         width="auto"
                                                         height="auto"
-                                                        title="IPTV Configuration"
+                                                        title="@i18n/tsvitch/setting/iptv/header"
                                                         marginBottom="0px" />
                                                 <brls:Box
                                                         width="100%"
@@ -196,15 +196,19 @@
 
                                                                 <brls:InputCell
                                                                         id="setting/iptv/xtream_server"
-                                                                        title="Server URL" />
+                                                                        title="@i18n/tsvitch/setting/iptv/server" />
 
                                                                 <brls:InputCell
                                                                         id="setting/iptv/xtream_username"
-                                                                        title="Username" />
+                                                                        title="@i18n/tsvitch/setting/iptv/username" />
 
                                                                 <brls:InputCell
                                                                         id="setting/iptv/xtream_password"
-                                                                        title="Password" />
+                                                                        title="@i18n/tsvitch/setting/iptv/password" />
+
+                                                                <brls:RadioCell
+                                                                        id="setting/iptv/account"
+                                                                        title="@i18n/tsvitch/setting/iptv/account" />
 
                                                                 <brls:BooleanCell
                                                                         id="setting/iptv/parental_enabled"
@@ -270,6 +274,9 @@
 
                                                         <brls:BooleanCell
                                                                 id="setting/video/hwdec" />
+
+                                                        <brls:BooleanCell
+                                                                id="setting/video/autonext" />
 
                                                         <SelectorCell
                                                                 id="setting/video/inmemory" />

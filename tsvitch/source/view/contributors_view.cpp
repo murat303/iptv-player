@@ -1,3 +1,6 @@
+#ifdef __linux__
+#include <borealis/platforms/desktop/steam_deck.hpp>
+#endif
 #include "view/contributors_view.hpp"
 #include <borealis/core/application.hpp>
 #include <borealis/views/label.hpp>
@@ -68,7 +71,7 @@ void ContributorsView::loadContributors() {
         std::string url = "https://api.github.com/repos/" + repo + "/contributors?per_page=" + std::to_string(limit);
         auto response   = cpr::Get(cpr::Url{url},
                                  cpr::Header{{"Accept", "application/vnd.github+json"},
-                                             {"User-Agent", "TsVitch"}},
+                                             {"User-Agent", "IPTVPlayer/1.0"}},
                                  cpr::Timeout{5000});
 
         this->removeView(loading);

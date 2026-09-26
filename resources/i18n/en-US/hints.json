@@ -8,7 +8,7 @@
   "delete": "Delete",
   "save": "Save",
   "search": "Search",
-  "toggle_favorite": "Toggle Favorite",
+  "toggle_favorite": "Favorite",
   "submit": "Submit",
   "input": "Please input...",
   "preset": "Preset",
@@ -21,5 +21,7 @@
   "live_error": "Error: Live is not available",
   "video_error": "Error: Video is not available",
   "network_error": "Network Error",
-  "coming_soon": "Coming soon"
+  "coming_soon": "Coming soon",
+  "next_channel": "Next",
+  "previous_channel": "Previous"
 }

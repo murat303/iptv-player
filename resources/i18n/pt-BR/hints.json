@@ -8,7 +8,7 @@
   "delete": "Excluir",
   "save": "Salvar",
   "search": "Pesquisar",
-  "toggle_favorite": "Adicionar/Remover dos favoritos",
+  "toggle_favorite": "Favorito",
   "submit": "Enviar",
   "input": "Por favor digite...",
   "preset": "Predefinir",
@@ -21,5 +21,7 @@
   "live_error": "Erro: A transmissão ao vivo não está disponível",
   "video_error": "Erro: O vídeo não está disponível",
   "network_error": "Erro de rede",
-  "coming_soon": "Em breve"
+  "coming_soon": "Em breve",
+  "next_channel": "Próximo",
+  "previous_channel": "Anterior"
 }

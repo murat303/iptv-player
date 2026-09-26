@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <limits>
 
 #include <borealis/views/label.hpp>
@@ -125,6 +126,35 @@ VideoView::VideoView() {
             return false;
         },
         true, true);
+
+    // The arrows skip ten seconds while the focus is on the video itself (controls hidden, or shown by a skip);
+    // once the focus is on the control buttons they move between them as before. Presses add up and the
+    // jump happens when they stop
+    auto skip = [this](int step) {
+        return [this, step](brls::View* view) -> bool {
+            CHECK_OSD(true);
+            if (isLiveMode || brls::Application::getCurrentFocus() != this) return false;
+            int duration = (int)getRealDuration();
+            if (duration <= 0) return false;
+            int position  = (int)mpvCore->playback_time;
+            seeking_range = std::clamp(position + seeking_range + step, 0, duration) - position;
+            this->requestSeeking(seeking_range, 600);
+            return true;
+        };
+    };
+    this->registerAction("skipBackward", brls::ControllerButton::BUTTON_NAV_LEFT, skip(-SKIP_SECONDS), true, true);
+    this->registerAction("skipForward", brls::ControllerButton::BUTTON_NAV_RIGHT, skip(SKIP_SECONDS), true, true);
+
+    // A on the picture itself pauses and resumes; on a control button it presses that button
+    this->registerAction(
+        "togglePlay", brls::ControllerButton::BUTTON_A,
+        [this](brls::View* view) -> bool {
+            CHECK_OSD(true);
+            if (brls::Application::getCurrentFocus() != this) return false;
+            this->togglePlay();
+            return true;
+        },
+        true);
 
     this->registerMpvEvent();
 
@@ -398,7 +428,7 @@ void VideoView::requestSeeking(int seek, int delay) {
         seek     = (int64_t)this->mpvCore->playback_time * -1;
     } else if (progress > 1) {
         progress = 1;
-        seek     = getRealDuration();
+        seek     = (int64_t)(getRealDuration() - this->mpvCore->playback_time);
     }
 
     showOSD(false);
@@ -412,27 +442,29 @@ void VideoView::requestSeeking(int seek, int delay) {
 
     brls::cancelDelay(seeking_iter);
     if (delay <= 0) {
-        this->hideCenterHint();
-        seeking_range = 0;
-        is_seeking    = false;
-        if (seek == 0) return;
-        mpvCore->seekRelative(seek);
+        this->finishSeeking(seek);
     } else {
         is_seeking = true;
         ASYNC_RETAIN
         seeking_iter = brls::delay(delay, [ASYNC_TOKEN, seek]() {
             ASYNC_RELEASE
-            this->hideCenterHint();
-            seeking_range = 0;
-            is_seeking    = false;
-            if (seek == 0) return;
-            mpvCore->seekRelative(seek);
+            this->finishSeeking(seek);
         });
     }
 }
 
+void VideoView::finishSeeking(int seek) {
+    this->hideCenterHint();
+    seeking_range = 0;
+    is_seeking    = false;
+    // The controls shown for the jump go away again like after any other press, unless the video is paused
+    if (!mpvCore->isPaused()) this->showOSD(true);
+    if (seek != 0) mpvCore->seekRelative(seek);
+}
+
 VideoView::~VideoView() {
     brls::Logger::debug("trying delete VideoView...");
+    brls::cancelDelay(openRetryIter);
     this->unRegisterMpvEvent();
     APP_E->unsubscribe(customEventSubscribeID);
 #ifdef __SWITCH__
@@ -577,7 +609,11 @@ void VideoView::setUrl(const std::string& url, int start, int end, const std::st
 }
 
 void VideoView::setUrl(const std::string& url, int start, int end, const std::vector<std::string>& audios) {
-    mpvCore->setUrl(url, genExtraUrlParam(start, end, audios));
+    brls::cancelDelay(openRetryIter);
+    openRetries  = 0;
+    lastUrl      = url;
+    lastUrlExtra = genExtraUrlParam(start, end, audios);
+    mpvCore->setUrl(lastUrl, lastUrlExtra);
 }
 
 void VideoView::setUrl(const std::vector<EDLUrl>& edl_urls, int start, int end) {
@@ -797,6 +833,27 @@ void VideoView::disableProgressSliderSeek(bool disabled) {
 
 void VideoView::setTitle(const std::string& title) { this->videoTitleLabel->setText(title); }
 
+void VideoView::setEpg(const std::string& nowTime, const std::string& nowTitle, float progress,
+                       const std::string& nextTime, const std::string& nextTitle) {
+    auto show = [](brls::View* view, bool visible) {
+        view->setVisibility(visible ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    };
+    show(this->epgBox, !nowTitle.empty() || !nextTitle.empty());
+    show(this->epgNowRow, !nowTitle.empty());
+    show(this->epgBar, !nowTitle.empty() && progress >= 0);
+    show(this->epgNextRow, !nextTitle.empty());
+    this->epgNowTime->setText(nowTime);
+    this->epgNowTitle->setText(nowTitle);
+    this->epgBarFill->setWidthPercentage(std::clamp(progress, 0.0f, 1.0f) * 100);
+    this->epgNextTime->setText(nextTime);
+    this->epgNextTitle->setText(nextTitle);
+}
+
+void VideoView::setOsdHint(const std::string& hint) {
+    this->osdHintLabel->setText(hint);
+    this->osdHintBox->setVisibility(hint.empty() ? brls::Visibility::GONE : brls::Visibility::VISIBLE);
+}
+
 std::string VideoView::getTitle() { return this->videoTitleLabel->getFullText(); }
 
 void VideoView::setDuration(const std::string& value) { this->rightStatusLabel->setText(value); }
@@ -987,6 +1044,20 @@ void VideoView::registerMpvEvent() {
                 break;
 
             case MpvEventEnum::MPV_FILE_ERROR: {
+                // Try the same stream again a few times before showing the error
+                if (!lastUrl.empty() && openRetries < MAX_OPEN_RETRIES) {
+                    openRetries++;
+                    brls::Logger::warning("VideoView: stream failed to open, retry {}/{}", openRetries,
+                                          MAX_OPEN_RETRIES);
+                    this->showLoading();
+                    brls::cancelDelay(openRetryIter);
+                    ASYNC_RETAIN
+                    openRetryIter = brls::delay(1500 * openRetries, [ASYNC_TOKEN]() {
+                        ASYNC_RELEASE
+                        this->mpvCore->setUrl(this->lastUrl, this->lastUrlExtra);
+                    });
+                    break;
+                }
                 this->hideLoading();
                 this->showOSD(false);
                 // Mostra messaggio di errore diverso per live e video
@@ -998,6 +1069,7 @@ void VideoView::registerMpvEvent() {
                 break;
             }
             case MpvEventEnum::MPV_LOADED:
+                openRetries = 0;
                 this->setPlaybackTime(tsvitch::sec2Time(this->mpvCore->video_progress));
                 if (lastPlayedPosition <= 0) break;
                 if (abs(getRealDuration() - lastPlayedPosition) <= 5) {

@@ -1,0 +1,59 @@
+<brls:Box
+        wireframe="false"
+        highlightCornerRadius="10"
+        axis="column"
+        width="auto"
+        height="auto">
+
+    <!-- Poster (2:3) with the rating in the corner -->
+    <brls:Box
+            id="video/card/pic_box"
+            width="100%"
+            height="237">
+        <brls:Image
+                id="video/card/picture"
+                width="100%"
+                height="100%"
+                scalingType="fill"
+                cornerRadius="8"
+                backgroundColor="@theme/color/grey_1"/>
+        <brls:Box
+                id="video/card/hint"
+                positionType="absolute"
+                positionTop="6"
+                positionRight="6"
+                height="22"
+                paddingLeft="6"
+                paddingRight="6"
+                cornerRadius="5"
+                alignItems="center"
+                backgroundColor="#000000B8">
+            <brls:Label
+                    id="video/card/label/group"
+                    fontSize="13"
+                    singleLine="true"
+                    textColor="#FFC940"/>
+        </brls:Box>
+        <SVGImage
+                id="video/card/ico/favorite"
+                positionType="absolute"
+                positionLeft="6"
+                positionTop="6"
+                height="26"
+                width="26"
+                SVG="@res/svg/ico-favorites-activate.svg"/>
+    </brls:Box>
+
+    <TextBox
+            id="video/card/label/title"
+            marginTop="8"
+            fontSize="15"
+            lineHeight="1.25"
+            maxRows="2"
+            width="100%"/>
+    <brls:Label
+            id="video/card/label/chno"
+            marginTop="2"
+            fontSize="13"
+            textColor="@theme/font/grey"/>
+</brls:Box>

@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cpr/cpr.h>
 
+#include "utils/xtream_account.hpp"
 #include "tsvitch.h"
 #include "activity/settings_activity.hpp"
 #include "fragment/setting_network.hpp"
@@ -211,6 +212,9 @@ void SettingsActivity::onContentAvailable() {
         APPVersion::instance().checkUpdate(0, true);
         return true;
     });
+#ifdef DISABLE_UPDATE_CHECK
+    btnReleaseChecker->setVisibility(brls::Visibility::GONE);
+#endif
 
     labelAboutVersion->setText(version
 #if defined(BOREALIS_USE_DEKO3D)
@@ -454,14 +458,12 @@ void SettingsActivity::onContentAvailable() {
     selectorLang->init(
         "tsvitch/setting/app/others/language/header"_i18n,
         {
+            // Each language in its own name, as in the order of the app_lang options
+            "English", "Türkçe", "Italiano", "Português (Brasil)",
 #if defined(__SWITCH__) || defined(__PSV__) || defined(PS4)
             "tsvitch/setting/app/others/language/auto"_i18n,
 #endif
-            "tsvitch/setting/app/others/language/english"_i18n, "tsvitch/setting/app/others/language/japanese"_i18n,
-            "tsvitch/setting/app/others/language/ryukyuan"_i18n, "tsvitch/setting/app/others/language/chinese_t"_i18n,
-            "tsvitch/setting/app/others/language/chinese_s"_i18n, "tsvitch/setting/app/others/language/korean"_i18n,
-            "tsvitch/setting/app/others/language/italiano"_i18n,
-            "tsvitch/setting/app/others/language/portuguese_br"_i18n},
+        },
         langIndex, [](int data) {
             if (langIndex == data) return false;
             langIndex       = data;
@@ -524,7 +526,7 @@ void SettingsActivity::onContentAvailable() {
 
     // Inizializza il selettore modalità IPTV
     auto iptvModeOption = conf.getOptionData(SettingItem::IPTV_MODE);
-    selectorIPTVMode->init("IPTV Mode", iptvModeOption.optionList,
+    selectorIPTVMode->init("tsvitch/setting/iptv/mode"_i18n, iptvModeOption.optionList,
                           conf.getIntOptionIndex(SettingItem::IPTV_MODE), [this, iptvModeOption](int data) {
                               ProgramConfig::instance().setSettingItem(SettingItem::IPTV_MODE,
                                                                        iptvModeOption.rawOptionList[data]);
@@ -548,7 +550,7 @@ void SettingsActivity::onContentAvailable() {
     btnM3U8Input->detail->setSingleLine(true);   // Forza una sola linea
 
     auto m3u8TimeoutOption = conf.getOptionData(SettingItem::M3U8_TIMEOUT);
-    selectorM3U8Timeout->init("M3U8 Timeout", m3u8TimeoutOption.optionList,
+    selectorM3U8Timeout->init("tsvitch/setting/iptv/m3u8_timeout"_i18n, m3u8TimeoutOption.optionList,
                               conf.getIntOptionIndex(SettingItem::M3U8_TIMEOUT), [m3u8TimeoutOption](int data) {
                                   ProgramConfig::instance().setSettingItem(SettingItem::M3U8_TIMEOUT,
                                                                            m3u8TimeoutOption.rawOptionList[data]);
@@ -574,6 +576,12 @@ void SettingsActivity::onContentAvailable() {
                        MPVCore::instance().restart();
                    });
 #endif
+    btnAutoNext->init("tsvitch/setting/app/playback/auto_next"_i18n, conf.getBoolOption(SettingItem::PLAYER_AUTO_NEXT),
+                      [](bool value) { ProgramConfig::instance().setSettingItem(SettingItem::PLAYER_AUTO_NEXT, value); });
+    btnXtreamAccount->registerClickAction([](brls::View*) {
+        tsvitch::showXtreamAccountInfo();
+        return true;
+    });
     btnQuality->init("tsvitch/setting/app/playback/low_quality"_i18n,
                      conf.getBoolOption(SettingItem::PLAYER_LOW_QUALITY), [](bool value) {
                          ProgramConfig::instance().setSettingItem(SettingItem::PLAYER_LOW_QUALITY, value);
@@ -582,7 +590,7 @@ void SettingsActivity::onContentAvailable() {
                          MPVCore::instance().restart();
                      });
     // Inizializza i controlli Xtream Codes IPTV
-    btnXtreamServer->init("Server URL", conf.getXtreamServerUrl(), 
+    btnXtreamServer->init("tsvitch/setting/iptv/server"_i18n, conf.getXtreamServerUrl(), 
         [](const std::string& data) {
             ProgramConfig::instance().setXtreamServerUrl(data);
             // Notifica il cambio dei parametri Xtream
@@ -592,9 +600,9 @@ void SettingsActivity::onContentAvailable() {
             xtreamData.password = ProgramConfig::instance().getXtreamPassword();
             OnXtreamChanged.fire(xtreamData);
         }, 
-        "Enter Xtream Codes server URL", "http://server.com:8080", 255);
+        "tsvitch/setting/iptv/server_hint"_i18n, "http://server.com:8080", 255);
     
-    btnXtreamUsername->init("Username", conf.getXtreamUsername(), 
+    btnXtreamUsername->init("tsvitch/setting/iptv/username"_i18n, conf.getXtreamUsername(), 
         [](const std::string& data) {
             ProgramConfig::instance().setXtreamUsername(data);
             // Notifica il cambio dei parametri Xtream
@@ -604,9 +612,9 @@ void SettingsActivity::onContentAvailable() {
             xtreamData.password = ProgramConfig::instance().getXtreamPassword();
             OnXtreamChanged.fire(xtreamData);
         }, 
-        "Enter your username", "username", 255);
+        "tsvitch/setting/iptv/username_hint"_i18n, "username", 255);
     
-    btnXtreamPassword->init("Password", conf.getXtreamPassword(), 
+    btnXtreamPassword->init("tsvitch/setting/iptv/password"_i18n, conf.getXtreamPassword(), 
         [](const std::string& data) {
             ProgramConfig::instance().setXtreamPassword(data);
             // Notifica il cambio dei parametri Xtream
@@ -616,7 +624,9 @@ void SettingsActivity::onContentAvailable() {
             xtreamData.password = data;
             OnXtreamChanged.fire(xtreamData);
         }, 
-        "Enter your password", "password", 255);
+        "tsvitch/setting/iptv/password_hint"_i18n, "password", 255);
+    // Not in plain sight on the screen (screenshots, streaming)
+    btnXtreamPassword->setSecure(true);
 
     // ===== Controle parental =====
     // Pede o PIN atual e executa onOk apenas se conferir.

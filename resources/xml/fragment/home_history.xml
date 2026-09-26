@@ -4,6 +4,34 @@
         marginBottom="8"
         width="auto"
         height="auto">
+        <brls:Box
+                axis="row"
+                width="100%"
+                alignItems="center"
+                justifyContent="spaceBetween"
+                paddingLeft="30"
+                paddingRight="30"
+                marginBottom="10">
+                <brls:Label
+                        fontSize="28"
+                        text="@i18n/tsvitch/history/title" />
+                <CustomButton
+                        id="home/history/clear"
+                        focusable="true"
+                        highlightCornerRadius="6"
+                        hideHighlightBackground="true"
+                        height="35"
+                        paddingLeft="15"
+                        paddingRight="15"
+                        backgroundColor="#E3E5E7"
+                        cornerRadius="6"
+                        alignItems="center">
+                        <brls:Label
+                                fontSize="14"
+                                textColor="#18191c"
+                                text="@i18n/tsvitch/history/clear_all" />
+                </CustomButton>
+        </brls:Box>
         <RecyclingGrid
                 paddingLeft="20"
                 paddingRight="20"

@@ -134,6 +134,14 @@ public:
 
     void setTitle(const std::string& title);
 
+    /// Programme guide card under the title (live channels). progress: how much of the current programme is
+    /// over (0-1); an empty title hides its line, and the card hides when both are empty
+    void setEpg(const std::string& nowTime, const std::string& nowTitle, float progress, const std::string& nextTime,
+                const std::string& nextTitle);
+
+    /// Hint under the title, such as which buttons change the channel; empty hides it
+    void setOsdHint(const std::string& hint);
+
     std::string getTitle();
 
     void setDuration(const std::string& value);
@@ -251,6 +259,17 @@ private:
     NVGcolor bottomBarColor             = brls::Application::getTheme().getColor("color/tsvitch");
 
     BRLS_BIND(brls::Label, videoTitleLabel, "video/osd/title");
+    BRLS_BIND(brls::Box, epgBox, "video/osd/epg");
+    BRLS_BIND(brls::Box, epgNowRow, "video/osd/epg/now");
+    BRLS_BIND(brls::Label, epgNowTime, "video/osd/epg/now/time");
+    BRLS_BIND(brls::Label, epgNowTitle, "video/osd/epg/now/title");
+    BRLS_BIND(brls::Box, epgBar, "video/osd/epg/bar");
+    BRLS_BIND(brls::Box, epgBarFill, "video/osd/epg/bar/fill");
+    BRLS_BIND(brls::Box, epgNextRow, "video/osd/epg/next");
+    BRLS_BIND(brls::Label, epgNextTime, "video/osd/epg/next/time");
+    BRLS_BIND(brls::Label, epgNextTitle, "video/osd/epg/next/title");
+    BRLS_BIND(brls::Box, osdHintBox, "video/osd/hint");
+    BRLS_BIND(brls::Label, osdHintLabel, "video/osd/hint/label");
     BRLS_BIND(brls::Box, osdTopBox, "video/osd/top/box");
     BRLS_BIND(brls::Box, osdBottomBox, "video/osd/bottom/box");
 
@@ -300,6 +319,9 @@ private:
     brls::Rect oldRect = brls::Rect(-1, -1, -1, -1);
 
     void requestSeeking(int seek, int delay = 400);
+    void finishSeeking(int seek);
+    // How far one press of the left or right arrow skips
+    static constexpr int SKIP_SECONDS = 10;
 
     bool is_seeking     = false;
     int seeking_range   = 0;
@@ -308,6 +330,14 @@ private:
     void requestVolume(int volume, int delay = 0);
     int volume_init    = 0;
     size_t volume_iter = 0;
+
+    // Reopening the stream after a failed open (IPTV servers refuse a new connection for a moment
+    // when the previous one is still counted or their flood protection kicks in)
+    static constexpr int MAX_OPEN_RETRIES = 3;
+    std::string lastUrl;
+    std::string lastUrlExtra;
+    int openRetries        = 0;
+    size_t openRetryIter   = 0;
 
     void requestBrightness(float brightness);
     float brightness_init = 0.0f;

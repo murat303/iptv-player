@@ -35,11 +35,21 @@ public:
 
     void setupCommonSetting();
 
+    // Audio language and subtitle pickers, filled from the tracks of the playing file
+    void setupTrackSetting();
+
 private:
     BRLS_BIND(ButtonClose, closebtn, "button/close");
     BRLS_BIND(brls::ScrollingFrame, settings, "player/settings");
     BRLS_BIND(brls::Box, cancel, "player/cancel");
 
+    BRLS_BIND(brls::DetailCell, btnAudioTrack, "setting/tracks/audio");
+    BRLS_BIND(brls::DetailCell, btnSubtitleTrack, "setting/tracks/sub");
+    BRLS_BIND(TsVitchSelectorCell, btnSubSize, "setting/tracks/sub/size");
+    BRLS_BIND(TsVitchSelectorCell, btnSubColor, "setting/tracks/sub/color");
+    BRLS_BIND(TsVitchSelectorCell, btnSubBackground, "setting/tracks/sub/background");
+    BRLS_BIND(TsVitchSelectorCell, btnSubPosition, "setting/tracks/sub/position");
+    BRLS_BIND(TsVitchSelectorCell, btnSubDelay, "setting/tracks/sub/delay");
     BRLS_BIND(brls::BooleanCell, btnFullscreen, "setting/fullscreen");
     BRLS_BIND(TsVitchSelectorCell, btnOnTopMode, "setting/onTopMode");
 

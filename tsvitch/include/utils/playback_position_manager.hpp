@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <string>
 #include <fstream>
 #include <chrono>
@@ -89,6 +90,21 @@ public:
         }
     }
     
+    /// Saved positions (seconds) of every video, read in one go for screens that show many of them
+    static std::unordered_map<std::string, int64_t> getAllPositions() {
+        std::unordered_map<std::string, int64_t> positions;
+        try {
+            nlohmann::json data = loadCache();
+            for (auto it = data.begin(); it != data.end(); ++it) {
+                if (it.value().is_object() && it.value().contains("position"))
+                    positions[it.key()] = it.value()["position"].get<int64_t>();
+            }
+        } catch (const std::exception& e) {
+            brls::Logger::error("PlaybackPosition: Error reading positions: {}", e.what());
+        }
+        return positions;
+    }
+
     /**
      * Rimuove la posizione salvata per un video
      * @param url URL univoco del video

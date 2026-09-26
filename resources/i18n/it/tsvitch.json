@@ -1,7 +1,7 @@
 {
-  "title": "TsVitch",
-  "github": "https://github.com/giovannimirulla/TsVitch",
-  "github_release": "https://github.com/giovannimirulla/TsVitch/releases/latest",
+  "title": "IPTV Player",
+  "github": "https://github.com/murat303/iptv-player",
+  "github_release": "https://github.com/murat303/iptv-player/releases/latest",
   "setting": {
     "quit_hint": "Stai per uscire dall'applicazione. Le impostazioni avranno effetto dopo il prossimo avvio",
     "app": {
@@ -20,11 +20,12 @@
         "auto_loop": "Ripeti il video corrente",
         "auto_no": "Metti in pausa dopo la riproduzione",
         "auto_hint": "\"Riproduzione automatica dei video consigliati\" riprodurrà automaticamente i video consigliati dopo l'episodio.",
-        "sleep": "Spegnimento programmato",
+        "sleep": "Timer spegnimento",
         "video_codec": "Codec Video",
         "audio_quality": "Qualità audio",
         "video_format": "Formato video",
-        "player": "Player"
+        "player": "Player",
+        "auto_next": "Riproduci automaticamente l'episodio successivo"
       },
       "image": {
         "header": "Immagine",
@@ -74,7 +75,7 @@
         },
         "language": {
           "header": "Lingua (riavvio richiesto)",
-          "auto": "Auto",
+          "auto": "Lingua della console",
           "chinese_s": "Cinese semplificato",
           "chinese_t": "Cinese tradizionale",
           "english": "Inglese",
@@ -91,7 +92,8 @@
           "ps": "PlayStation",
           "keyboard": "Tastiera",
           "swap": "Scambia i pulsanti"
-        }
+        },
+        "always_on_top_hint": "Mantieni la finestra sopra le altre"
       }
     },
     "tools": {
@@ -119,7 +121,7 @@
       "test": {
         "header": "Diagnostica",
         "net": "Diagnostica di rete",
-        "proxy": "Test proxy",
+        "proxy": "Prova proxy",
         "proxy_none": "Nessun proxy configurato",
         "proxy_testing": "Test del proxy",
         "proxy_success": "✓ Proxy funziona correttamente",
@@ -143,15 +145,20 @@
       "tab": "Info",
       "brief_header": "Introduzione",
       "repository": "Repository",
-      "brief": "La TV finalmente sulla Switch",
+      "brief": "Lettore IPTV per Nintendo Switch: TV in diretta, film e serie (Xtream Codes e playlist M3U8).",
       "repo_header": "Repository",
       "author_header": "Intervento dell'autore",
       "author": "Quanto è bello guardare la TV in bagno",
       "contrib_header": "Contribuzione e Sponsor",
-      "contrib_text": "TsVitch è un progetto open-source: contributi, segnalazioni di bug e suggerimenti sono benvenuti. Se ti piace il progetto e vuoi sostenerlo, valuta di diventare sponsor. Trovi tutte le informazioni e le modalità nel repository GitHub.",
+      "contrib_text": "IPTV Player è open source (GPL-3.0). Segnalazioni di bug e suggerimenti sono benvenuti su GitHub: github.com/murat303/iptv-player",
       "contributors_header": "Contributori",
       "sponsors_header": "Sponsor",
-      "sponsor_qr": "Diventa Sponsor"
+      "sponsor_qr": "Diventa Sponsor",
+      "developer_header": "Sviluppatore",
+      "credits_header": "Basato su",
+      "credits": "TsVitch di giovannimirulla, supporto a film e serie Xtream di ratk, wiliwili di xfangfang e la libreria grafica borealis.",
+      "license_header": "Licenza",
+      "license": "GPL-3.0: software libero, fornito senza alcuna garanzia. Codice sorgente: github.com/murat303/iptv-player"
     },
     "opensource": {
       "tab": "Opensource"
@@ -164,7 +171,7 @@
       "font_q1": "Come impostare font o icona personalizzata",
       "font_a1": "1. Scarica il font o l'icona che desideri\n2. Rinomina il font in: font.ttf; Rinomina l'icona in: icon.ttf\n3. Inserisci i file nella cartella di configurazione\n4. Riavvia l'applicazione",
       "font_q2": "Domande frequenti",
-      "font_a2": "1. TsVitch dà priorità ai font personalizzati, con i font integrati come fallback\n2. \"Impostazioni - Strumenti - Altri\" offre una voce di menu per aprire rapidamente la cartella di configurazione\n3. Su Linux, TsVitch usa xdg-open per aprire la cartella. Se la cartella non si apre correttamente, considera di installare questo strumento"
+      "font_a2": "1. IPTV Player usa prima i font personalizzati, poi quelli integrati\n2. In \"Impostazioni - Strumenti - Altri\" c'è una voce per aprire subito la cartella di configurazione\n3. Su Linux, IPTV Player apre la cartella con xdg-open. Se la cartella non si apre, installa questo strumento"
     },
     "hot_keys": {
       "common_header": "Comuni",
@@ -183,13 +190,26 @@
         "ip": "Indirizzo IP",
         "dns": "Indirizzo DNS"
       }
+    },
+    "iptv": {
+      "mode": "Modalità IPTV",
+      "m3u8_timeout": "Timeout M3U8",
+      "server": "URL del server",
+      "username": "Nome utente",
+      "password": "Password",
+      "account": "Informazioni account",
+      "tab": "IPTV",
+      "header": "Impostazioni IPTV",
+      "server_hint": "Inserisci l'indirizzo del server Xtream Codes",
+      "username_hint": "Inserisci il nome utente",
+      "password_hint": "Inserisci la password"
     }
   },
   "hints": {
     "hint1": "Seleziona un gioco dalla schermata home",
     "hint2": "Tieni premuto il tasto  e premi  per entrare in hbmenu",
-    "hint3": "In hbmenu, seleziona TsVitch",
-    "hint4": "Opzionale: usa il forwarder NSP fornito (Metti TsVitch.nro in /switch/TsVitch.nro)",
+    "hint3": "In hbmenu, seleziona IPTV Player",
+    "hint4": "Facoltativo: usa un forwarder NSP (iptv-player.nro deve trovarsi in /switch/iptv-player/)",
     "hint_nsp": "Premi  per installare il forwarder NSP",
     "hint_confirm": "Installare il forwarder NSP può causare un ban\nConfermi?",
     "hint_right": "Le immagini provengono da Internet, il copyright appartiene a Nintendo Co., Ltd"
@@ -289,7 +309,7 @@
       "logout": "Esci dall'account corrente \n(l'app verrà chiusa)",
       "scan": "Scansiona il codice QR per accedere",
       "loading": "Caricamento codice QR...",
-      "hint": "Usa il client TsVitch per scansionare il codice QR",
+      "hint": "Scansiona il codice QR con il telefono",
       "network_error": "Errore di rete, riprova",
       "qr_not_available": "Codice QR non valido, rientra nella finestra di dialogo",
       "need_confirm": "In attesa di conferma",
@@ -467,6 +487,45 @@
       "related": "{} risposte totali",
       "end": "Non ci sono altri commenti.",
       "delete": "Dopo aver eliminato il commento, tutte le risposte sotto il commento verranno eliminate\n\nVuoi continuare?"
+    },
+    "tracks": {
+      "header": "Audio e sottotitoli",
+      "audio": "Audio",
+      "subtitle": "Sottotitoli",
+      "none": "Nessuno",
+      "track": "Traccia {}",
+      "sub_size": "Dimensione testo",
+      "size_small": "Piccola",
+      "size_normal": "Normale",
+      "size_big": "Grande",
+      "size_huge": "Molto grande",
+      "sub_color": "Colore testo",
+      "color_white": "Bianco",
+      "color_yellow": "Giallo",
+      "sub_background": "Sfondo testo",
+      "background_half": "Traslucido",
+      "background_black": "Nero",
+      "sub_position": "Posizione testo",
+      "position_bottom": "In basso",
+      "position_higher": "Più su",
+      "position_high": "In alto",
+      "sub_delay": "Ritardo dei sottotitoli",
+      "seconds": "{} s"
+    },
+    "next_episode": {
+      "title": "Episodio successivo",
+      "countdown": "Inizia tra {} s",
+      "play_now": "Riproduci ora"
+    },
+    "epg": {
+      "now": "Ora",
+      "next": "Dopo"
+    },
+    "hint": {
+      "channels": "{}  Canale precedente      {}  Canale successivo",
+      "episodes": "{}  Episodio precedente      {}  Episodio successivo",
+      "videos": "{}  Video precedente      {}  Video successivo",
+      "seek": "{} {}  10 s indietro / avanti"
     }
   },
   "dialog": {
@@ -475,7 +534,7 @@
   },
   "xtream": {
     "content": {
-      "live": "Live TV",
+      "live": "TV in diretta",
       "movies": "Film",
       "series": "Serie"
     },
@@ -487,15 +546,42 @@
       "live": "canali",
       "movies": "film",
       "series": "serie"
+    },
+    "season": "Stagione {}",
+    "group": {
+      "all": "Tutti",
+      "recent": "★ Aggiunti di recente"
+    },
+    "search_results": "{} risultati per \"{}\"",
+    "no_results": "Nessun risultato per \"{}\"",
+    "bad_response": "Il server ha inviato una risposta incompleta. Premi Aggiorna per riprovare.",
+    "sort": {
+      "title": "Ordina",
+      "label": "Ordina: {}",
+      "server": "Ordine del server",
+      "recent": "Aggiunti di recente",
+      "rating": "Valutazione",
+      "name": "Nome (A-Z)",
+      "year": "Anno"
+    },
+    "search_label": {
+      "live": "Cerca canali",
+      "movies": "Cerca film",
+      "series": "Cerca serie"
+    },
+    "refresh_label": {
+      "live": "Aggiorna canali",
+      "movies": "Aggiorna film",
+      "series": "Aggiorna serie"
     }
   },
   "download": {
     "started": "Download avviato",
     "completed": "Download completato!",
-    "already": "File già scaricato!",
+    "already": "Questo video è già stato scaricato. Guardalo dalla scheda Download.",
     "error": "Errore download",
     "start_error": "Errore nell'avvio del download",
-    "action": "Scarica video",
+    "action": "Scarica",
     "live_error": "Impossibile scaricare una diretta in corso.\nIl download è disponibile solo per i contenuti on-demand.",
     "error_title": "Errore",
     "in_progress": "Download in corso...",
@@ -503,17 +589,37 @@
     "resume": "Riprendi",
     "play": "Riproduci",
     "delete": "Elimina",
-    "exit_warning": "Un download è in corso. Se esci verrà annullato. Uscire comunque?",
+    "exit_warning": "Un download è in corso. Se esci viene messo in pausa e potrai riprenderlo più tardi dalla scheda Download. Uscire?",
     "status": {
-      "queued": "In coda...",
-      "downloading": "Download in corso...",
+      "queued": "In coda",
+      "downloading": "Download in corso",
       "paused": "In pausa",
-      "completed": "Completato",
+      "completed": "Scaricato",
       "failed": "Download fallito",
       "cancelled": "Annullato",
       "unknown": "Sconosciuto",
       "error": "Errore"
-    }
+    },
+    "title": "Download",
+    "started_title": "Download avviato: {}\nSeguilo nella scheda Download.",
+    "completed_title": "Download completato: {}",
+    "failed_title": "Download interrotto: {}\nPuoi riprovare dalla scheda Download.",
+    "already_running": "Questo video è già in download.",
+    "busy_download": "“{}” è in download.\nIl tuo provider consente una sola connessione alla volta, quindi non può partire un altro download. Attendi la fine o mettilo in pausa nella scheda Download.",
+    "busy_watch": "“{}” è in download.\nIl tuo provider consente una sola connessione alla volta, quindi non puoi guardare durante il download.",
+    "pause_and_watch": "Metti in pausa e guarda",
+    "close": "Annulla",
+    "delete_confirm": "Eliminare “{}”?\nAnche il file video viene rimosso dalla scheda SD.",
+    "file_missing": "Il file video non è stato trovato sulla scheda SD.",
+    "empty": "Ancora nessun download",
+    "empty_hint": "Usa il pulsante Scarica nella schermata di un film o di un episodio. I video scaricati si riproducono senza internet.",
+    "speed": "{}/s",
+    "time_left_m": "{} min rimanenti",
+    "time_left_h": "{} h {} min rimanenti",
+    "time_left_less": "meno di un minuto rimanente",
+    "error_file": "Impossibile scrivere sulla scheda SD (potrebbe essere piena)",
+    "error_network": "Connessione persa",
+    "error_not_video": "Il server ha inviato una pagina di errore invece del video"
   },
   "parental": {
     "enter_pin": "Inserisci PIN",
@@ -532,5 +638,65 @@
     "clear_history": "Cancella cronologia",
     "clear_history_all": "Tutto",
     "history_cleared": "Cronologia cancellata"
+  },
+  "detail": {
+    "play": "Riproduci",
+    "resume": "Riprendi ({})",
+    "restart": "Ricomincia",
+    "favorite_add": "Aggiungi ai preferiti",
+    "favorite_remove": "Rimuovi dai preferiti",
+    "play_episode": "Riproduci S{} E{}",
+    "resume_episode": "Riprendi S{} E{}",
+    "next_episode": "Successivo: S{} E{}",
+    "episode_title": "{}. {}",
+    "episode_count": "{} episodi",
+    "season_count": "Stagioni: {}  ·  Episodi: {}",
+    "season_pick": "Stagione",
+    "director": "Regia: {}",
+    "cast": "Cast: {}",
+    "hours_minutes": "{} h {} min",
+    "minutes": "{} min",
+    "load_error": "Impossibile caricare i dettagli",
+    "episode": "Episodio {}",
+    "download": "Scarica",
+    "download_series_hint": "Apri la serie e premi ZR su un episodio per scaricarlo",
+    "download_pick_episode": "Seleziona un episodio per scaricarlo",
+    "load_error_retry": "Impossibile caricare i dettagli. Il provider potrebbe non rispondere in questo momento.",
+    "retry": "Riprova",
+    "previous_season": "Stagione precedente",
+    "next_season": "Stagione successiva"
+  },
+  "cast": {
+    "live_download_error": "Download non disponibile",
+    "live_download_error_desc": "Non è possibile scaricare una diretta in corso.\nIl download è disponibile solo per film ed episodi."
+  },
+  "account": {
+    "title": "Informazioni account",
+    "loading": "Caricamento delle informazioni dell'account...",
+    "error": "Impossibile caricare le informazioni dell'account. Controlla la connessione a internet e le impostazioni IPTV.",
+    "status": "Stato: {}",
+    "status_active": "Attivo",
+    "status_expired": "Scaduto",
+    "status_banned": "Bloccato",
+    "status_disabled": "Disattivato",
+    "expires": "Scade il: {}",
+    "days_left": "{} giorni rimanenti",
+    "unlimited": "Scade il: nessuna scadenza",
+    "connections": "Connessioni: {} di {} in uso",
+    "trial": "Account di prova: {}",
+    "yes": "Sì",
+    "no": "No",
+    "created": "Creato il: {}",
+    "ends_soon": "Il tuo abbonamento scade tra {} giorni ({}).",
+    "ends_today": "Il tuo abbonamento scade oggi.",
+    "ended": "Il tuo abbonamento è scaduto."
+  },
+  "history": {
+    "title": "Cronologia",
+    "clear_all": "Cancella tutto",
+    "remove": "Rimuovi",
+    "removed": "Rimosso dalla cronologia",
+    "clear_confirm": "Cancellare tutta la cronologia?",
+    "empty": "Non hai ancora guardato nulla"
   }
 }

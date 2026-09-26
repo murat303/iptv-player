@@ -22,12 +22,18 @@ void Analytics::report(const std::string& event) { this->report(Event{event}); }
 void Analytics::report(const std::string& event, const Params& params) { this->report(Event{event, params}); }
 
 void Analytics::report(const Event& event) {
+#ifdef NO_GA
+    return;
+#endif
     events_mutex.lock();
     events.emplace_back(event);
     events_mutex.unlock();
 }
 
 void Analytics::send() {
+#ifdef NO_GA
+    return;
+#endif
     Package package;
     events_mutex.lock();
     if (events.size() > REPORT_MAX_NUM) {
@@ -82,7 +88,9 @@ Analytics::Analytics() {
     this->client_id   = "GA1.3." + ProgramConfig::instance().getClientID();
 
     reportTimer.setCallback([]() { brls::Threading::async([]() { Analytics::instance().send(); }); });
+#ifndef NO_GA
     reportTimer.start(10000);
+#endif
 }
 
 Analytics::~Analytics() { reportTimer.stop(); }

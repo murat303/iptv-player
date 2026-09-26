@@ -19,7 +19,12 @@ inline bool isLiveStream(const std::string& url, const std::string& title) {
     std::string titleLower = title;
     std::transform(urlLower.begin(), urlLower.end(), urlLower.begin(), ::tolower);
     std::transform(titleLower.begin(), titleLower.end(), titleLower.begin(), ::tolower);
-    
+
+    // Downloaded files and Xtream movies and episodes are never live, whatever their title says
+    if (urlLower.rfind("file://", 0) == 0 || urlLower.find("/movie/") != std::string::npos ||
+        urlLower.find("/series/") != std::string::npos)
+        return false;
+
     // Indicatori di live stream negli URL e titoli
     if (urlLower.find("live") != std::string::npos || 
         urlLower.find("stream") != std::string::npos ||

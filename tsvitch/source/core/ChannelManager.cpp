@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstring>
 #include <thread>
+#include <algorithm>
 
 using json = nlohmann::json;
 
@@ -220,7 +221,9 @@ void ChannelManager::saveBinary(const tsvitch::LiveM3u8ListResult& channels) con
         
         // Buffer per accumulate dati prima di scrivere (riduce syscall da 3.6M a ~60k)
         std::vector<char> buffer;
-        buffer.reserve(300 * 1024 * 1024); // Pre-alloca 300MB per evitare reallocazioni
+        // The buffer is flushed every 5000 channels, so that is all it has to hold
+        // (it used to reserve 300 MB, more than the Switch has in applet mode)
+        buffer.reserve(std::min<size_t>(channels.size(), 5000) * 512);
         
         // Scrivi ogni canale nel buffer
         for (size_t i = 0; i < channels.size(); ++i) {

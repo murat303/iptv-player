@@ -8,17 +8,140 @@
         <brls:Box
                 id="video/osd/top/box"
                 width="100%"
-                height="80"
-                backgroundStartColor="#000000CC"
+                height="auto"
+                paddingTop="18"
+                paddingBottom="40"
+                backgroundStartColor="#000000E6"
                 backgroundEndColor="#00000000"
                 background="vertical_linear">
-                <brls:Label
-                        id="video/osd/title"
-                        height="100%"
-                        marginLeft="20"
-                        marginRight="120"
-                        singleLine="true"
-                        textColor="#FFFFFF" />
+                <brls:Box
+                        axis="column"
+                        width="0"
+                        grow="1"
+                        marginLeft="24"
+                        marginRight="120">
+                        <brls:Label
+                                id="video/osd/title"
+                                width="100%"
+                                fontSize="24"
+                                singleLine="true"
+                                textColor="#FFFFFF" />
+                        <!-- Programme guide of a live channel: a dark card stays readable on any picture -->
+                        <brls:Box
+                                id="video/osd/epg"
+                                axis="column"
+                                width="640"
+                                marginTop="12"
+                                paddingTop="12"
+                                paddingBottom="12"
+                                paddingLeft="14"
+                                paddingRight="16"
+                                cornerRadius="10"
+                                backgroundColor="#000000B8"
+                                visibility="gone">
+                                        <brls:Box
+                                                id="video/osd/epg/now"
+                                                axis="row"
+                                                width="100%"
+                                                alignItems="center">
+                                                <brls:Box
+                                                        height="24"
+                                                        width="72"
+                                                        shrink="0"
+                                                        cornerRadius="5"
+                                                        backgroundColor="#FF9100"
+                                                        alignItems="center"
+                                                        justifyContent="center">
+                                                        <brls:Label
+                                                                fontSize="14"
+                                                                textColor="#FFFFFF"
+                                                                text="@i18n/tsvitch/player/epg/now" />
+                                                </brls:Box>
+                                                <brls:Label
+                                                        id="video/osd/epg/now/time"
+                                                        fontSize="17"
+                                                        marginLeft="12"
+                                                        shrink="0"
+                                                        singleLine="true"
+                                                        textColor="#FFFFFFB8" />
+                                                <brls:Label
+                                                        id="video/osd/epg/now/title"
+                                                        width="0"
+                                                        grow="1"
+                                                        marginLeft="14"
+                                                        fontSize="19"
+                                                        singleLine="true"
+                                                        textColor="#FFFFFF" />
+                                        </brls:Box>
+                                        <brls:Box
+                                                id="video/osd/epg/bar"
+                                                width="100%"
+                                                height="4"
+                                                marginTop="10"
+                                                marginBottom="10"
+                                                cornerRadius="2"
+                                                backgroundColor="#FFFFFF33">
+                                                <brls:Box
+                                                        id="video/osd/epg/bar/fill"
+                                                        width="0"
+                                                        height="4"
+                                                        cornerRadius="2"
+                                                        backgroundColor="#FF9100" />
+                                        </brls:Box>
+                                        <brls:Box
+                                                id="video/osd/epg/next"
+                                                axis="row"
+                                                width="100%"
+                                                alignItems="center">
+                                                <brls:Box
+                                                        height="24"
+                                                        width="72"
+                                                        shrink="0"
+                                                        cornerRadius="5"
+                                                        backgroundColor="#FFFFFF40"
+                                                        alignItems="center"
+                                                        justifyContent="center">
+                                                        <brls:Label
+                                                                fontSize="14"
+                                                                textColor="#FFFFFF"
+                                                                text="@i18n/tsvitch/player/epg/next" />
+                                                </brls:Box>
+                                                <brls:Label
+                                                        id="video/osd/epg/next/time"
+                                                        fontSize="17"
+                                                        marginLeft="12"
+                                                        shrink="0"
+                                                        singleLine="true"
+                                                        textColor="#FFFFFFB8" />
+                                                <brls:Label
+                                                        id="video/osd/epg/next/title"
+                                                        width="0"
+                                                        grow="1"
+                                                        marginLeft="14"
+                                                        fontSize="17"
+                                                        singleLine="true"
+                                                        textColor="#FFFFFFD0" />
+                                        </brls:Box>
+                        </brls:Box>
+                        <!-- Which buttons change the channel or the episode -->
+                        <brls:Box
+                                id="video/osd/hint"
+                                alignSelf="flexStart"
+                                marginTop="10"
+                                paddingTop="5"
+                                paddingBottom="5"
+                                paddingLeft="12"
+                                paddingRight="12"
+                                cornerRadius="6"
+                                backgroundColor="#000000A0"
+                                visibility="gone">
+                                <brls:Label
+                                        id="video/osd/hint/label"
+                                        fontSize="16"
+                                        singleLine="true"
+                                        textColor="#FFFFFFD8" />
+                        </brls:Box>
+                </brls:Box>
 
 
                 <brls:Box

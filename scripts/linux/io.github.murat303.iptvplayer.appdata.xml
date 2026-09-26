@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+    <id>io.github.murat303.iptvplayer</id>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-only</project_license>
+    <name>IPTV Player</name>
+    <developer_name>muratgokce</developer_name>
+    <summary>Live TV, movies and series from your IPTV provider</summary>
+    <launchable type="desktop-id">io.github.murat303.iptvplayer.desktop</launchable>
+    <content_rating type="oars-1.1"/>
+    <description>
+        <p>IPTV Player plays the live channels, movies and series of your own IPTV subscription (Xtream Codes API or M3U playlists).</p>
+    </description>
+    <url type="homepage">https://github.com/murat303/iptv-player</url>
+    <releases>
+        <release date="2026-09-26" version="1.0.0"/>
+    </releases>
+</component>

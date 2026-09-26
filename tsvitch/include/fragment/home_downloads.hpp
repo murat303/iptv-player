@@ -1,50 +1,42 @@
 #pragma once
 
+#include <chrono>
+#include <cstdint>
 #include <borealis/core/bind.hpp>
 #include <borealis/core/box.hpp>
-#include "view/recycling_grid.hpp"
 
 #include "core/DownloadManager.hpp"
-#include <atomic>
-#include <thread>
-#include <chrono>
-#include <mutex>
-#include <condition_variable>
 
+class RecyclingGrid;
 class DownloadDataSource;
 
+/// Downloads tab: every download with its state; A opens the actions of a download (pause, continue, play, delete)
 class HomeDownloads : public brls::Box {
 public:
     HomeDownloads();
+
     ~HomeDownloads() override;
-
-    void draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style, brls::FrameContext* ctx) override;
-    void onFocusGained() override;
-    void onFocusLost() override;
-
-    void refresh();
-    void forceRefresh(); // Forza un refresh immediato
-    void onDownloadItemSelected(const DownloadItem& item);
-    void notifyNewDownloadStarted(); // Notifica il thread di refresh che è iniziato un nuovo download
 
     static brls::View* create();
 
-private:
-    BRLS_BIND(RecyclingGrid, recyclingGrid, "home/downloads/recyclingGrid");
+    // Looks at the download list twice a second while the tab is on screen
+    void draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
+              brls::FrameContext* ctx) override;
 
-    DownloadDataSource* dataSource = nullptr;
-    std::atomic<bool> shouldAutoRefresh{true};
-    std::thread refreshThread;
-    std::atomic<bool> refreshThreadRunning{false};
-    std::mutex refreshMutex;
-    std::condition_variable refreshCondition;
-    brls::Event<>::Subscription exitEventSubscription;
-    bool hasExitSubscription = false;
-    
-    void setupRecyclingGrid();
-    void startAutoRefresh();
-    void stopAutoRefresh();
-    void refreshWorker();
-    void onDownloadProgress(const std::string& id, float progress);
-    void onDownloadComplete(const std::string& id, bool success);
+    void onDownloadSelected(size_t index);
+
+private:
+    // Shows the current list: rows that stay are updated in place, otherwise the list is rebuilt
+    void refreshList();
+
+    void confirmDelete(const DownloadItem& item);
+
+    void play(const DownloadItem& item);
+
+    BRLS_BIND(RecyclingGrid, recyclingGrid, "home/downloads/recyclingGrid");
+    BRLS_BIND(brls::Box, emptyBox, "home/downloads/empty");
+
+    DownloadDataSource* dataSource = nullptr;  // given to the grid
+    uint64_t shownVersion          = 0;
+    std::chrono::steady_clock::time_point lastCheck;
 };
