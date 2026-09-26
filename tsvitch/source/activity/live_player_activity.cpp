@@ -103,40 +103,26 @@ void LiveActivity::onContentAvailable() {
         return true;
     });
 
-    //Button R go to next channel
-    this->video->registerAction("hints/next_channel"_i18n, brls::BUTTON_RB, [this](...) {
-        if (!this->isAd) {
-            if (this->video->isOSDLock()) {
+    // L and R change the channel on live TV only: on a movie R closed the player, and between episodes an
+    // accidental press changed the episode. At the ends of the channel list they do nothing.
+    if (liveData.type == 0) {
+        this->video->registerAction("hints/next_channel"_i18n, brls::BUTTON_RB, [this](...) {
+            if (this->isAd) return true;
+            if (this->video->isOSDLock())
                 this->video->toggleOSD();
-            } else {
-                if (currentChannelIndex + 1 < channelList.size()) {
-                    this->switchTo(currentChannelIndex + 1);
-                } else {
-                    //exit live
-                    brls::Logger::debug("exit live");
-                    brls::Application::popActivity();
-                }
-            }
-        }
-        return true;
-    });
-    //Button L go to previous channel
-    this->video->registerAction("hints/previous_channel"_i18n, brls::BUTTON_LB, [this](...) {
-        if (!this->isAd) {
-            if (this->video->isOSDLock()) {
+            else if (currentChannelIndex + 1 < channelList.size())
+                this->switchTo(currentChannelIndex + 1);
+            return true;
+        });
+        this->video->registerAction("hints/previous_channel"_i18n, brls::BUTTON_LB, [this](...) {
+            if (this->isAd) return true;
+            if (this->video->isOSDLock())
                 this->video->toggleOSD();
-            } else {
-                if (currentChannelIndex > 0) {
-                    this->switchTo(currentChannelIndex - 1);
-                } else {
-                    //exit live
-                    brls::Logger::debug("exit live");
-                    brls::Application::popActivity();
-                }
-            }
-        }
-        return true;
-    });
+            else if (currentChannelIndex > 0)
+                this->switchTo(currentChannelIndex - 1);
+            return true;
+        });
+    }
 
     this->video->hideSubtitleSetting();
     this->video->hideVideoRelatedSetting();
@@ -394,14 +380,10 @@ void LiveActivity::detectContentType() {
     }
     brls::Logger::debug("LiveActivity: Content detected as: {}", isLiveStream ? "LIVE STREAM" : "VIDEO WITH DURATION");
 
-    // The hint above the title: the buttons that change the channel or episode, and the skip on the arrows
+    // The hint above the title: the buttons that change the channel (live TV only), and the skip on the arrows
     std::string hint;
-    if (channelList.size() > 1) {
-        const char* key = liveData.type == 0   ? "tsvitch/player/hint/channels"
-                          : liveData.type == 2 ? "tsvitch/player/hint/episodes"
-                                               : "tsvitch/player/hint/videos";
-        hint = brls::getStr(key, "\uE0E4", "\uE0E5");
-    }
+    if (liveData.type == 0 && channelList.size() > 1)
+        hint = brls::getStr("tsvitch/player/hint/channels", "\uE0E4", "\uE0E5");
     if (!isLiveStream) {
         if (!hint.empty()) hint += "      ";
         hint += brls::getStr("tsvitch/player/hint/seek", "\uE0ED", "\uE0EE");

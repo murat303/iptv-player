@@ -528,8 +528,6 @@
     },
     "hint": {
       "channels": "{}  Canale precedente      {}  Canale successivo",
-      "episodes": "{}  Episodio precedente      {}  Episodio successivo",
-      "videos": "{}  Video precedente      {}  Video successivo",
       "seek": "{} {}  10 s indietro / avanti"
     }
   },

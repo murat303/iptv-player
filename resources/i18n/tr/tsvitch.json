@@ -516,8 +516,6 @@
     },
     "hint": {
       "channels": "{}  Önceki kanal      {}  Sonraki kanal",
-      "episodes": "{}  Önceki bölüm      {}  Sonraki bölüm",
-      "videos": "{}  Önceki video      {}  Sonraki video",
       "seek": "{} {}  10 sn geri / ileri"
     }
   },

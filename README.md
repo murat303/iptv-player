@@ -95,8 +95,8 @@ The app is in English by default. The language can be changed in **Settings → 
 | B | Back | Back | Back |
 | X | Favorite | Favorite | |
 | Y | Search | | Show / hide controls |
-| L | Sort | Previous season | Previous channel or episode |
-| R | Refresh | Next season | Next channel or episode |
+| L | Sort | Previous season | Previous channel |
+| R | Refresh | Next season | Next channel |
 | ZR | Download | Download | Volume with ↑ / ↓ |
 | ← / → | Move | Move | Skip 10 s back / forward |
 | − | | | Video information |

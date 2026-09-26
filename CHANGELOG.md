@@ -23,6 +23,7 @@ Changes by muratgokce:
 - Audio and subtitle track pickers; the choice is remembered.
 - Subtitle size, color, background, position and delay. Subtitles show on the Switch without extra fonts.
 - The D-pad skips 10 seconds back or forward; A pauses and resumes.
+- L and R change the channel on live TV only; on movies and episodes they do nothing, and the end of a channel list no longer closes the player.
 - Subtitles move above the player controls while the controls are on screen.
 - Playback resumes where it stopped; the old picture no longer shows while the next video loads.
 
