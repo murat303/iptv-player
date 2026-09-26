@@ -693,6 +693,7 @@ void VideoView::onOSDStateChanged(bool state) {
     if (!state && isChildFocused()) {
         brls::Application::giveFocus(this);
     }
+    mpvCore->setSubtitleRaised(state && !is_osd_lock);
 }
 
 void VideoView::toggleOSDLock() {

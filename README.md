@@ -34,36 +34,37 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
     <td><img src="docs/screenshots/movie-detail.jpg" alt="Movie details"/><br/>Movie details</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/series.jpg" alt="Series"/><br/>Series</td>
     <td><img src="docs/screenshots/series-detail.jpg" alt="Seasons and episodes"/><br/>Seasons and episodes</td>
-  </tr>
-  <tr>
     <td><img src="docs/screenshots/player.jpg" alt="Player"/><br/>Player</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/player-settings.jpg" alt="Audio and subtitles"/><br/>Audio and subtitles</td>
-  </tr>
-  <tr>
     <td><img src="docs/screenshots/live-player.jpg" alt="Live TV with the programme guide"/><br/>Live TV with the programme guide</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/next-episode.jpg" alt="Next episode"/><br/>Next episode</td>
-  </tr>
-  <tr>
     <td><img src="docs/screenshots/search.jpg" alt="Search"/><br/>Search</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/favorites.jpg" alt="Favorites"/><br/>Favorites</td>
-  </tr>
-  <tr>
     <td><img src="docs/screenshots/downloads.jpg" alt="Downloads"/><br/>Downloads</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/history.jpg" alt="History"/><br/>History</td>
-  </tr>
-  <tr>
     <td><img src="docs/screenshots/settings.jpg" alt="IPTV settings"/><br/>IPTV settings</td>
-    <td><img src="docs/screenshots/account.jpg" alt="Account info"/><br/>Account info</td>
   </tr>
   <tr>
+    <td><img src="docs/screenshots/account.jpg" alt="Account info"/><br/>Account info</td>
     <td><img src="docs/screenshots/about.jpg" alt="About"/><br/>About</td>
-    <td></td>
   </tr>
 </table>
 
-The screenshots use a made-up catalogue: the channel names, titles and posters are not real.
+The screenshots show the open movies of the Blender Foundation: *Big Buck Bunny*, *Sintel*, *Tears of Steel*,
+*Spring*, *Cosmos Laundromat*, *Sprite Fright*, *Elephants Dream*, *Charge* and *Caminandes*
+(© Blender Foundation / Blender Studio, [studio.blender.org](https://studio.blender.org), licensed
+[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) and [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/);
+posters from Wikimedia Commons, resized, and the Caminandes cover made from an episode picture).
+The channel names and logos are made up.
 
 ## Installation
 

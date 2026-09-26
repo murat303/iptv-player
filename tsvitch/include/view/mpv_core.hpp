@@ -177,6 +177,9 @@ public:
     /// Applies the subtitle settings to the playing file
     void applySubtitleStyle();
 
+    // While the player controls are on screen the subtitles sit above them
+    void setSubtitleRaised(bool raised);
+
     void setUrl(const std::string &url, const std::string &extra = "", const std::string &method = "replace");
 
     void setVolume(int64_t value);

@@ -1312,6 +1312,15 @@ void MPVCore::applySubtitleStyle() {
     for (const auto &option : subtitleStyleOptions()) command_async("set", option.first, option.second);
 }
 
+void MPVCore::setSubtitleRaised(bool raised) {
+    std::string position = "100";
+    for (const auto &option : subtitleStyleOptions())
+        if (option.first == "sub-pos") position = option.second;
+    // the control bar covers the lowest ~17 % of the picture
+    if (raised && std::stoi(position) > 82) position = "82";
+    command_async("set", "sub-pos", position);
+}
+
 std::unordered_map<std::string, mpv_node> MPVCore::getNodeMap(const std::string &key) {
     mpv_node node;
     std::unordered_map<std::string, mpv_node> nodeMap;
