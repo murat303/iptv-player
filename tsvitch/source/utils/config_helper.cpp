@@ -775,12 +775,27 @@ std::string ProgramConfig::getLegacyConfigDir() {
 
 namespace {
 
+// Big blocks: the Switch's SD card is slow with the small default buffers (the lists of a provider are MBs)
 bool copyFileContents(const std::filesystem::path& from, const std::filesystem::path& to) {
-    std::ifstream in(from, std::ios::binary);
-    std::ofstream out(to, std::ios::binary | std::ios::trunc);
-    if (!in || !out) return false;
-    out << in.rdbuf();
-    return out.good();
+    std::FILE* in = std::fopen(from.string().c_str(), "rb");
+    if (!in) return false;
+    std::FILE* out = std::fopen(to.string().c_str(), "wb");
+    if (!out) {
+        std::fclose(in);
+        return false;
+    }
+    std::vector<char> buffer(1 << 20);
+    bool ok = true;
+    size_t n;
+    while ((n = std::fread(buffer.data(), 1, buffer.size(), in)) > 0) {
+        if (std::fwrite(buffer.data(), 1, n, out) != n) {
+            ok = false;
+            break;
+        }
+    }
+    ok = ok && !std::ferror(in);
+    std::fclose(in);
+    return std::fclose(out) == 0 && ok;
 }
 
 // Copies a folder tree; files that already exist in the target are kept

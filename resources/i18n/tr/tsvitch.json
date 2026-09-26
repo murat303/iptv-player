@@ -561,6 +561,20 @@
       "live": "Kanalları yenile",
       "movies": "Filmleri yenile",
       "series": "Dizileri yenile"
+    },
+    "loading": {
+      "title": {
+        "live": "Kanallar yükleniyor",
+        "movies": "Filmler yükleniyor",
+        "series": "Diziler yükleniyor"
+      },
+      "connecting": "Sağlayıcına bağlanılıyor",
+      "queued": "Başka bir listenin bitmesi bekleniyor",
+      "categories": "Kategoriler alınıyor",
+      "downloading": "Liste indiriliyor · {}",
+      "retry": "Sağlayıcı meşgul. {} sn sonra yeniden denenecek ({}/{})",
+      "preparing": "Liste hazırlanıyor",
+      "hint": "Büyük listeler bir dakika kadar sürebilir. Liste karta kaydedilir; bir dahaki sefere hemen açılır."
     }
   },
   "download": {

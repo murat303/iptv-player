@@ -522,10 +522,32 @@ static bool isRetryableXtreamResponse(const cpr::Response& r) {
  * server that does not respond shows an error after about a minute instead of several.
  * The credentials travel only as query parameters and are never logged.
  */
+namespace {
+
+std::function<void(const XtreamLoadState&)> xtreamLoadObserver;
+
+/// Hands a list download state to the screen. The observer is read on the UI thread when the state arrives
+/// there, so a screen that closed in the meantime gets nothing.
+void notifyXtreamLoad(const XtreamLoadState& state) {
+    if (state.contentType < 0) return;
+    brls::sync([state]() {
+        if (xtreamLoadObserver) xtreamLoadObserver(state);
+    });
+}
+
+}  // namespace
+
+void TsVitchClient::setXtreamLoadObserver(std::function<void(const XtreamLoadState&)> observer) {
+    xtreamLoadObserver = std::move(observer);
+}
+
+// reportType / reportPhase: the list (0 live, 1 movies, 2 series) whose download screen hears about this
+// request, and what the request is for it; -1 reports nothing
 static void xtreamApiGet(const XtreamAccount& account, const std::string& action,
                          const std::vector<std::pair<std::string, std::string>>& extra,
-                         std::function<void(cpr::Response)> done, bool list = false) {
-    cpr::async([account, action, extra, done, list]() {
+                         std::function<void(cpr::Response)> done, bool list = false, int reportType = -1,
+                         XtreamLoadState::Phase reportPhase = XtreamLoadState::CATEGORIES) {
+    cpr::async([account, action, extra, done, list, reportType, reportPhase]() {
         static const int listRetryMs[] = {1500, 3000, 5000, 8000};
         static const int infoRetryMs[] = {1500, 3000};
         const int* retryDelaysMs       = list ? listRetryMs : infoRetryMs;
@@ -538,20 +560,50 @@ static void xtreamApiGet(const XtreamAccount& account, const std::string& action
         if (!action.empty()) params.Add(cpr::Parameter{"action", action});
         for (const auto& [key, value] : extra) params.Add(cpr::Parameter{key, value});
 
+        auto report = [reportType](XtreamLoadState state) {
+            state.contentType = reportType;
+            notifyXtreamLoad(state);
+        };
         cpr::Response r;
         {
-            std::lock_guard<std::mutex> lock(lane.mutex);
+            // Another request of the lane is running (usually another list): the screen says it waits
+            std::unique_lock<std::mutex> lock(lane.mutex, std::try_to_lock);
+            if (!lock.owns_lock()) {
+                report({0, XtreamLoadState::QUEUED});
+                lock.lock();
+            }
             for (size_t attempt = 0;; attempt++) {
                 if (!waitUnlessStopping(lane.lastRequest + minGap - std::chrono::steady_clock::now())) return;
+                report({0, reportPhase});
+                auto lastReport = std::make_shared<std::chrono::steady_clock::time_point>();
                 r = cpr::Get(cpr::Url{account.baseUrl + "player_api.php"}, params, cpr::Timeout{timeoutMs},
                              cpr::ConnectTimeout{10000}, HTTP::HEADERS, HTTP::COOKIES, HTTP::PROXIES, HTTP::VERIFY,
-                             cpr::ProgressCallback([](...) -> bool { return !xtreamStopping.load(); }));
+                             cpr::ProgressCallback([reportType, reportPhase, lastReport](
+                                                       cpr::cpr_pf_arg_t total, cpr::cpr_pf_arg_t now,
+                                                       cpr::cpr_pf_arg_t, cpr::cpr_pf_arg_t, intptr_t) -> bool {
+                                 // the received bytes, four times a second
+                                 auto time = std::chrono::steady_clock::now();
+                                 if (reportType >= 0 && reportPhase == XtreamLoadState::DOWNLOADING && now > 0 &&
+                                     time - *lastReport >= std::chrono::milliseconds(250)) {
+                                     *lastReport = time;
+                                     XtreamLoadState state{reportType, XtreamLoadState::DOWNLOADING};
+                                     state.bytes = static_cast<int64_t>(now);
+                                     state.total = static_cast<int64_t>(total);
+                                     notifyXtreamLoad(state);
+                                 }
+                                 return !xtreamStopping.load();
+                             }));
                 lane.lastRequest = std::chrono::steady_clock::now();
                 if (xtreamStopping) return;
                 if (!isRetryableXtreamResponse(r) || attempt >= retries) break;
                 brls::Logger::warning("Xtream {}: failed (status {}, {} bytes, {}), retry {} in {} ms", action,
                                       r.status_code, r.text.size(), r.error.message, attempt + 1,
                                       retryDelaysMs[attempt]);
+                XtreamLoadState retry{0, XtreamLoadState::RETRY};
+                retry.attempt        = static_cast<int>(attempt) + 1;
+                retry.attempts       = static_cast<int>(retries);
+                retry.retryInSeconds = (retryDelaysMs[attempt] + 999) / 1000;
+                report(retry);
                 if (!waitUnlessStopping(std::chrono::milliseconds(retryDelaysMs[attempt]))) return;
             }
         }
@@ -581,7 +633,7 @@ static void fetchXtreamCategories(const XtreamAccount& account, const XtreamCont
             brls::Logger::warning("Xtream {}: no categories (status {}), items keep a fallback group", label,
                                   r.status_code);
         done(categories);
-    }, true);
+    }, true, kind.contentType, XtreamLoadState::CATEGORIES);
 }
 
 // Only these keys of the get_*_streams / get_series items are used. Dropping the rest while parsing
@@ -614,6 +666,7 @@ static void xtreamFetchContent(const std::function<void(LiveM3u8ListResult)>& ca
             };
             if (r.error) return fail("Network error: " + r.error.message, -1);
             if (r.status_code != 200) return fail("HTTP error " + std::to_string(r.status_code), r.status_code);
+            notifyXtreamLoad({kind.contentType, XtreamLoadState::PREPARING});
 
             auto parseStart = std::chrono::steady_clock::now();
             nlohmann::json json;
@@ -693,7 +746,7 @@ static void xtreamFetchContent(const std::function<void(LiveM3u8ListResult)>& ca
             brls::sync([callback, sorted]() {
                 if (callback) callback(std::move(*sorted));
             });
-        }, true);
+        }, true, kind.contentType, XtreamLoadState::DOWNLOADING);
     });
 }
 

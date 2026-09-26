@@ -573,6 +573,20 @@
       "live": "Aggiorna canali",
       "movies": "Aggiorna film",
       "series": "Aggiorna serie"
+    },
+    "loading": {
+      "title": {
+        "live": "Caricamento dei canali",
+        "movies": "Caricamento dei film",
+        "series": "Caricamento delle serie"
+      },
+      "connecting": "Connessione al provider",
+      "queued": "In attesa che finisca un altro elenco",
+      "categories": "Recupero delle categorie",
+      "downloading": "Download dell'elenco · {}",
+      "retry": "Il provider è occupato. Nuovo tentativo tra {} s ({}/{})",
+      "preparing": "Preparazione dell'elenco",
+      "hint": "Gli elenchi grandi possono richiedere un minuto. Vengono salvati sulla scheda SD, così la prossima volta si aprono subito."
     }
   },
   "download": {

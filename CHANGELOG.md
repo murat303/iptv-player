@@ -11,6 +11,7 @@ Changes by muratgokce:
 - The next episode starts after a 10-second countdown (can be turned off in the settings).
 - Poster grids with ratings, a "Recently added" group, sorting (server order, recently added, rating, name, year) and search that ignores case and accents.
 - The lists of the provider are kept on the SD card for 24 hours and refreshed in the background; busy providers are retried with pauses.
+- While a list comes from the provider, a card shows what is happening: waiting, downloading (with the size), retries of a busy provider and preparing.
 
 ### Live TV
 - Now / next programme guide (EPG) on the player, refreshed when a programme ends.
@@ -30,6 +31,7 @@ Changes by muratgokce:
 - History: remove one video or clear everything.
 - Account info: status, end date, connections, and a reminder before the subscription ends.
 - Own name and data folder (`/switch/iptv-player`); the settings of TsVitch are copied at the first start.
+- The home screen no longer shows the buttons of the last list (search, favorite, download, refresh, sort).
 - Turkish translation; Italian and Brazilian Portuguese completed; English is the default language.
 - The password is hidden in the settings.
 - No analytics, no ads server and no update check.

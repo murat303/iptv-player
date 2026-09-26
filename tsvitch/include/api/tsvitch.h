@@ -15,6 +15,18 @@ typedef std::vector<LiveM3u8> LiveM3u8ListResult;
 
 using ErrorCallback = std::function<void(const std::string&, int code)>;
 
+/// Progress of a list download (live channels, movies or series), delivered on the UI thread
+struct XtreamLoadState {
+    enum Phase { QUEUED, CATEGORIES, DOWNLOADING, RETRY, PREPARING };
+    int contentType    = 0;
+    Phase phase        = QUEUED;
+    int64_t bytes      = 0;  // DOWNLOADING: received so far
+    int64_t total      = 0;  // DOWNLOADING: 0 when the server does not tell the size
+    int attempt        = 0;  // RETRY: this retry and how many there can be
+    int attempts       = 0;
+    int retryInSeconds = 0;
+};
+
 #define CLIENT tsvitch::TsVitchClient
 #define CLIENT_ERR const std::string &error, int code
 
@@ -54,6 +66,9 @@ public:
 
     // Called when the app closes: Xtream requests still waiting or retrying give up at once
     static void stopRequests();
+
+    // The screen that shows list downloads; nullptr removes it
+    static void setXtreamLoadObserver(std::function<void(const XtreamLoadState&)> observer);
 
     // Status, end date and connections of the subscription (player_api.php without an action)
     static void get_xtream_account_info(const std::function<void(XtreamAccountInfo)>& callback = nullptr,

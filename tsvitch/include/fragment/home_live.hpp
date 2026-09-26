@@ -4,6 +4,7 @@
 
 #include "view/auto_tab_frame.hpp"
 #include "presenter/home_live.hpp"
+#include "api/tsvitch.h"
 
 #include <map>
 #include <mutex>
@@ -164,4 +165,17 @@ private:
     BRLS_BIND(CustomButton, hubSeries, "xtream/hub/series");
     BRLS_BIND(CustomButton, backButton, "xtream/content/back");
     BRLS_BIND(brls::Label, backLabel, "xtream/content/back/label");
+    BRLS_BIND(brls::Box, loadingBox, "home/live/loading");
+    BRLS_BIND(brls::Label, loadingTitle, "home/live/loading/title");
+    BRLS_BIND(brls::Label, loadingDetail, "home/live/loading/detail");
+    BRLS_BIND(brls::Box, loadingBar, "home/live/loading/bar");
+    BRLS_BIND(brls::Box, loadingBarFill, "home/live/loading/bar/fill");
+
+    // The card over the grid while a list comes from the provider (-1: hidden)
+    int loadingType = -1;
+    std::map<int, tsvitch::XtreamLoadState> lastLoadState;
+    void showLoading(int contentType);
+    void hideLoading();
+    void onXtreamLoad(const tsvitch::XtreamLoadState& state);
+    void applyLoadState(const tsvitch::XtreamLoadState& state);
 };

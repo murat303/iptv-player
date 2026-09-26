@@ -561,6 +561,20 @@
       "live": "Refresh channels",
       "movies": "Refresh movies",
       "series": "Refresh series"
+    },
+    "loading": {
+      "title": {
+        "live": "Loading channels",
+        "movies": "Loading movies",
+        "series": "Loading series"
+      },
+      "connecting": "Connecting to your provider",
+      "queued": "Waiting for another list to finish",
+      "categories": "Getting the categories",
+      "downloading": "Downloading the list · {}",
+      "retry": "The provider is busy. Trying again in {} s ({}/{})",
+      "preparing": "Preparing the list",
+      "hint": "Big lists can take a minute. They are saved on the SD card, so next time they open at once."
     }
   },
   "download": {

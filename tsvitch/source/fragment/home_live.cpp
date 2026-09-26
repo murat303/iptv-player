@@ -257,7 +257,14 @@ static const std::string& groupOf(const tsvitch::LiveM3u8& item) {
 static std::string allGroupLabel() { return "tsvitch/xtream/group/all"_i18n; }
 static std::string recentGroupLabel() { return "tsvitch/xtream/group/recent"_i18n; }
 
+namespace {
+// The HomeLive that receives the list download states (one home screen at a time)
+HomeLive* loadObserverOwner = nullptr;
+}  // namespace
+
 HomeLive::HomeLive() {
+    loadObserverOwner = this;
+    CLIENT::setXtreamLoadObserver([this](const tsvitch::XtreamLoadState& state) { this->onXtreamLoad(state); });
     this->inflateFromXMLRes("xml/fragment/home_live.xml");
     brls::Logger::info("Fragment HomeLive: constructor called");
 
@@ -371,6 +378,13 @@ void HomeLive::showContentHub() {
     if (!isXtreamMode) return;
     inHubMode      = true;
     isSearchActive = false;
+    this->hideLoading();
+    // The hub has no list: the list's buttons (search, favorite, download, refresh, sort) do nothing there and
+    // show no hint; a list registers them again. They are replaced by button, not removed by id: borealis gives
+    // replaced actions the same id, so removing by id could take away the Back button.
+    for (auto button : {brls::BUTTON_Y, brls::BUTTON_X, brls::BUTTON_RT, brls::BUTTON_RB, brls::BUTTON_LB})
+        this->registerAction("", button, [](brls::View*) { return true; }, true);
+    sortActionId = -1;
 
     leftColumn->setVisibility(brls::Visibility::GONE);
     recyclingGrid->setVisibility(brls::Visibility::GONE);
@@ -385,6 +399,7 @@ void HomeLive::showContentHub() {
 
 void HomeLive::enterContentType(int contentType, int groupIndex) {
     brls::Logger::info("HomeLive: entering Xtream content type {}", contentType);
+    this->hideLoading();
     inHubMode        = false;
     inSeriesEpisodes = false;
     ProgramConfig::instance().setXtreamContentType(contentType);
@@ -471,10 +486,13 @@ void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) 
         if (!background) {
             waitingType   = contentType;
             waitingSerial = serial;
+            this->showLoading(contentType);
         }
         return;
     }
     fetchingTypes.insert(contentType);
+    lastLoadState.erase(contentType);
+    if (!background) this->showLoading(contentType);
 
     auto isValid = validityFlag;
     // Whether the screen still shows this content type and asked for this download (or waits for it)
@@ -487,6 +505,8 @@ void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) 
     auto onDone = [this, contentType, wanted, isValid](tsvitch::LiveM3u8ListResult result) {
         if (!isValid->load()) return;
         fetchingTypes.erase(contentType);
+        lastLoadState.erase(contentType);
+        if (loadingType == contentType) this->hideLoading();
         if (!result.empty()) {
             auto toSave = std::make_shared<tsvitch::LiveM3u8ListResult>(result);
             cpr::async([contentType, toSave]() { XtreamStore::save(contentType, *toSave); });
@@ -501,6 +521,8 @@ void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) 
     auto onFail = [this, contentType, wanted, isValid](const std::string& error, int) {
         if (!isValid->load()) return;
         fetchingTypes.erase(contentType);
+        lastLoadState.erase(contentType);
+        if (loadingType == contentType) this->hideLoading();
         if (wanted()) this->onError(error);
     };
 
@@ -510,6 +532,68 @@ void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) 
         CLIENT::get_xtream_vod(onDone, onFail);
     else
         CLIENT::get_xtream_channels(onDone, onFail);
+}
+
+void HomeLive::showLoading(int contentType) {
+    loadingType     = contentType;
+    const char* key = contentType == 2   ? "tsvitch/xtream/loading/title/series"
+                      : contentType == 1 ? "tsvitch/xtream/loading/title/movies"
+                                         : "tsvitch/xtream/loading/title/live";
+    loadingTitle->setText(brls::getStr(key));
+    auto known = lastLoadState.find(contentType);
+    if (known != lastLoadState.end()) {
+        this->applyLoadState(known->second);
+    } else {
+        loadingDetail->setText("tsvitch/xtream/loading/connecting"_i18n);
+        loadingBar->setVisibility(brls::Visibility::GONE);
+    }
+    loadingBox->setVisibility(brls::Visibility::VISIBLE);
+}
+
+void HomeLive::hideLoading() {
+    loadingType = -1;
+    loadingBox->setVisibility(brls::Visibility::GONE);
+}
+
+void HomeLive::onXtreamLoad(const tsvitch::XtreamLoadState& state) {
+    // Remembered also for lists downloading in the background: opening one shows where it is
+    lastLoadState[state.contentType] = state;
+    if (state.contentType == loadingType) this->applyLoadState(state);
+}
+
+void HomeLive::applyLoadState(const tsvitch::XtreamLoadState& state) {
+    bool bar = false;
+    switch (state.phase) {
+        case tsvitch::XtreamLoadState::QUEUED:
+            loadingDetail->setText("tsvitch/xtream/loading/queued"_i18n);
+            break;
+        case tsvitch::XtreamLoadState::CATEGORIES:
+            loadingDetail->setText("tsvitch/xtream/loading/categories"_i18n);
+            break;
+        case tsvitch::XtreamLoadState::DOWNLOADING: {
+            if (state.bytes <= 0) {
+                loadingDetail->setText("tsvitch/xtream/loading/connecting"_i18n);
+                break;
+            }
+            double received = state.bytes / 1048576.0;
+            std::string size = state.total > 0 ? fmt::format("{:.1f} / {:.1f} MB", received, state.total / 1048576.0)
+                                               : fmt::format("{:.1f} MB", received);
+            loadingDetail->setText(brls::getStr("tsvitch/xtream/loading/downloading", size));
+            if (state.total > 0) {
+                bar = true;
+                loadingBarFill->setWidthPercentage(std::min(100.0f, 100.0f * state.bytes / state.total));
+            }
+            break;
+        }
+        case tsvitch::XtreamLoadState::RETRY:
+            loadingDetail->setText(
+                brls::getStr("tsvitch/xtream/loading/retry", state.retryInSeconds, state.attempt, state.attempts));
+            break;
+        case tsvitch::XtreamLoadState::PREPARING:
+            loadingDetail->setText("tsvitch/xtream/loading/preparing"_i18n);
+            break;
+    }
+    loadingBar->setVisibility(bar ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
 }
 
 void HomeLive::prefetchMissingLists() {
@@ -778,7 +862,8 @@ void HomeLive::applyGridLayout() {
             return true;
         });
     } else if (!posters && sortActionId >= 0) {
-        this->unregisterAction(sortActionId);
+        // No sort for this list: L does nothing and has no hint (replaced, not removed by id; see showContentHub)
+        this->registerAction("", brls::BUTTON_LB, [](brls::View*) { return true; }, true);
         sortActionId = -1;
     }
 }
@@ -802,6 +887,7 @@ void HomeLive::focusContent() {
 
 void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
     brls::Logger::info("Fragment HomeLive: onLiveList - received {} channels", result.size());
+    this->hideLoading();
     if (result.empty()) {
         recyclingGrid->setEmpty();
         upRecyclingGrid->setVisibility(brls::Visibility::GONE);
@@ -1180,6 +1266,10 @@ void HomeLive::onCreate() {
 
 HomeLive::~HomeLive() { 
     brls::Logger::debug("Fragment HomeLiveActivity: delete");
+    if (loadObserverOwner == this) {
+        CLIENT::setXtreamLoadObserver(nullptr);
+        loadObserverOwner = nullptr;
+    }
     
     // Cancella la sottoscrizione all'evento di uscita solo se è stata creata
     if (hasExitSubscription) {
