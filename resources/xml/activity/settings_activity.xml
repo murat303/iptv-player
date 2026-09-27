@@ -282,6 +282,9 @@
                                                                 id="setting/video/autonext" />
 
                                                         <SelectorCell
+                                                                id="setting/video/next_at" />
+
+                                                        <SelectorCell
                                                                 id="setting/video/inmemory" />
 
                                                 </brls:Box>

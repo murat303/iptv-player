@@ -35,6 +35,16 @@
                                 fontSize="16" />
                 </brls:Box>
 
+                <!-- How far a movie or an episode was played -->
+                <ProgressLine
+                        id="video/card/progress"
+                        positionType="absolute"
+                        positionLeft="10"
+                        positionRight="10"
+                        positionBottom="0"
+                        height="4"
+                        visibility="gone" />
+
         </brls:Box>
 
           <SVGImage
@@ -45,6 +55,15 @@
                         height="30"
                         width="30"
                         SVG="@res/svg/ico-favorites-activate.svg" />
+          <SVGImage
+                        id="video/card/ico/watched"
+                        positionType="absolute"
+                        positionRight="10"
+                        positionTop="10"
+                        height="28"
+                        width="28"
+                        SVG="@res/svg/ico-watched.svg"
+                        visibility="gone" />
         <brls:Box
                 margin="10"
                 axis="column">

@@ -25,7 +25,12 @@
         "audio_quality": "Audio quality",
         "video_format": "Video format",
         "player": "Player",
-        "auto_next": "Play the next episode automatically"
+        "auto_next": "Play the next episode automatically",
+        "next_at": "Show the next episode",
+        "next_at_end": "When the episode ends",
+        "next_at_30": "30 s before the end",
+        "next_at_60": "1 min before the end",
+        "next_at_120": "2 min before the end"
       },
       "image": {
         "header": "Image",
@@ -682,7 +687,10 @@
     "load_error_retry": "The details could not be loaded. The provider may not be answering right now.",
     "retry": "Try again",
     "previous_season": "Previous season",
-    "next_season": "Next season"
+    "next_season": "Next season",
+    "watched": "Watched",
+    "mark_watched": "Mark as watched",
+    "mark_unwatched": "Mark as unwatched"
   },
   "cast": {
     "live_download_error": "Download unavailable",

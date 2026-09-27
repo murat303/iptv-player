@@ -17,6 +17,8 @@
 #include "utils/config_helper.hpp"
 #include "utils/stream_helper.hpp"
 #include "utils/playback_position_manager.hpp"
+#include "utils/watched_manager.hpp"
+#include "utils/activity_helper.hpp"
 
 #include "view/video_view.hpp"
 
@@ -271,6 +273,10 @@ void LiveActivity::onMpvEvent(MpvEventEnum event) {
         this->startLive();
         return;
     }
+    if (event == MpvEventEnum::UPDATE_PROGRESS) {
+        this->onProgress();
+        return;
+    }
     if (event != MpvEventEnum::MPV_LOADED || this->isAd) return;
     // The real duration tells a video from a live stream
     this->detectContentType();
@@ -292,6 +298,9 @@ void LiveActivity::switchTo(size_t index) {
 
     currentChannelIndex = index;
     this->liveData      = channelList[currentChannelIndex];
+    nextOffered         = false;
+    creditsAt           = -1;
+    markedWatched       = false;
     this->video->setTitle(liveData.title);
     this->video->setFavoriteIcon(FavoriteManager::get()->isFavorite(liveData.url));
     // The episode goes to the history, so the series screen offers the right one to continue
@@ -308,12 +317,22 @@ void LiveActivity::switchTo(size_t index) {
     });
 }
 
+bool LiveActivity::currentProgress(double& position, double& duration) {
+    position = MPVCore::instance().getDouble("time-pos");
+    duration = MPVCore::instance().getDouble("duration");
+    return position > 0 && duration > 0;
+}
+
 void LiveActivity::savePlaybackPosition() {
     if (tsvitch::isLiveStream(liveData.url, liveData.title)) return;
-    int64_t position = MPVCore::instance().playback_time;
-    int64_t duration = MPVCore::instance().duration;
-    if (position <= 0 || duration <= 0) return;
-    if (duration - position < 30)
+    double time = 0, length = 0;
+    if (!this->currentProgress(time, length)) return;
+    auto position = static_cast<int64_t>(time);
+    auto duration = static_cast<int64_t>(length);
+    // Played to the credits or near the end: watched, and it starts from the beginning next time
+    if (position >= duration * tsvitch::WatchedManager::THRESHOLD || (markedWatched && position >= creditsAt))
+        tsvitch::WatchedManager::setWatched(liveData.url, true);
+    else if (duration - position < 30)
         tsvitch::PlaybackPositionManager::clearPosition(liveData.url);
     else
         tsvitch::PlaybackPositionManager::savePosition(liveData.url, position, duration);
@@ -322,16 +341,65 @@ void LiveActivity::savePlaybackPosition() {
 void LiveActivity::onVideoEnded() {
     if (this->isAd) return;
     // Watched to the end: next time it starts from the beginning
-    if (!tsvitch::isLiveStream(liveData.url, liveData.title))
-        tsvitch::PlaybackPositionManager::clearPosition(liveData.url);
+    if (!tsvitch::isLiveStream(liveData.url, liveData.title)) tsvitch::WatchedManager::setWatched(liveData.url, true);
     if (!seriesPlaylist || currentChannelIndex + 1 >= channelList.size()) return;
     if (!ProgramConfig::instance().getBoolOption(SettingItem::PLAYER_AUTO_NEXT)) return;
+    // The question may be on the screen already (it came with the closing credits)
+    if (nextDialogOpen && *nextDialogOpen) return;
     this->offerNextEpisode();
+}
+
+void LiveActivity::onProgress() {
+    if (this->isAd || tsvitch::isLiveStream(liveData.url, liveData.title)) return;
+    double position = 0, duration = 0;
+    if (!this->currentProgress(position, duration)) return;
+    // Most of it was played: watched (it still starts from the beginning only once the player is left)
+    if (!markedWatched && position >= duration * tsvitch::WatchedManager::THRESHOLD) {
+        markedWatched = true;
+        tsvitch::WatchedManager::setWatched(liveData.url, true);
+    }
+    if (!seriesPlaylist || nextOffered || currentChannelIndex + 1 >= channelList.size()) return;
+    if (!ProgramConfig::instance().getBoolOption(SettingItem::PLAYER_AUTO_NEXT)) return;
+    if (creditsAt < 0) creditsAt = this->findCreditsStart(duration);
+    if (position < creditsAt) return;
+    // The closing credits: the episode counts as watched, and the next one is offered (Cancel keeps playing)
+    nextOffered = true;
+    if (!markedWatched) {
+        markedWatched = true;
+        tsvitch::WatchedManager::setWatched(liveData.url, true);
+    }
+    this->offerNextEpisode();
+}
+
+double LiveActivity::findCreditsStart(double duration) {
+    // Some files carry chapters; one named for the closing credits (in the second half) tells the moment
+    auto& mpv     = MPVCore::instance();
+    int64_t count = mpv.getInt("chapter-list/count");
+    for (int64_t i = count - 1; i >= 0; i--) {
+        double time = mpv.getDouble(fmt::format("chapter-list/{}/time", i));
+        if (time < duration / 2) break;
+        std::string title = mpv.getString(fmt::format("chapter-list/{}/title", i));
+        std::transform(title.begin(), title.end(), title.begin(), ::tolower);
+        bool credits = title == "ed";
+        for (const char* word : {"credit", "outro", "ending", "end titles", "jenerik"})
+            if (title.find(word) != std::string::npos) credits = true;
+        if (credits) {
+            brls::Logger::info("LiveActivity: closing credits at {:.0f} s (chapter '{}')", time, title);
+            return time;
+        }
+    }
+    static const int before[] = {0, 30, 60, 120};
+    int choice = std::clamp(ProgramConfig::instance().getSettingItem(SettingItem::PLAYER_NEXT_AT, 2), 0, 3);
+    // "When the episode ends": only the end of the file offers it
+    if (before[choice] == 0) return duration + 1;
+    // Never in the first half (short videos)
+    return std::max(duration - before[choice], duration / 2);
 }
 
 void LiveActivity::offerNextEpisode() {
     size_t next  = currentChannelIndex + 1;
     auto open    = std::make_shared<bool>(true);
+    nextDialogOpen = open;
     auto* view   = new NextEpisodeView(open, channelList[next].title);
     auto* dialog = new brls::Dialog(view);
     // Closing the dialog in any way (B too) stops the countdown: the view is deleted with it
@@ -484,5 +552,5 @@ LiveActivity::~LiveActivity() {
     }
     
     lastIndex = currentChannelIndex;
-    if (onCloseCallback) onCloseCallback();
+    if (onCloseCallback && !Intent::isClosing()) onCloseCallback();
 }

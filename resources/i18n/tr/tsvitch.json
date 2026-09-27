@@ -25,7 +25,12 @@
         "audio_quality": "Ses kalitesi",
         "video_format": "Video biçimi",
         "player": "Oynatıcı",
-        "auto_next": "Sonraki bölümü otomatik oynat"
+        "auto_next": "Sonraki bölümü otomatik oynat",
+        "next_at": "Sonraki bölümü göster",
+        "next_at_end": "Bölüm bitince",
+        "next_at_30": "Bitmeden 30 sn önce",
+        "next_at_60": "Bitmeden 1 dk önce",
+        "next_at_120": "Bitmeden 2 dk önce"
       },
       "image": {
         "header": "Görseller",
@@ -682,7 +687,10 @@
     "load_error_retry": "Bilgiler alınamadı. Sağlayıcı şu an yanıt vermiyor olabilir.",
     "retry": "Tekrar dene",
     "previous_season": "Önceki sezon",
-    "next_season": "Sonraki sezon"
+    "next_season": "Sonraki sezon",
+    "watched": "İzlendi",
+    "mark_watched": "İzlendi olarak işaretle",
+    "mark_unwatched": "İzlenmedi olarak işaretle"
   },
   "cast": {
     "live_download_error": "İndirilemez",

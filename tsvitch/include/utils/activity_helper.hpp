@@ -16,7 +16,12 @@ public:
                          bool seriesPlaylist = false);
 
     // Information screen of an Xtream movie or series (series items carry the xtream-series:// url)
-    static void openXtreamDetail(const tsvitch::LiveM3u8& item);
+    // onClose: the screen was left (the list shows what was marked there)
+    static void openXtreamDetail(const tsvitch::LiveM3u8& item, std::function<void()> onClose = nullptr);
+
+    // True once the app is closing: borealis then deletes the bottom screen first, so the close callbacks of the
+    // screens above it must not touch the lists below
+    static bool isClosing();
 
     static void openPgcFilter(const std::string& filter);
 

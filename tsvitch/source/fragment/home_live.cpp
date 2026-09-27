@@ -226,7 +226,7 @@ public:
         const tsvitch::LiveM3u8& item = videoList[index];
         // Movies and series open their information screen (series items carry a sentinel url)
         if (item.type == 1 || item.url.rfind(XTREAM_SERIES_SCHEME, 0) == 0) {
-            Intent::openXtreamDetail(item);
+            Intent::openXtreamDetail(item, [recycler]() { RecyclingGridItemLiveVideoCard::refreshWatchStates(recycler); });
             return;
         }
         // Não registra no histórico conteúdo de categoria adulta (privacidade)

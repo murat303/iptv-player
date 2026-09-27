@@ -19,9 +19,12 @@
 #include "utils/config_helper.hpp"
 #include "utils/image_helper.hpp"
 #include "utils/playback_position_manager.hpp"
+#include "utils/watched_manager.hpp"
 #include "view/custom_button.hpp"
 #include "view/grid_dropdown.hpp"
+#include "view/progress_line.hpp"
 #include "view/recycling_grid.hpp"
+#include "view/svg_image.hpp"
 #include "view/text_box.hpp"
 #include "utils/text_fold.hpp"
 #include "utils/video_download.hpp"
@@ -50,6 +53,13 @@ std::string formatDuration(const std::string& text) {
     if (h > 0) return brls::getStr("tsvitch/detail/hours_minutes", h, m);
     if (m > 0) return brls::getStr("tsvitch/detail/minutes", m);
     return "";
+}
+
+/// "00:44:27" in seconds (0 when the server sent something else)
+int64_t durationSeconds(const std::string& text) {
+    int h = 0, m = 0, s = 0;
+    if (std::sscanf(text.c_str(), "%d:%d:%d", &h, &m, &s) != 3) return 0;
+    return h * 3600 + m * 60 + s;
 }
 
 /// Playback position as "1:02:15" or "12:34"
@@ -111,19 +121,18 @@ class EpisodeCell : public RecyclingGridItem {
 public:
     EpisodeCell() { this->inflateFromXMLRes("xml/views/episode_cell.xml"); }
 
-    void setEpisode(const std::string& seriesTitle, const tsvitch::XtreamEpisode& episode, int64_t position) {
-        this->item = episode.item;
+    // onWatchedChanged: Y marked the episode (the play button above follows)
+    void setEpisode(const std::string& seriesTitle, const tsvitch::XtreamEpisode& episode,
+                    std::function<void()> onWatchedChanged) {
+        this->item             = episode.item;
+        this->length           = durationSeconds(episode.duration);
+        this->onWatchedChanged = std::move(onWatchedChanged);
         title->setText(episodeTitle(seriesTitle, episode));
         std::string rating = episode.item.rating > 0 ? fmt::format("★ {:.1f}", episode.item.rating) : "";
         meta->setText(joinParts({formatDuration(episode.duration), rating, episode.airDate}));
         plot->setText(episode.plot);
         ImageHelper::with(still)->load(episode.item.logo);
-        if (position > 0) {
-            resumeLabel->setText(formatPosition(position));
-            resume->setVisibility(brls::Visibility::VISIBLE);
-        } else {
-            resume->setVisibility(brls::Visibility::GONE);
-        }
+        this->showWatchState();
     }
 
     void prepareForReuse() override { still->setImageFromRes("pictures/video-card-bg.png"); }
@@ -135,10 +144,41 @@ public:
     const tsvitch::LiveM3u8& getItem() const { return item; }
 
 private:
+    // Where the episode was left (time and bar under the still), a check once watched, and Y to mark it
+    void showWatchState() {
+        bool watched     = tsvitch::WatchedManager::isWatched(item.url);
+        int64_t position = 0, duration = 0;
+        bool started     = tsvitch::PlaybackPositionManager::getProgress(item.url, position, duration);
+        if (duration <= 0) duration = length;
+        if (started) {
+            resumeLabel->setText(formatPosition(position));
+            resume->setVisibility(brls::Visibility::VISIBLE);
+        } else {
+            resume->setVisibility(brls::Visibility::GONE);
+        }
+        watchedIcon->setVisibility(watched ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+        float part = started && duration > 0 ? static_cast<float>(position) / duration : watched ? 1.0f : -1.0f;
+        if (part >= 0) progress->setProgress(part);
+        progress->setVisibility(part >= 0 ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+        this->registerAction(watched ? "tsvitch/detail/mark_unwatched"_i18n : "tsvitch/detail/mark_watched"_i18n,
+                             brls::BUTTON_Y, [this](brls::View*) {
+                                 tsvitch::WatchedManager::setWatched(item.url,
+                                                                     !tsvitch::WatchedManager::isWatched(item.url));
+                                 this->showWatchState();
+                                 brls::Application::getGlobalHintsUpdateEvent()->fire();
+                                 if (onWatchedChanged) onWatchedChanged();
+                                 return true;
+                             });
+    }
+
     tsvitch::LiveM3u8 item;
+    int64_t length = 0;
+    std::function<void()> onWatchedChanged;
     BRLS_BIND(brls::Image, still, "episode/still");
     BRLS_BIND(brls::Box, resume, "episode/resume");
     BRLS_BIND(brls::Label, resumeLabel, "episode/resume/label");
+    BRLS_BIND(SVGImage, watchedIcon, "episode/watched");
+    BRLS_BIND(ProgressLine, progress, "episode/progress");
     BRLS_BIND(brls::Label, title, "episode/title");
     BRLS_BIND(brls::Label, meta, "episode/meta");
     BRLS_BIND(TextBox, plot, "episode/plot");
@@ -147,17 +187,15 @@ private:
 class EpisodeDataSource : public RecyclingGridDataSource {
 public:
     EpisodeDataSource(std::string seriesTitle, std::vector<tsvitch::XtreamEpisode> episodes,
-                      std::unordered_map<std::string, int64_t> positions, std::function<void(size_t)> onSelect)
+                      std::function<void(size_t)> onSelect, std::function<void()> onWatchedChanged)
         : seriesTitle(std::move(seriesTitle)),
           episodes(std::move(episodes)),
-          positions(std::move(positions)),
-          onSelect(std::move(onSelect)) {}
+          onSelect(std::move(onSelect)),
+          onWatchedChanged(std::move(onWatchedChanged)) {}
 
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
-        auto* cell           = (EpisodeCell*)recycler->dequeueReusableCell("Cell");
-        const auto& episode  = episodes[index];
-        auto position        = positions.find(episode.item.url);
-        cell->setEpisode(seriesTitle, episode, position != positions.end() ? position->second : 0);
+        auto* cell = (EpisodeCell*)recycler->dequeueReusableCell("Cell");
+        cell->setEpisode(seriesTitle, episodes[index], onWatchedChanged);
         return cell;
     }
 
@@ -172,11 +210,12 @@ public:
 private:
     std::string seriesTitle;
     std::vector<tsvitch::XtreamEpisode> episodes;
-    std::unordered_map<std::string, int64_t> positions;
     std::function<void(size_t)> onSelect;
+    std::function<void()> onWatchedChanged;
 };
 
-XtreamDetailActivity::XtreamDetailActivity(const tsvitch::LiveM3u8& item) : item(item) {
+XtreamDetailActivity::XtreamDetailActivity(const tsvitch::LiveM3u8& item, std::function<void()> onClose)
+    : item(item), onClose(std::move(onClose)) {
     isSeries = item.url.rfind(SERIES_SCHEME, 0) == 0;
 }
 
@@ -184,6 +223,7 @@ XtreamDetailActivity::~XtreamDetailActivity() {
     alive->store(false);
     ImageHelper::clear(poster);
     ImageHelper::clear(backdrop);
+    if (onClose && !Intent::isClosing()) onClose();
 }
 
 void XtreamDetailActivity::onContentAvailable() {
@@ -249,10 +289,13 @@ void XtreamDetailActivity::onContentAvailable() {
                 return true;
             };
         };
+        // Hidden hints: the L and R glyphs beside the season buttons show them (the footer needs the room)
         this->getContentView()->registerAction("tsvitch/detail/previous_season"_i18n, brls::BUTTON_LB,
-                                               changeSeason(-1, brls::FocusDirection::LEFT));
+                                               changeSeason(-1, brls::FocusDirection::LEFT), true);
         this->getContentView()->registerAction("tsvitch/detail/next_season"_i18n, brls::BUTTON_RB,
-                                               changeSeason(1, brls::FocusDirection::RIGHT));
+                                               changeSeason(1, brls::FocusDirection::RIGHT), true);
+        seasonPrev->setText("\uE0E4");
+        seasonNext->setText("\uE0E5");
         this->getContentView()->setActionAvailable(brls::BUTTON_LB, false);
         this->getContentView()->setActionAvailable(brls::BUTTON_RB, false);
 
@@ -345,6 +388,8 @@ void XtreamDetailActivity::showDetail(const tsvitch::XtreamDetail& update) {
         bool severalSeasons = detail.seasons.size() > 1;
         this->getContentView()->setActionAvailable(brls::BUTTON_LB, severalSeasons);
         this->getContentView()->setActionAvailable(brls::BUTTON_RB, severalSeasons);
+        seasonPrev->setVisibility(severalSeasons ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+        seasonNext->setVisibility(severalSeasons ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
         // Open the season of the episode the play button offers (where the user left off)
         this->showSeason(resumeSeason);
     }
@@ -358,11 +403,15 @@ void XtreamDetailActivity::showSeason(size_t index, size_t focusEpisode) {
     auto alive = this->alive;
     // When the focus is in the list it stays there, on the given episode of the new season
     episodes->reloadWithFocus(focusEpisode < season.episodes.size() ? focusEpisode : 0,
-                              new EpisodeDataSource(detail.title, season.episodes,
-                                                    tsvitch::PlaybackPositionManager::getAllPositions(),
-                                                    [this, alive, index](size_t episode) {
-                                                        if (alive->load()) this->playEpisode(index, episode);
-                                                    }));
+                              new EpisodeDataSource(
+                                  detail.title, season.episodes,
+                                  [this, alive, index](size_t episode) {
+                                      if (alive->load()) this->playEpisode(index, episode);
+                                  },
+                                  // Y on a row marked the episode: the play button follows
+                                  [this, alive]() {
+                                      if (alive->load()) this->updatePlayButtons();
+                                  }));
 }
 
 void XtreamDetailActivity::buildSeasonButtons() {
@@ -406,10 +455,18 @@ void XtreamDetailActivity::updateSeasonButtons() {
 
 void XtreamDetailActivity::updatePlayButtons() {
     if (!isSeries) {
-        int64_t position = tsvitch::PlaybackPositionManager::getPosition(item.url);
-        playLabel->setText(position > 0 ? brls::getStr("tsvitch/detail/resume", formatPosition(position))
-                                        : "tsvitch/detail/play"_i18n);
-        restartButton->setVisibility(position > 0 ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+        int64_t position = 0, duration = 0;
+        bool started = tsvitch::PlaybackPositionManager::getProgress(item.url, position, duration);
+        bool watched = tsvitch::WatchedManager::isWatched(item.url);
+        playLabel->setText(started ? brls::getStr("tsvitch/detail/resume", formatPosition(position))
+                                   : "tsvitch/detail/play"_i18n);
+        restartButton->setVisibility(started ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+        watchedChip->setVisibility(watched ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+        // How far it was played, on the poster
+        float part = started && duration > 0 ? static_cast<float>(position) / duration : watched ? 1.0f : -1.0f;
+        if (part >= 0) posterProgress->setProgress(part);
+        posterProgress->setVisibility(part >= 0 ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+        this->registerWatchedAction();
         return;
     }
 
@@ -418,6 +475,7 @@ void XtreamDetailActivity::updatePlayButtons() {
     hasLastWatched = false;
     if (detail.seasons.empty()) {
         playLabel->setText("tsvitch/detail/play"_i18n);
+        this->registerWatchedAction();
         return;
     }
 
@@ -437,28 +495,78 @@ void XtreamDetailActivity::updatePlayButtons() {
         break;
     }
 
-    std::string key = "tsvitch/detail/play_episode";
-    if (found) {
-        const auto& url = detail.seasons[resumeSeason].episodes[resumeEpisode].item.url;
-        if (tsvitch::PlaybackPositionManager::getPosition(url) > 0) {
-            key = "tsvitch/detail/resume_episode";
-        } else {
-            // Watched to the end: offer the next one (the last episode of the series is offered again)
-            if (resumeEpisode + 1 < detail.seasons[resumeSeason].episodes.size()) {
-                resumeEpisode++;
-                key = "tsvitch/detail/next_episode";
-            } else if (resumeSeason + 1 < detail.seasons.size()) {
-                resumeSeason++;
-                resumeEpisode = 0;
-                key = "tsvitch/detail/next_episode";
-            }
+    auto urlOf = [this](size_t s, size_t e) -> const std::string& { return detail.seasons[s].episodes[e].item.url; };
+    // The episode after (s, e): the next one of the season, or the first one of the next season
+    auto advance = [this](size_t& s, size_t& e) {
+        if (e + 1 < detail.seasons[s].episodes.size()) {
+            e++;
+            return true;
         }
+        for (size_t n = s + 1; n < detail.seasons.size(); n++) {
+            if (detail.seasons[n].episodes.empty()) continue;
+            s = n;
+            e = 0;
+            return true;
+        }
+        return false;
+    };
+
+    std::string key  = "tsvitch/detail/play_episode";
+    int64_t position = 0, duration = 0;
+    if (found && tsvitch::PlaybackPositionManager::getProgress(urlOf(resumeSeason, resumeEpisode), position, duration)) {
+        // Left in the middle
+        key = "tsvitch/detail/resume_episode";
+    } else if (!found || tsvitch::WatchedManager::isWatched(urlOf(resumeSeason, resumeEpisode))) {
+        // Watched: the first episode after it that is not watched yet (after the last episode of a season, the
+        // next season's first one). Nothing watched yet: the first episode not marked as watched.
+        size_t s = resumeSeason, e = resumeEpisode;
+        bool ok  = found ? advance(s, e) : !detail.seasons[s].episodes.empty() || advance(s, e);
+        while (ok && tsvitch::WatchedManager::isWatched(urlOf(s, e))) ok = advance(s, e);
+        if (ok) {
+            resumeSeason  = s;
+            resumeEpisode = e;
+            if (found) key = "tsvitch/detail/next_episode";
+        }
+        // Everything after it is watched: the episode watched last is offered again
+    }
+    if (resumeEpisode >= detail.seasons[resumeSeason].episodes.size()) {
+        playLabel->setText("tsvitch/detail/play"_i18n);
+        this->registerWatchedAction();
+        return;
     }
     const auto& season  = detail.seasons[resumeSeason];
     const auto& episode = season.episodes[resumeEpisode];
     int seasonNumber    = season.number > 0 ? season.number : static_cast<int>(resumeSeason) + 1;
     int episodeNumber   = episode.number > 0 ? episode.number : static_cast<int>(resumeEpisode) + 1;
     playLabel->setText(brls::getStr(key, seasonNumber, episodeNumber));
+    this->registerWatchedAction();
+}
+
+std::string XtreamDetailActivity::watchedTarget() const {
+    if (!isSeries) return item.url;
+    if (resumeSeason < detail.seasons.size() && resumeEpisode < detail.seasons[resumeSeason].episodes.size())
+        return detail.seasons[resumeSeason].episodes[resumeEpisode].item.url;
+    return "";
+}
+
+void XtreamDetailActivity::registerWatchedAction() {
+    std::string target = this->watchedTarget();
+    if (target.empty()) return;
+    bool watched = tsvitch::WatchedManager::isWatched(target);
+    this->getContentView()->registerAction(
+        watched ? "tsvitch/detail/mark_unwatched"_i18n : "tsvitch/detail/mark_watched"_i18n, brls::BUTTON_Y,
+        [this](brls::View*) {
+            std::string url = this->watchedTarget();
+            if (url.empty()) return true;
+            tsvitch::WatchedManager::setWatched(url, !tsvitch::WatchedManager::isWatched(url));
+            size_t season = currentSeason;
+            this->updatePlayButtons();
+            // A series: the row of that episode shows its new state
+            if (isSeries) this->showSeason(season);
+            brls::Application::getGlobalHintsUpdateEvent()->fire();
+            return true;
+        });
+    brls::Application::getGlobalHintsUpdateEvent()->fire();
 }
 
 void XtreamDetailActivity::play(bool fromStart) {

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.0 - not released yet
+
+### Watched marks
+- Movies and episodes count as watched after 90% of them was played (as in Plex, Jellyfin and Kodi), or when the next episode is offered at the credits; their cards show a check.
+- Y marks a movie or an episode as watched or not in the detail screens: on a series, the focused episode, or the episode of the play button.
+- Bars under the pictures show how far a movie or an episode was played: in the lists, the movie details, the episodes, favorites and history.
+- The play button of a series skips watched episodes; after the last episode of a season it offers the next season's first one.
+- Episodes watched to the end with an earlier version start as watched.
+
+### Next episode
+- The next episode is offered at the closing credits: at a chapter named for them when the video has chapters, otherwise 30 s, 1 min (the default) or 2 min before the end, or when the episode ends (Settings > Playback).
+- Cancel keeps the credits playing; when the episode ends the next one is offered again.
+
+### Other
+- The L and R glyphs sit beside the season buttons, so the footer has room for Y.
+- Closing the app while a video or a detail screen is open no longer touches the lists behind them.
+
 ## 1.0.0 - 2026-09-26
 
 First release of IPTV Player: a modified version of TsVitch 0.3.2 with the Xtream movies and series work of ratk.

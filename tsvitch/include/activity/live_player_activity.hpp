@@ -63,6 +63,16 @@ protected:
     // End of a video: an episode offers the next one
     void onVideoEnded();
 
+    // Every second of a movie or episode: marks it watched at 90% and offers the next episode at the credits
+    void onProgress();
+
+    // Where the closing credits start: a chapter named so, otherwise the time chosen in the settings
+    double findCreditsStart(double duration);
+
+    // Time and length of the video that plays now, asked from mpv (false until both are known). The cached
+    // values of MPVCore still belong to the previous video until the new one is loaded.
+    bool currentProgress(double& position, double& duration);
+
     void offerNextEpisode();
 
     // Programme guide of a live Xtream channel under the title: asked once the channel stays a moment
@@ -78,6 +88,13 @@ protected:
 
     bool seriesPlaylist     = false;
     size_t nextEpisodeDelay = 0;
+    // For the video that plays: the next episode was offered, where its credits start (-1: not known yet),
+    // it was marked watched while playing
+    bool nextOffered   = false;
+    double creditsAt   = -1;
+    bool markedWatched = false;
+    // True while the next episode question is on the screen
+    std::shared_ptr<bool> nextDialogOpen;
 
     std::vector<tsvitch::XtreamEpgEntry> epg;
     size_t epgDelay = 0;

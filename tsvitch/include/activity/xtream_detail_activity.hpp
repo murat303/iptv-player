@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <borealis/core/activity.hpp>
 #include <borealis/core/bind.hpp>
@@ -14,6 +15,7 @@ class Image;
 class Label;
 }  // namespace brls
 class CustomButton;
+class ProgressLine;
 class RecyclingGrid;
 class TextBox;
 
@@ -23,7 +25,8 @@ class XtreamDetailActivity : public brls::Activity {
 public:
     CONTENT_FROM_XML_RES("activity/xtream_detail.xml");
 
-    explicit XtreamDetailActivity(const tsvitch::LiveM3u8& item);
+    // onClose: called when the screen is left
+    explicit XtreamDetailActivity(const tsvitch::LiveM3u8& item, std::function<void()> onClose = nullptr);
 
     ~XtreamDetailActivity() override;
 
@@ -49,6 +52,12 @@ private:
 
     void play(bool fromStart);
 
+    // Y marks the movie, or on a series the episode of the play button, as watched or not (the hint says which)
+    void registerWatchedAction();
+
+    // What Y marks outside the episode list (empty: nothing yet)
+    std::string watchedTarget() const;
+
     void playEpisode(size_t season, size_t episode);
 
     void toggleFavorite();
@@ -56,6 +65,7 @@ private:
     void updateFavoriteLabel();
 
     tsvitch::LiveM3u8 item;
+    std::function<void()> onClose;
     tsvitch::XtreamDetail detail;
     bool isSeries        = false;
     size_t currentSeason = 0;
@@ -70,6 +80,10 @@ private:
 
     BRLS_BIND(brls::Image, backdrop, "detail/backdrop");
     BRLS_BIND(brls::Image, poster, "detail/poster");
+    BRLS_BIND(ProgressLine, posterProgress, "detail/poster/progress");
+    BRLS_BIND(brls::Box, watchedChip, "detail/watched");
+    BRLS_BIND(brls::Label, seasonPrev, "detail/seasons/prev");
+    BRLS_BIND(brls::Label, seasonNext, "detail/seasons/next");
     BRLS_BIND(brls::Label, facts, "detail/facts");
     BRLS_BIND(TextBox, title, "detail/title");
     BRLS_BIND(brls::Label, subtitle, "detail/subtitle");

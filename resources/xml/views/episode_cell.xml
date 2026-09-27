@@ -26,7 +26,7 @@
                 id="episode/resume"
                 positionType="absolute"
                 positionRight="6"
-                positionBottom="6"
+                positionBottom="14"
                 height="22"
                 paddingLeft="6"
                 paddingRight="6"
@@ -39,6 +39,24 @@
                     fontSize="13"
                     textColor="#FFFFFF"/>
         </brls:Box>
+        <!-- Watched, and how far it was played -->
+        <SVGImage
+                id="episode/watched"
+                positionType="absolute"
+                positionTop="6"
+                positionRight="6"
+                width="22"
+                height="22"
+                SVG="@res/svg/ico-watched.svg"
+                visibility="gone"/>
+        <ProgressLine
+                id="episode/progress"
+                positionType="absolute"
+                positionLeft="6"
+                positionRight="6"
+                positionBottom="5"
+                height="4"
+                visibility="gone"/>
     </brls:Box>
 
     <brls:Box

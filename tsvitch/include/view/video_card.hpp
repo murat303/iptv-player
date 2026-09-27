@@ -7,6 +7,7 @@
 
 class SVGImage;
 class TextBox;
+class ProgressLine;
 
 class BaseVideoCard : public RecyclingGridItem {
 public:
@@ -36,6 +37,12 @@ public:
 
     static RecyclingGridItemLiveVideoCard* createPoster();
 
+    // Movies and episodes: a check once watched, and a bar under the picture with how far they were played
+    void showWatchState();
+
+    // After a detail screen marked something: the cards on the screen show it without a reload
+    static void refreshWatchStates(RecyclingGrid* grid);
+
 private:
 tsvitch::LiveM3u8 liveData;
     bool posterLayout = false;
@@ -46,4 +53,6 @@ tsvitch::LiveM3u8 liveData;
     BRLS_BIND(brls::Box, boxHint, "video/card/hint");
     BRLS_BIND(SVGImage, svgUp, "video/svg/up");
     BRLS_BIND(SVGImage, svgFavoriteIcon, "video/card/ico/favorite");
+    BRLS_BIND(SVGImage, svgWatched, "video/card/ico/watched");
+    BRLS_BIND(ProgressLine, progressLine, "video/card/progress");
 };

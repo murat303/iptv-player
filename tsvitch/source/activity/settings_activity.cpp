@@ -578,6 +578,14 @@ void SettingsActivity::onContentAvailable() {
 #endif
     btnAutoNext->init("tsvitch/setting/app/playback/auto_next"_i18n, conf.getBoolOption(SettingItem::PLAYER_AUTO_NEXT),
                       [](bool value) { ProgramConfig::instance().setSettingItem(SettingItem::PLAYER_AUTO_NEXT, value); });
+    selectorNextAt->init(
+        "tsvitch/setting/app/playback/next_at"_i18n,
+        {"tsvitch/setting/app/playback/next_at_end"_i18n, "tsvitch/setting/app/playback/next_at_30"_i18n,
+         "tsvitch/setting/app/playback/next_at_60"_i18n, "tsvitch/setting/app/playback/next_at_120"_i18n},
+        std::clamp(conf.getSettingItem(SettingItem::PLAYER_NEXT_AT, 2), 0, 3), [](int data) {
+            ProgramConfig::instance().setSettingItem(SettingItem::PLAYER_NEXT_AT, data);
+            return true;
+        });
     btnXtreamAccount->registerClickAction([](brls::View*) {
         tsvitch::showXtreamAccountInfo();
         return true;

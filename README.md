@@ -15,9 +15,11 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
 ## Features
 
 - **Live TV:** categories, channel logos, favorites, a now / next programme guide in the player, L and R to change the channel.
-- **Movies and series:** poster grids with ratings and years, sorting (recently added, rating, name, year), search, and detail pages with the plot, cast, backdrop and a resume button.
-- **Series:** seasons and episodes with stills and progress, L and R to change the season, and the next episode after a 10-second countdown.
+- **Movies and series:** poster grids with ratings and years, watched marks and progress bars, sorting (recently added, rating, name, year), search, and detail pages with the plot, cast, backdrop and a resume button.
+- **Series:** seasons and episodes with stills and progress, L and R to change the season, and the next episode offered at the closing credits.
 - **Player:** audio and subtitle tracks, subtitle size / color / background / position / delay, 10-second skips with the D-pad, and playback resumes where you left off.
+- **Watched:** movies and episodes count as watched after 90% of them was played, like in Plex, Jellyfin and Kodi.
+  Y marks them by hand in the detail screens, and the play button of a series goes on with the first unwatched episode.
 - **Downloads:** save movies and episodes to the SD card, pause and continue them, and watch them without internet.
 - **Saved lists:** the lists of the provider are kept on the SD card and open at once. They are refreshed in the
   background every day, every week or only with the refresh button, and a card shows how the download goes.
@@ -94,7 +96,7 @@ The app is in English by default. The language can be changed in **Settings → 
 | A | Open | Play | Play / pause |
 | B | Back | Back | Back |
 | X | Favorite | Favorite | |
-| Y | Search | | Show / hide controls |
+| Y | Search | Mark as watched | Show / hide controls |
 | L | Sort | Previous season | Previous channel |
 | R | Refresh | Next season | Next channel |
 | ZR | Download | Download | Volume with ↑ / ↓ |
@@ -160,6 +162,9 @@ SD kartta `/switch/iptv-player/` klasörüne kopyala. Homebrew menüsünden ya d
 
 **İlk açılış:** Ayarlar → IPTV bölümünden Xtream Codes ya da M3U8 seç ve hesap bilgilerini gir.
 Arayüzü Türkçe yapmak için: Settings → UI → Language → Türkçe.
+
+**İzlendi:** %90'ı izlenen film ve bölümler izlendi sayılır. Detay ekranlarında Y ile elle de işaretleyebilirsin.
+Sonraki bölüm, videoda jenerik işareti varsa orada, yoksa ayarlardan seçtiğin sürede (varsayılan: bitmeden 1 dk önce) sorulur.
 
 **Listeler:** Sağlayıcının listeleri SD karta kaydedilir ve hemen açılır. Arka planda her gün yenilenir;
 bunu Ayarlar → IPTV bölümünden haftada bire çekebilir ya da kapatabilirsin.

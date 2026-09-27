@@ -114,6 +114,9 @@ enum class SettingItem {
     PLAYER_SUB_POSITION,
     // After an episode ends the next one starts after a short countdown (on by default)
     PLAYER_AUTO_NEXT,
+    // When the next episode is offered: 0 when the episode ends, 1/2/3 30 s/1 min/2 min before the end (a
+    // chapter named for the closing credits wins)
+    PLAYER_NEXT_AT,
     // Unix time of the last daily subscription check (the reminder before it ends)
     XTREAM_ACCOUNT_CHECKED,
     // Background refresh of the saved lists: 0 every day, 1 every week, 2 only with the refresh button

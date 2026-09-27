@@ -42,6 +42,24 @@
                 height="26"
                 width="26"
                 SVG="@res/svg/ico-favorites-activate.svg"/>
+        <!-- Watched, and how far it was played -->
+        <SVGImage
+                id="video/card/ico/watched"
+                positionType="absolute"
+                positionRight="6"
+                positionBottom="16"
+                height="24"
+                width="24"
+                SVG="@res/svg/ico-watched.svg"
+                visibility="gone"/>
+        <ProgressLine
+                id="video/card/progress"
+                positionType="absolute"
+                positionLeft="8"
+                positionRight="8"
+                positionBottom="7"
+                height="4"
+                visibility="gone"/>
     </brls:Box>
 
     <TextBox

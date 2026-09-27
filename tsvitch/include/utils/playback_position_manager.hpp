@@ -90,6 +90,16 @@ public:
         }
     }
     
+    /// Saved position and length (seconds) of a video, for the progress bars; false when nothing is saved
+    static bool getProgress(const std::string& url, int64_t& position, int64_t& duration) {
+        const nlohmann::json& data = cache();
+        auto it = data.find(url);
+        if (it == data.end() || !it->is_object() || !it->contains("position") || expired(*it)) return false;
+        position = it->value("position", int64_t{0});
+        duration = it->value("duration", int64_t{0});
+        return position > 0;
+    }
+
     /// Saved positions (seconds) of every video, read in one go for screens that show many of them
     static std::unordered_map<std::string, int64_t> getAllPositions() {
         std::unordered_map<std::string, int64_t> positions;
@@ -159,11 +169,28 @@ public:
     }
     
 private:
+    static bool expired(const nlohmann::json& entry) {
+        if (!entry.contains("timestamp")) return false;
+        auto savedTime = std::chrono::system_clock::time_point(
+            std::chrono::system_clock::duration(entry["timestamp"].get<int64_t>()));
+        return std::chrono::duration_cast<std::chrono::hours>(std::chrono::system_clock::now() - savedTime).count() /
+                   24 >
+               30;
+    }
+
+    // The file is read once; cards ask for many positions while a list scrolls
+    static nlohmann::json& cache() {
+        static nlohmann::json data = readFile();
+        return data;
+    }
+
+    static nlohmann::json loadCache() { return cache(); }
+
     static std::string getCachePath() {
         return ProgramConfig::instance().getConfigDir() + "/playback_positions.json";
     }
     
-    static nlohmann::json loadCache() {
+    static nlohmann::json readFile() {
         std::string cachePath = getCachePath();
         
         std::ifstream file(cachePath);
@@ -184,6 +211,7 @@ private:
     }
     
     static void saveCache(const nlohmann::json& data) {
+        cache()               = data;
         std::string cachePath = getCachePath();
         
         std::ofstream file(cachePath);

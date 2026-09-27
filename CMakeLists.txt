@@ -108,7 +108,7 @@ add_definitions(-DFONS_HASH_LUT_SIZE=4096)
 # Project Info
 project(iptv_player)
 set(VERSION_MAJOR "1")
-set(VERSION_MINOR "0")
+set(VERSION_MINOR "1")
 set(VERSION_REVISION "0")
 if (NOT VERSION_BUILD)
     set(VERSION_BUILD "0")

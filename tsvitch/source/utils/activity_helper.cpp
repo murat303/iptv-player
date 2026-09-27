@@ -20,6 +20,20 @@
 
 using namespace brls::literals;
 
+namespace {
+bool closing = false;
+
+// Once, before the first screen with a close callback opens
+void watchClosing() {
+    static bool subscribed = false;
+    if (subscribed) return;
+    subscribed = true;
+    brls::Application::getExitEvent()->subscribe([]() { closing = true; });
+}
+}  // namespace
+
+bool Intent::isClosing() { return closing; }
+
 std::vector<tsvitch::LiveM3u8> sameKindPlaylist(const std::vector<tsvitch::LiveM3u8>& items, size_t index,
                                                 size_t& start) {
     std::vector<tsvitch::LiveM3u8> playlist;
@@ -50,13 +64,15 @@ void Intent::openLive(const std::vector<tsvitch::LiveM3u8>& channelList, size_t 
         return;
     }
 
+    watchClosing();
     auto activity = new LiveActivity(channelList, index, onClose, seriesPlaylist);
     brls::Application::pushActivity(activity, brls::TransitionAnimation::NONE);
     registerFullscreen(activity);
 }
 
-void Intent::openXtreamDetail(const tsvitch::LiveM3u8& item) {
-    auto activity = new XtreamDetailActivity(item);
+void Intent::openXtreamDetail(const tsvitch::LiveM3u8& item, std::function<void()> onClose) {
+    watchClosing();
+    auto activity = new XtreamDetailActivity(item, std::move(onClose));
     brls::Application::pushActivity(activity);
     registerFullscreen(activity);
 }

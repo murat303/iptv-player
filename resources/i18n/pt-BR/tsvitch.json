@@ -25,7 +25,12 @@
         "audio_quality": "Qualidade do áudio",
         "video_format": "Formato de vídeo",
         "player": "Player",
-        "auto_next": "Reproduzir o próximo episódio automaticamente"
+        "auto_next": "Reproduzir o próximo episódio automaticamente",
+        "next_at": "Mostrar o próximo episódio",
+        "next_at_end": "Quando o episódio termina",
+        "next_at_30": "30 s antes do fim",
+        "next_at_60": "1 min antes do fim",
+        "next_at_120": "2 min antes do fim"
       },
       "image": {
         "header": "Imagem",
@@ -682,7 +687,10 @@
     "load_error_retry": "Não foi possível carregar os detalhes. O provedor pode não estar respondendo agora.",
     "retry": "Tentar de novo",
     "previous_season": "Temporada anterior",
-    "next_season": "Próxima temporada"
+    "next_season": "Próxima temporada",
+    "watched": "Assistido",
+    "mark_watched": "Marcar como assistido",
+    "mark_unwatched": "Marcar como não assistido"
   },
   "cast": {
     "live_download_error": "Download indisponível",

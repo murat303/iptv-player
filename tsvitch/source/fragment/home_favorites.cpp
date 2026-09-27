@@ -40,7 +40,7 @@ public:
         const auto& item = favoriteChannels[index];
         // Movies and series open their information screen (a series item is not a playable url)
         if (item.type == 1 || item.url.rfind("xtream-series://", 0) == 0) {
-            Intent::openXtreamDetail(item);
+            Intent::openXtreamDetail(item, [recycler]() { RecyclingGridItemLiveVideoCard::refreshWatchStates(recycler); });
             return;
         }
         HistoryManager::get()->add(item);

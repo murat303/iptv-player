@@ -77,6 +77,7 @@ private:
     BRLS_BIND(brls::BooleanCell, btnQuality, "setting/video/quality");
     BRLS_BIND(brls::BooleanCell, btnHWDEC, "setting/video/hwdec");
     BRLS_BIND(brls::BooleanCell, btnAutoNext, "setting/video/autonext");
+    BRLS_BIND(TsVitchSelectorCell, selectorNextAt, "setting/video/next_at");
     // BRLS_BIND(brls::BooleanCell, btnAutoPlay, "setting/video/auto_play");
     BRLS_BIND(TsVitchSelectorCell, selectorInmemory, "setting/video/inmemory");
     BRLS_BIND(TsVitchSelectorCell, selectorFormat, "setting/video/format");

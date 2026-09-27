@@ -6,6 +6,8 @@
 #include "utils/number_helper.hpp"
 #include "utils/image_helper.hpp"
 #include "core/FavoriteManager.hpp"
+#include "utils/watched_manager.hpp"
+#include "view/progress_line.hpp"
 #include <pystring.h>
 
 using namespace brls::literals;
@@ -50,6 +52,26 @@ void RecyclingGridItemLiveVideoCard::setChannel(tsvitch::LiveM3u8 liveData, bool
         this->svgFavoriteIcon->setVisibility(brls::Visibility::VISIBLE);
     } else
         this->svgFavoriteIcon->setVisibility(brls::Visibility::GONE);
+    this->showWatchState();
+}
+
+void RecyclingGridItemLiveVideoCard::showWatchState() {
+    // Channels and series cards have neither (a series card stands for all of its episodes)
+    bool video       = liveData.type != 0;
+    bool watched     = video && tsvitch::WatchedManager::isWatched(liveData.url);
+    int64_t position = 0, duration = 0;
+    bool started = video && tsvitch::PlaybackPositionManager::getProgress(liveData.url, position, duration) &&
+                   duration > 0;
+    float part = started ? static_cast<float>(position) / duration : watched ? 1.0f : -1.0f;
+    svgWatched->setVisibility(watched ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    if (part >= 0) progressLine->setProgress(part);
+    progressLine->setVisibility(part >= 0 ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+}
+
+void RecyclingGridItemLiveVideoCard::refreshWatchStates(RecyclingGrid* grid) {
+    if (!grid) return;
+    for (auto* cell : grid->getGridItems())
+        if (auto* card = dynamic_cast<RecyclingGridItemLiveVideoCard*>(cell)) card->showWatchState();
 }
 
 tsvitch::LiveM3u8 RecyclingGridItemLiveVideoCard::getChannel() { return this->liveData; }

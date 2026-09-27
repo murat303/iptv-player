@@ -38,7 +38,8 @@ public:
     void onItemSelected(RecyclingGrid* recycler, size_t index) override {
         // A series item is not a playable url: open its information screen
         if (recentChannels[index].url.rfind("xtream-series://", 0) == 0) {
-            Intent::openXtreamDetail(recentChannels[index]);
+            Intent::openXtreamDetail(recentChannels[index],
+                                     [recycler]() { RecyclingGridItemLiveVideoCard::refreshWatchStates(recycler); });
             return;
         }
         HistoryManager::get()->add(recentChannels[index]);

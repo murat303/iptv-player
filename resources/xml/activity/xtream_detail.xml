@@ -39,13 +39,26 @@
                 width="250"
                 height="auto"
                 shrink="0">
-            <brls:Image
-                    id="detail/poster"
+            <brls:Box
                     width="250"
-                    height="375"
-                    cornerRadius="10"
-                    scalingType="fill"
-                    backgroundColor="@theme/color/grey_1"/>
+                    height="375">
+                <brls:Image
+                        id="detail/poster"
+                        width="250"
+                        height="375"
+                        cornerRadius="10"
+                        scalingType="fill"
+                        backgroundColor="@theme/color/grey_1"/>
+                <!-- How far the movie was played -->
+                <ProgressLine
+                        id="detail/poster/progress"
+                        positionType="absolute"
+                        positionLeft="12"
+                        positionRight="12"
+                        positionBottom="10"
+                        height="5"
+                        visibility="gone"/>
+            </brls:Box>
             <brls:Label
                     id="detail/facts"
                     width="250"
@@ -75,6 +88,26 @@
                     axis="row"
                     alignItems="center"
                     marginTop="10">
+                <brls:Box
+                        id="detail/watched"
+                        height="28"
+                        paddingLeft="7"
+                        paddingRight="10"
+                        marginRight="12"
+                        cornerRadius="6"
+                        alignItems="center"
+                        backgroundColor="#FFFFFF1F"
+                        visibility="gone">
+                    <SVGImage
+                            width="18"
+                            height="18"
+                            marginRight="6"
+                            SVG="@res/svg/ico-watched.svg"/>
+                    <brls:Label
+                            fontSize="16"
+                            textColor="#FFFFFF"
+                            text="@i18n/tsvitch/detail/watched"/>
+                </brls:Box>
                 <brls:Box
                         id="detail/rating/box"
                         height="28"
@@ -201,19 +234,38 @@
                     marginTop="16"
                     visibility="gone">
                 <!-- One button per season, scrolling sideways when there are many -->
-                <brls:HScrollingFrame
-                        id="detail/seasons/scroll"
+                <brls:Box
+                        axis="row"
+                        alignItems="center"
                         width="100%"
                         height="50">
-                    <brls:Box
-                            id="detail/seasons"
-                            axis="row"
-                            width="auto"
-                            height="auto"
-                            alignItems="center"
-                            paddingTop="4"
-                            paddingBottom="4"/>
-                </brls:HScrollingFrame>
+                    <!-- L and R change the season; their hints live here, the footer has no room -->
+                    <brls:Label
+                            id="detail/seasons/prev"
+                            fontSize="26"
+                            marginRight="12"
+                            textColor="#FFFFFF"
+                            visibility="gone"/>
+                    <brls:HScrollingFrame
+                            id="detail/seasons/scroll"
+                            grow="1"
+                            height="50">
+                        <brls:Box
+                                id="detail/seasons"
+                                axis="row"
+                                width="auto"
+                                height="auto"
+                                alignItems="center"
+                                paddingTop="4"
+                                paddingBottom="4"/>
+                    </brls:HScrollingFrame>
+                    <brls:Label
+                            id="detail/seasons/next"
+                            fontSize="26"
+                            marginLeft="12"
+                            textColor="#FFFFFF"
+                            visibility="gone"/>
+                </brls:Box>
                 <RecyclingGrid
                         id="detail/episodes"
                         grow="1"
