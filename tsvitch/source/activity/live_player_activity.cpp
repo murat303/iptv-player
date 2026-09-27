@@ -333,13 +333,19 @@ void LiveActivity::savePlaybackPosition() {
     if (!this->currentProgress(time, length)) return;
     auto position = static_cast<int64_t>(time);
     auto duration = static_cast<int64_t>(length);
-    // Played to the credits or near the end: watched, and it starts from the beginning next time
-    if (position >= duration * tsvitch::WatchedManager::THRESHOLD || (markedWatched && position >= creditsAt))
-        tsvitch::WatchedManager::setWatched(liveData.url, true);
-    else if (duration - position < 30)
-        tsvitch::PlaybackPositionManager::clearPosition(liveData.url);
-    else
-        tsvitch::PlaybackPositionManager::savePosition(liveData.url, position, duration);
+    bool mostly = position >= duration * tsvitch::WatchedManager::THRESHOLD;
+    // The credits were reached (the next episode was offered) or only the last seconds are left: it starts from
+    // the beginning next time, and counts as watched when most of it was played
+    if ((markedWatched && creditsAt >= 0 && position >= creditsAt) || duration - position < 30) {
+        if (mostly || markedWatched)
+            tsvitch::WatchedManager::setWatched(liveData.url, true);
+        else
+            tsvitch::PlaybackPositionManager::clearPosition(liveData.url);
+        return;
+    }
+    // Some of it is left: it resumes there, also when it already counts as watched
+    tsvitch::PlaybackPositionManager::savePosition(liveData.url, position, duration);
+    if (mostly) tsvitch::WatchedManager::setWatched(liveData.url, true, false);
 }
 
 void LiveActivity::onVideoEnded() {
@@ -357,10 +363,10 @@ void LiveActivity::onProgress() {
     if (this->isAd || tsvitch::isLiveStream(liveData.url, liveData.title)) return;
     double position = 0, duration = 0;
     if (!this->currentProgress(position, duration)) return;
-    // Most of it was played: watched (it still starts from the beginning only once the player is left)
+    // Most of it was played: watched (where it is left is decided when the player is left)
     if (!markedWatched && position >= duration * tsvitch::WatchedManager::THRESHOLD) {
         markedWatched = true;
-        tsvitch::WatchedManager::setWatched(liveData.url, true);
+        tsvitch::WatchedManager::setWatched(liveData.url, true, false);
     }
     if (!seriesPlaylist || nextOffered || currentChannelIndex + 1 >= channelList.size()) return;
     if (!ProgramConfig::instance().getBoolOption(SettingItem::PLAYER_AUTO_NEXT)) return;
@@ -370,7 +376,7 @@ void LiveActivity::onProgress() {
     nextOffered = true;
     if (!markedWatched) {
         markedWatched = true;
-        tsvitch::WatchedManager::setWatched(liveData.url, true);
+        tsvitch::WatchedManager::setWatched(liveData.url, true, false);
     }
     this->offerNextEpisode();
 }

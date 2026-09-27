@@ -25,10 +25,11 @@ public:
 
     static bool isWatched(const std::string& url) { return !url.empty() && items().count(url) > 0; }
 
-    /// Marking as watched also forgets where the video was left: it starts from the beginning next time
-    static void setWatched(const std::string& url, bool watched) {
+    /// forgetPosition: a video marked watched starts from the beginning next time (a mark by hand, the end of
+    /// the video, its credits). The player keeps the position when most of it was played but some is left.
+    static void setWatched(const std::string& url, bool watched, bool forgetPosition = true) {
         if (url.empty()) return;
-        if (watched) PlaybackPositionManager::clearPosition(url);
+        if (watched && forgetPosition) PlaybackPositionManager::clearPosition(url);
         auto& marks = items();
         if (watched == (marks.count(url) > 0)) return;
         if (watched)

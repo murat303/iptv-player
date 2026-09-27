@@ -3,6 +3,7 @@
 ## 1.1.1 - 2026-09-27
 
 - An audio or subtitle track picked by hand stays picked in the next episode also when the track has no language: it is found again by its title, or within the same series by its place in the list. Before, the next episode went back to the file's default track.
+- A movie or an episode that counts as watched (90%) but was left before its end resumes where it was left. Only its credits (where the next episode is offered), its last 30 seconds or a mark by hand start it from the beginning.
 
 ## 1.1.0 - 2026-09-27
 
