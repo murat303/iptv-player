@@ -815,7 +815,7 @@
     "need_xtream": "The discovery page needs an Xtream Codes account (Settings > IPTV).",
     "no_lists": "The movie and series lists are being downloaded. The page fills in when they are ready.",
     "empty": "Nothing to discover yet.",
-    "tmdb_off": "TMDB is turned off: movie genres, collections and recommendations are missing (Settings > Discover).",
+    "tmdb_off": "TMDB is turned off: nothing new is asked, so the trending, popular and recommendation shelves are hidden (Settings > Discover).",
     "tmdb_missing": "This build has no TMDB key: movie genres, collections and recommendations are missing.",
     "genres_need_tmdb": "Movie genres come from TMDB, which is turned off (Settings > Discover).",
     "genres_wait": "The genres are being prepared. Look again in a few minutes.",

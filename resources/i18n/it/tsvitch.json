@@ -827,7 +827,7 @@
     "need_xtream": "La pagina Scopri richiede un account Xtream Codes (Impostazioni > IPTV).",
     "no_lists": "Download delle liste di film e serie in corso. La pagina si riempie quando sono pronte.",
     "empty": "Ancora niente da scoprire.",
-    "tmdb_off": "TMDB è disattivato: mancano generi dei film, raccolte e consigli (Impostazioni > Scopri).",
+    "tmdb_off": "TMDB è disattivato: nessuna nuova richiesta, le righe di tendenza, popolari e dei consigli sono nascoste (Impostazioni > Scopri).",
     "tmdb_missing": "Questa versione non ha una chiave TMDB: mancano generi dei film, raccolte e consigli.",
     "genres_need_tmdb": "I generi dei film vengono da TMDB, che è disattivato (Impostazioni > Scopri).",
     "genres_wait": "Generi in preparazione. Riprova tra qualche minuto.",

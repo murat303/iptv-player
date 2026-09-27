@@ -815,7 +815,7 @@
     "need_xtream": "Keşfet sayfası bir Xtream Codes hesabı ister (Ayarlar > IPTV).",
     "no_lists": "Film ve dizi listeleri indiriliyor. Hazır olunca sayfa dolar.",
     "empty": "Henüz keşfedilecek bir şey yok.",
-    "tmdb_off": "TMDB kapalı: film türleri, koleksiyonlar ve öneriler görünmüyor (Ayarlar > Keşfet).",
+    "tmdb_off": "TMDB kapalı: yeni bilgi istenmiyor; trend, popüler ve öneri satırları görünmüyor (Ayarlar > Keşfet).",
     "tmdb_missing": "Bu sürümde TMDB anahtarı yok: film türleri, koleksiyonlar ve öneriler görünmüyor.",
     "genres_need_tmdb": "Film türleri TMDB'den gelir; TMDB kapalı (Ayarlar > Keşfet).",
     "genres_wait": "Türler hazırlanıyor. Birkaç dakika sonra tekrar bakın.",

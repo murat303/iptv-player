@@ -815,7 +815,7 @@
     "need_xtream": "A página Descobrir precisa de uma conta Xtream Codes (Configurações > IPTV).",
     "no_lists": "As listas de filmes e séries estão sendo baixadas. A página se completa quando estiverem prontas.",
     "empty": "Ainda não há nada para descobrir.",
-    "tmdb_off": "O TMDB está desligado: faltam gêneros de filmes, coleções e recomendações (Configurações > Descobrir).",
+    "tmdb_off": "O TMDB está desligado: nada novo é pedido, e as fileiras de tendências, populares e recomendações ficam ocultas (Configurações > Descobrir).",
     "tmdb_missing": "Esta versão não tem chave do TMDB: faltam gêneros de filmes, coleções e recomendações.",
     "genres_need_tmdb": "Os gêneros dos filmes vêm do TMDB, que está desligado (Configurações > Descobrir).",
     "genres_wait": "Os gêneros estão sendo preparados. Tente de novo em alguns minutos.",
