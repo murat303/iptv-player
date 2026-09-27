@@ -22,19 +22,38 @@ struct TmdbRef {
     int id   = 0;
 };
 
+/// Someone of the cast or the director, for the detail screen
+struct TmdbPerson {
+    std::string name;
+    std::string role;   // the character, or "director" for the director
+    std::string photo;  // picture url (small size), empty when TMDB has none
+};
+
+/// What the detail screen of a title shows from TMDB
+struct TmdbDetails {
+    bool ok       = false;
+    float vote    = 0;
+    int votes     = 0;
+    int collection = 0;  // the film series of a movie
+    std::string overview;
+    std::vector<TmdbPerson> people;  // the director first (movies), then the cast
+    std::vector<TmdbRef> recommendations;
+};
+
 /**
  * The app's connection to TMDB (themoviedb.org), for the discovery screen and the genre pages.
  *
  * The provider's lists already carry the TMDB id of most movies and series, so TMDB is never searched by name:
  * each title of the catalogue is asked about once (genres, year, votes, keywords...) and kept on the SD card for
  * six months at most, and a few lists (trending this week, recommendations) are kept for a day or a month.
- * Four worker threads send the requests with a gap (about 25 a second in all), wait while a video plays and stop at
+ * Five worker threads send the requests with a gap (about 30 a second in all), wait while a video plays and stop at
  * once when the app closes. What came is saved every minute, so a new start goes on where the last one stopped. Nothing goes to TMDB without a key (built in, or the user's own in <config>/tmdb_key.txt)
  * or when the setting is off.
  */
 class TmdbService {
 public:
-    using ListCallback = std::function<void(const std::vector<TmdbRef>&)>;
+    using ListCallback    = std::function<void(const std::vector<TmdbRef>&)>;
+    using DetailsCallback = std::function<void(const TmdbDetails&)>;
 
     static TmdbService& instance();
 
@@ -62,6 +81,10 @@ public:
     /// saved copy: done is called when the list arrived (empty on failure). done runs on the UI thread.
     void list(const std::string& path, int pages, int64_t maxAge, const ListCallback& done);
 
+    /// The rating, cast and recommendations of one title (one request, kept in memory while the app runs); done runs
+    /// on the UI thread, with ok false when TMDB is off or did not answer
+    void details(int type, int id, const DetailsCallback& done);
+
     /// Forgets the TMDB data and lists (Settings)
     void clearData();
 
@@ -81,6 +104,11 @@ private:
         int64_t time = 0;
         std::vector<TmdbRef> refs;
     };
+    struct DetailJob {
+        int type = 1;
+        int id   = 0;
+        std::vector<DetailsCallback> waiting;
+    };
 
     TmdbService() = default;
     void startWorkers();
@@ -95,6 +123,9 @@ private:
     mutable std::mutex mutex;
     std::condition_variable wake, exited;
     std::deque<ListJob> listJobs;
+    std::deque<DetailJob> detailJobs;
+    std::map<int64_t, TmdbDetails> detailCache;
+    std::deque<int64_t> detailOrder;  // the oldest cached details go first
     std::deque<TmdbRef> pending;
     std::map<std::string, CachedList> lists;
     std::vector<std::thread> workers;

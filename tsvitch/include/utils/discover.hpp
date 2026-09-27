@@ -83,6 +83,9 @@ std::vector<Collection> genreTiles(int type);
 /// A whole collection by its id, every title in it (for its page); empty items when it is unknown
 Collection collection(const std::string& id);
 
+/// The catalogue's movies of a film series (TMDB collection), oldest first
+std::vector<LiveM3u8> sameCollection(int collection);
+
 /// Poster url of a title for a card (the provider's picture, TMDB's in the small size)
 std::string posterOf(const LiveM3u8& item);
 

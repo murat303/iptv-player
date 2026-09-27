@@ -723,7 +723,10 @@
     "next_season": "Stagione successiva",
     "watched": "Visto",
     "mark_watched": "Segna come visto",
-    "mark_unwatched": "Segna come non visto"
+    "mark_unwatched": "Segna come non visto",
+    "director_role": "Regista",
+    "votes": "{} voti",
+    "similar": "Titoli simili"
   },
   "cast": {
     "live_download_error": "Download non disponibile",

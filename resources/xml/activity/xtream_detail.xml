@@ -226,6 +226,19 @@
                     width="100%"
                     textColor="#B4B9C2"/>
 
+            <!-- From TMDB (movies): the director and the cast with photos, and similar titles of the catalogue -->
+            <brls:Box
+                    id="detail/people"
+                    axis="row"
+                    width="100%"
+                    marginTop="16"
+                    visibility="gone"/>
+            <brls:Box
+                    id="detail/similar"
+                    axis="column"
+                    width="100%"
+                    visibility="gone"/>
+
             <!-- Series: season picker and the episodes of the chosen season -->
             <brls:Box
                     id="detail/series"

@@ -711,7 +711,10 @@
     "next_season": "Próxima temporada",
     "watched": "Assistido",
     "mark_watched": "Marcar como assistido",
-    "mark_unwatched": "Marcar como não assistido"
+    "mark_unwatched": "Marcar como não assistido",
+    "director_role": "Diretor",
+    "votes": "{} votos",
+    "similar": "Títulos parecidos"
   },
   "cast": {
     "live_download_error": "Download indisponível",

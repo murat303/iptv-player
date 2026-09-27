@@ -26,8 +26,11 @@ public:
     bool isLoaded() const { return loaded; }
     size_t size() const { return images.size(); }
 
-    /// Paints picture i cropped to fill the rectangle (nothing while it loads); false when it is not there yet
+    /// Paints picture i cropped to fill the rectangle (nothing while it loads); false when it is not there yet.
+    /// The corners are rounded one by one: top left, top right, bottom right, bottom left.
     bool draw(NVGcontext* vg, size_t i, float x, float y, float width, float height, float radius, float alpha);
+    bool draw(NVGcontext* vg, size_t i, float x, float y, float width, float height, float topLeft, float topRight,
+              float bottomRight, float bottomLeft, float alpha);
 
 private:
     std::vector<std::string> urls;
@@ -104,6 +107,18 @@ private:
     PictureSet posters;
 };
 
+/// Someone of a title's cast (or its director): a round photo, the name and the role under it
+class PersonCard : public brls::Box {
+public:
+    explicit PersonCard(const tsvitch::TmdbPerson& person);
+    ~PersonCard() override;
+
+    static constexpr float WIDTH = 92;
+
+private:
+    brls::Image* photo = nullptr;
+};
+
 /// One shelf of the discovery screen: a title and a row that scrolls sideways. Its cards are made when the shelf
 /// first comes near the screen, and their pictures are freed when it is far away again.
 class DiscoverShelfView : public brls::Box {
@@ -111,7 +126,9 @@ public:
     using OpenItem       = std::function<void(const tsvitch::LiveM3u8&)>;
     using OpenCollection = std::function<void(const tsvitch::discover::Collection&)>;
 
-    DiscoverShelfView(tsvitch::discover::Shelf shelf, OpenItem openItem, OpenCollection openCollection);
+    // compact: smaller posters, no side margins (a row inside the detail screen)
+    DiscoverShelfView(tsvitch::discover::Shelf shelf, OpenItem openItem, OpenCollection openCollection,
+                      bool compact = false);
     ~DiscoverShelfView() override;
 
     void draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
@@ -135,6 +152,7 @@ private:
     brls::Box* row                  = nullptr;
     bool built                      = false;
     bool near                       = false;
+    bool compact                    = false;
     bool pendingChange              = false;
     std::shared_ptr<bool> alive     = std::make_shared<bool>(true);
 };

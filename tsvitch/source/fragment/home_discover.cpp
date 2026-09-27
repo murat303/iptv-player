@@ -13,6 +13,7 @@
 #include "utils/config_helper.hpp"
 #include "view/discover_views.hpp"
 #include "view/loading_ring.hpp"
+#include "view/progress_line.hpp"
 
 using namespace brls::literals;
 
@@ -124,15 +125,23 @@ void HomeDiscover::showMessage(const std::string& text, bool loading) {
 void HomeDiscover::updateStatus() {
     auto& tmdb = tsvitch::TmdbService::instance();
     std::string text;
+    float part = -1;
     if (tmdb.keyRejected()) {
         text = "tsvitch/discover/status/rejected"_i18n;
     } else if (tmdb.enabled()) {
         size_t done = 0, total = 0;
         tmdb.progress(done, total);
-        if (total > 0 && done < total) text = brls::getStr("tsvitch/discover/status/progress", done * 100 / total);
+        if (total > 0 && done < total) {
+            text = brls::getStr("tsvitch/discover/status/progress", done * 100 / total);
+            part = static_cast<float>(done) / static_cast<float>(total);
+        }
     }
     statusLabel->setText(text);
-    statusLabel->setVisibility(text.empty() ? brls::Visibility::GONE : brls::Visibility::VISIBLE);
+    // While the data comes in: a turning ring and a bar; a refused key only says so
+    statusRing->setVisibility(part >= 0 ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    statusBar->setVisibility(part >= 0 ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    if (part >= 0) statusBar->setProgress(part);
+    statusBox->setVisibility(text.empty() ? brls::Visibility::GONE : brls::Visibility::VISIBLE);
 }
 
 void HomeDiscover::requestData() {

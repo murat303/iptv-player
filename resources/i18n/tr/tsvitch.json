@@ -711,7 +711,10 @@
     "next_season": "Sonraki sezon",
     "watched": "İzlendi",
     "mark_watched": "İzlendi olarak işaretle",
-    "mark_unwatched": "İzlenmedi olarak işaretle"
+    "mark_unwatched": "İzlenmedi olarak işaretle",
+    "director_role": "Yönetmen",
+    "votes": "{} oy",
+    "similar": "Benzer yapımlar"
   },
   "cast": {
     "live_download_error": "İndirilemez",

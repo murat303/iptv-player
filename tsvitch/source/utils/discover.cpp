@@ -1016,6 +1016,23 @@ Page build(const Inputs& in) {
     return page;
 }
 
+std::vector<LiveM3u8> sameCollection(int collection) {
+    std::vector<std::pair<int, const LiveM3u8*>> found;
+    if (collection <= 0) return {};
+    TmdbStore::instance().read([&](const TmdbStore::Map& map) {
+        for (const auto& item : Catalog::instance().items(1)) {
+            if (item.tmdb <= 0) continue;
+            auto it = map.find(TmdbStore::key(1, item.tmdb));
+            if (it != map.end() && it->second.collection == collection)
+                found.emplace_back(item.year ? item.year : it->second.year, &item);
+        }
+    });
+    std::stable_sort(found.begin(), found.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+    std::vector<LiveM3u8> out;
+    for (const auto& [year, item] : found) out.push_back(*item);
+    return out;
+}
+
 std::vector<Collection> genreTiles(int type) {
     std::vector<Collection> out;
     auto locked = lockedCategories();

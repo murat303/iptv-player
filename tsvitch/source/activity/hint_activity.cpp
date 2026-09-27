@@ -28,7 +28,7 @@ const std::string galleryItemInstallNSPXML = R"xml(
         <brls:Image
                 maxWidth="90%"
                 maxHeight="80%"
-                image="@res/pictures/hint_tsvitch.png"
+                image="@res/pictures/hint_nsp.png"
                 id="gallery/image"/>
         <brls:Label
                 focusable="true"
@@ -96,7 +96,7 @@ void HintActivity::onContentAvailable() {
         {"pictures/hint_game_1.png", "tsvitch/hints/hint1"_i18n},
         {"pictures/hint_game_2.png", "tsvitch/hints/hint2"_i18n},
         {"pictures/hint_hbmenu.png", "tsvitch/hints/hint3"_i18n},
-        {"pictures/hint_tsvitch.png", "tsvitch/hints/hint4"_i18n},
+        {"pictures/hint_nsp.png", "tsvitch/hints/hint4"_i18n},
     });
 #endif
 }

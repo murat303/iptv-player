@@ -38,6 +38,19 @@ bool onScreen(float y, float height, float distance) {
     return y < screen + distance && y + height > -distance;
 }
 
+/// Two soft rings in the top right corner of a tile give the flat colour some depth. They are gradients painted
+/// into the tile's own rounded shape, so nothing crosses its corners.
+void paintRings(NVGcontext* vg, float x, float y, float width, float height, float alpha) {
+    auto ring = [&](float radius, float edge, unsigned char strength) {
+        NVGpaint paint = nvgRadialGradient(vg, x + width - 18, y + 14, radius, radius + edge,
+                                           nvgRGBA(255, 255, 255, static_cast<unsigned char>(strength * alpha)),
+                                           nvgRGBA(255, 255, 255, 0));
+        fillRounded(vg, x, y, width, height, 12, paint);
+    };
+    ring(50, 2, 30);
+    ring(28, 2, 26);
+}
+
 brls::Label* makeLabel(float size, NVGcolor color, const std::string& text) {
     auto* label = new brls::Label();
     label->setFontSize(size);
@@ -80,6 +93,11 @@ void PictureSet::release() {
 
 bool PictureSet::draw(NVGcontext* vg, size_t i, float x, float y, float width, float height, float radius,
                       float alpha) {
+    return this->draw(vg, i, x, y, width, height, radius, radius, radius, radius, alpha);
+}
+
+bool PictureSet::draw(NVGcontext* vg, size_t i, float x, float y, float width, float height, float topLeft,
+                      float topRight, float bottomRight, float bottomLeft, float alpha) {
     if (i >= images.size()) return false;
     int texture = images[i]->getTexture();
     float iw = images[i]->getOriginalImageWidth(), ih = images[i]->getOriginalImageHeight();
@@ -92,7 +110,10 @@ bool PictureSet::draw(NVGcontext* vg, size_t i, float x, float y, float width, f
     float dx = x + (width - dw) / 2, dy = y + (height - dh) / 2;
     // The pattern covers the padded picture: one scaled pixel outside on every side
     NVGpaint paint = nvgImagePattern(vg, dx - scale, dy - scale, dw + 2 * scale, dh + 2 * scale, 0, texture, alpha);
-    fillRounded(vg, x, y, width, height, radius, paint);
+    nvgBeginPath(vg);
+    nvgRoundedRectVarying(vg, x, y, width, height, topLeft, topRight, bottomRight, bottomLeft);
+    nvgFillPaint(vg, paint);
+    nvgFill(vg);
     return true;
 }
 
@@ -199,18 +220,7 @@ GenreTile::GenreTile(const tsvitch::discover::Collection& genre, std::function<v
 void GenreTile::draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
                      brls::FrameContext* ctx) {
     fillRounded(vg, x, y, width, height, 12, nvgLinearGradient(vg, x, y, x + width, y + height, a(colorA), a(colorB)));
-    // Two soft rings in the corner give the flat colour some depth
-    nvgSave(vg);
-    nvgIntersectScissor(vg, x, y, width, height);
-    nvgBeginPath(vg);
-    nvgCircle(vg, x + width - 18, y + 14, 52);
-    nvgFillColor(vg, a(nvgRGBA(255, 255, 255, 30)));
-    nvgFill(vg);
-    nvgBeginPath(vg);
-    nvgCircle(vg, x + width - 18, y + 14, 30);
-    nvgFillColor(vg, a(nvgRGBA(255, 255, 255, 26)));
-    nvgFill(vg);
-    nvgRestore(vg);
+    paintRings(vg, x, y, width, height, this->alpha);
     brls::Box::draw(vg, x, y, width, height, style, ctx);
 }
 
@@ -241,17 +251,7 @@ void GenreGridCell::setGenre(const tsvitch::discover::Collection& genre) {
 void GenreGridCell::draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
                          brls::FrameContext* ctx) {
     fillRounded(vg, x, y, width, height, 12, nvgLinearGradient(vg, x, y, x + width, y + height, a(colorA), a(colorB)));
-    nvgSave(vg);
-    nvgIntersectScissor(vg, x, y, width, height);
-    nvgBeginPath(vg);
-    nvgCircle(vg, x + width - 18, y + 14, 52);
-    nvgFillColor(vg, a(nvgRGBA(255, 255, 255, 30)));
-    nvgFill(vg);
-    nvgBeginPath(vg);
-    nvgCircle(vg, x + width - 18, y + 14, 30);
-    nvgFillColor(vg, a(nvgRGBA(255, 255, 255, 26)));
-    nvgFill(vg);
-    nvgRestore(vg);
+    paintRings(vg, x, y, width, height, this->alpha);
     brls::Box::draw(vg, x, y, width, height, style, ctx);
 }
 
@@ -311,7 +311,11 @@ void CoverCard::draw(NVGcontext* vg, float x, float y, float width, float height
     float column = width / 3.0f;
     for (size_t i = 0; i < count; i++) {
         float px = x + width - column * static_cast<float>(i + 1);
-        posters.draw(vg, i, px, y, column + (i == 0 ? 0.0f : 1.0f), height, i == 0 ? 12.0f : 0.0f, this->alpha * 0.95f);
+        // The rightmost poster rounds its right corners like the card, the leftmost (the third) its left ones
+        float right = i == 0 ? 12.0f : 0.0f;
+        float left  = i == 2 ? 12.0f : 0.0f;
+        posters.draw(vg, i, px, y, column + (i == 0 ? 0.0f : 1.0f), height, left, right, right, left,
+                     this->alpha * 0.95f);
     }
     // The collection's colour over the posters, strong on the left where the name is
     fillRounded(vg, x, y, width, height, 12,
@@ -322,20 +326,54 @@ void CoverCard::draw(NVGcontext* vg, float x, float y, float width, float height
     brls::Box::draw(vg, x, y, width, height, style, ctx);
 }
 
+// PersonCard
+
+PersonCard::PersonCard(const tsvitch::TmdbPerson& person) {
+    this->setAxis(brls::Axis::COLUMN);
+    this->setAlignItems(brls::AlignItems::CENTER);
+    this->setWidth(WIDTH);
+    this->setMarginRight(8);
+    photo = new brls::Image();
+    photo->setWidth(64);
+    photo->setHeight(64);
+    photo->setCornerRadius(32);
+    photo->setScalingType(brls::ImageScalingType::FILL);
+    // TMDB's photos are portraits: the face is in their top part
+    photo->setImageAlign(brls::ImageAlignment::TOP);
+    photo->setBackgroundColor(nvgRGBA(255, 255, 255, 28));
+    this->addView(photo);
+    if (!person.photo.empty()) ImageHelper::with(photo)->load(person.photo);
+    // Left aligned with at most the card's width (the card centers them): borealis shortens a long name with an
+    // ellipsis only when the text is not centered
+    auto* name = makeLabel(13, nvgRGB(255, 255, 255), person.name);
+    name->setSingleLine(true);
+    name->setMaxWidth(WIDTH);
+    name->setMarginTop(6);
+    auto* role = makeLabel(12, nvgRGBA(255, 255, 255, 150), person.role);
+    role->setSingleLine(true);
+    role->setMaxWidth(WIDTH);
+    this->addView(name);
+    this->addView(role);
+}
+
+PersonCard::~PersonCard() { ImageHelper::clear(photo); }
+
 // DiscoverShelfView
 
-DiscoverShelfView::DiscoverShelfView(tsvitch::discover::Shelf shelf, OpenItem openItem, OpenCollection openCollection)
-    : shelf(std::move(shelf)), openItem(std::move(openItem)), openCollection(std::move(openCollection)) {
+DiscoverShelfView::DiscoverShelfView(tsvitch::discover::Shelf shelf, OpenItem openItem, OpenCollection openCollection,
+                                     bool compact)
+    : shelf(std::move(shelf)), openItem(std::move(openItem)), openCollection(std::move(openCollection)),
+      compact(compact) {
     this->setAxis(brls::Axis::COLUMN);
-    this->setMarginTop(18);
+    this->setMarginTop(compact ? 12 : 18);
 
-    auto* title = makeLabel(22, brls::Application::getTheme().getColor("brls/text"), this->shelf.title);
-    title->setMarginLeft(30);
-    title->setMarginBottom(12);
+    auto* title = makeLabel(compact ? 17 : 22, brls::Application::getTheme().getColor("brls/text"), this->shelf.title);
+    title->setMarginLeft(compact ? 0 : 30);
+    title->setMarginBottom(compact ? 6 : 12);
     title->setSingleLine(true);
     this->addView(title);
 
-    float height = this->shelf.kind == tsvitch::discover::Shelf::POSTERS  ? 292
+    float height = this->shelf.kind == tsvitch::discover::Shelf::POSTERS  ? (compact ? 206 : 292)
                    : this->shelf.kind == tsvitch::discover::Shelf::GENRES ? GenreTile::HEIGHT + 12
                                                                           : CoverCard::HEIGHT + 12;
     scroller = new brls::HScrollingFrame();
@@ -343,7 +381,10 @@ DiscoverShelfView::DiscoverShelfView(tsvitch::discover::Shelf shelf, OpenItem op
     scroller->setScrollingBehavior(brls::ScrollingBehavior::CENTERED);
     scroller->setScrollingIndicatorVisible(false);
     row = new brls::Box(brls::Axis::ROW);
-    row->setPadding(6, 30, 6, 30);
+    if (compact)
+        row->setPadding(4, 4, 4, 4);
+    else
+        row->setPadding(6, 30, 6, 30);
     scroller->setContentView(row);
     this->addView(scroller);
 }
@@ -356,9 +397,9 @@ void DiscoverShelfView::buildCards() {
     if (shelf.kind == tsvitch::discover::Shelf::POSTERS) {
         for (size_t i = 0; i < shelf.items.size(); i++) {
             auto* card = RecyclingGridItemLiveVideoCard::createPoster();
-            card->setWidth(146);
-            card->setMarginRight(16);
-            card->setPosterHeight(219);
+            card->setWidth(compact ? 90 : 146);
+            card->setMarginRight(compact ? 12 : 16);
+            card->setPosterHeight(compact ? 135 : 219);
             // The card shows the name without the provider's tags; the detail screen gets the item as it is
             auto shown  = shelf.items[i];
             shown.title = tsvitch::discover::cleanTitle(shown.title);

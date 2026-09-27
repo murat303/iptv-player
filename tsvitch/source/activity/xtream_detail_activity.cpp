@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <borealis/core/box.hpp>
 #include <borealis/core/application.hpp>
 #include <borealis/core/i18n.hpp>
@@ -28,6 +29,10 @@
 #include "view/text_box.hpp"
 #include "utils/text_fold.hpp"
 #include "utils/video_download.hpp"
+#include "core/Catalog.hpp"
+#include "core/TmdbStore.hpp"
+#include "utils/discover.hpp"
+#include "view/discover_views.hpp"
 
 using namespace brls::literals;
 
@@ -317,6 +322,85 @@ void XtreamDetailActivity::onContentAvailable() {
     this->updateFavoriteLabel();
     brls::Application::giveFocus(playButton);
     this->loadDetail();
+    this->requestTmdb();
+}
+
+void XtreamDetailActivity::requestTmdb() {
+    auto& tmdb = tsvitch::TmdbService::instance();
+    int type = 0, id = Catalog::instance().tmdbOf(item, type);
+    if (!tmdb.enabled() || id <= 0) return;
+    auto alive = this->alive;
+    tmdb.details(type, id, [this, alive, id](const tsvitch::TmdbDetails& result) {
+        if (alive->load() && result.ok) this->showTmdb(id, result);
+    });
+}
+
+namespace {
+std::string groupThousands(int number) {
+    std::string digits = std::to_string(number), out;
+    for (size_t i = 0; i < digits.size(); i++) {
+        if (i > 0 && (digits.size() - i) % 3 == 0) out += '.';
+        out += digits[i];
+    }
+    return out;
+}
+}  // namespace
+
+void XtreamDetailActivity::showTmdb(int id, const tsvitch::TmdbDetails& tmdb) {
+    if (tmdb.votes > 0) {
+        tmdbVote  = tmdb.vote;
+        tmdbVotes = tmdb.votes;
+        rating->setText(fmt::format("★ {:.1f}", tmdb.vote) + "   " +
+                        brls::getStr("tsvitch/detail/votes", groupThousands(tmdb.votes)));
+        ratingBox->setVisibility(brls::Visibility::VISIBLE);
+    }
+    tmdbOverview = tmdb.overview;
+    if (detail.plot.empty() && !tmdbOverview.empty()) plot->setText(tmdbOverview);
+    // A series needs the room for its episodes
+    if (isSeries) return;
+
+    if (!tmdb.people.empty()) {
+        peopleBox->clearViews();
+        size_t count = 0;
+        for (const auto& person : tmdb.people) {
+            if (count++ == 9) break;
+            peopleBox->addView(new PersonCard(person));
+        }
+        peopleShown = true;
+        peopleBox->setVisibility(brls::Visibility::VISIBLE);
+        director->setVisibility(brls::Visibility::GONE);
+        cast->setVisibility(brls::Visibility::GONE);
+    }
+
+    // The other movies of its film series first, then what TMDB recommends; only titles of the catalogue
+    std::vector<tsvitch::LiveM3u8> similar;
+    std::unordered_set<int64_t> seen{TmdbStore::key(1, id)};
+    for (const auto& movie : tsvitch::discover::sameCollection(tmdb.collection))
+        if (seen.insert(TmdbStore::key(1, movie.tmdb)).second) similar.push_back(movie);
+    for (const auto& ref : tmdb.recommendations) {
+        if (similar.size() >= 15) break;
+        const auto* found = Catalog::instance().find(ref.type, ref.id);
+        if (found && seen.insert(TmdbStore::key(ref.type, ref.id)).second) similar.push_back(*found);
+    }
+    if (similar.size() >= 3) {
+        tsvitch::discover::Shelf shelf;
+        shelf.id    = "similar";
+        shelf.title = "tsvitch/detail/similar"_i18n;
+        shelf.items = std::move(similar);
+        shelf.notes.assign(shelf.items.size(), "");
+        shelf.progress.assign(shelf.items.size(), "");
+        auto alive = this->alive;
+        similarBox->clearViews();
+        similarBox->addView(new DiscoverShelfView(
+            std::move(shelf),
+            [alive](const tsvitch::LiveM3u8& other) {
+                if (alive->load()) Intent::openXtreamDetail(other);
+            },
+            nullptr, true));
+        similarBox->setVisibility(brls::Visibility::VISIBLE);
+    }
+    // Room for the rows
+    if (peopleShown || similarBox->getVisibility() == brls::Visibility::VISIBLE) plot->setMaxRows(3);
 }
 
 void XtreamDetailActivity::loadDetail() {
@@ -368,7 +452,9 @@ void XtreamDetailActivity::showDetail(const tsvitch::XtreamDetail& update) {
     bool showOriginal = !detail.originalTitle.empty() && detail.originalTitle != detail.title;
     subtitle->setText(detail.originalTitle);
     subtitle->setVisibility(showOriginal ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
-    if (detail.rating > 0) {
+    if (tmdbVotes > 0) {
+        // TMDB's rating with its votes stays
+    } else if (detail.rating > 0) {
         rating->setText(fmt::format("★ {:.1f}", detail.rating));
         ratingBox->setVisibility(brls::Visibility::VISIBLE);
     } else {
@@ -376,7 +462,7 @@ void XtreamDetailActivity::showDetail(const tsvitch::XtreamDetail& update) {
     }
     meta->setText(joinParts({detail.year > 0 ? std::to_string(detail.year) : "", detail.genre,
                              formatDuration(detail.duration), detail.country}));
-    plot->setText(detail.plot);
+    plot->setText(detail.plot.empty() ? tmdbOverview : detail.plot);
     director->setText(detail.director.empty() ? "" : brls::getStr("tsvitch/detail/director", detail.director));
     cast->setText(detail.cast.empty() ? "" : brls::getStr("tsvitch/detail/cast", detail.cast));
     if (newPoster) ImageHelper::with(poster)->load(tmdbSize(detail.cover, "w342"));

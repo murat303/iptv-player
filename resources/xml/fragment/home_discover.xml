@@ -4,15 +4,34 @@
         axis="column"
         grow="1">
 
-    <!-- How far the TMDB data of the catalogue is (a line above the page, gone when there is nothing to say) -->
-    <brls:Label
+    <!-- How far the TMDB data of the catalogue is: a chip above the page, gone when there is nothing to say -->
+    <brls:Box
             id="discover/status"
+            axis="row"
             alignSelf="flexEnd"
-            marginTop="6"
-            marginRight="34"
-            fontSize="14"
-            textColor="@theme/font/grey"
-            visibility="gone" />
+            alignItems="center"
+            height="30"
+            marginTop="8"
+            marginRight="30"
+            paddingLeft="12"
+            paddingRight="14"
+            cornerRadius="15"
+            backgroundColor="@theme/color/grey_1"
+            visibility="gone">
+        <LoadingRing
+                id="discover/status/ring"
+                width="16"
+                height="16"
+                marginRight="9" />
+        <brls:Label
+                id="discover/status/label"
+                fontSize="14" />
+        <ProgressLine
+                id="discover/status/bar"
+                width="96"
+                height="4"
+                marginLeft="11" />
+    </brls:Box>
 
     <brls:ScrollingFrame
             id="discover/scroll"

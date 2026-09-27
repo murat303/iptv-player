@@ -711,7 +711,10 @@
     "next_season": "Next season",
     "watched": "Watched",
     "mark_watched": "Mark as watched",
-    "mark_unwatched": "Mark as unwatched"
+    "mark_unwatched": "Mark as unwatched",
+    "director_role": "Director",
+    "votes": "{} votes",
+    "similar": "More like this"
   },
   "cast": {
     "live_download_error": "Download unavailable",

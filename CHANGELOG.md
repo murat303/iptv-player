@@ -18,7 +18,7 @@
 
 ### How it works
 - The provider's lists already carry the TMDB id of most titles: each title is asked about once at TMDB
-  (themoviedb.org) in the background, about 25 a second (a catalogue of 15,000 titles in about ten minutes the
+  (themoviedb.org) in the background, about 30 a second (a catalogue of 15,000 titles in about eight minutes the
   first time), and kept on the SD card. It waits while a video plays and goes on where it stopped when the app
   starts again.
 - Lists saved by an earlier version are downloaded again once, with the next automatic refresh.

@@ -60,7 +60,7 @@ const std::map<std::string, std::map<std::string, std::string>> OPENSOURCE = {
     {"QR-Code-generator",
      {{"Official site", "https://www.nayuki.io/page/qr-code-generator-library"},
       {"GitHub", "https://github.com/nayuki/QR-Code-generator"},
-      {"Notes", "Copyright Â© 2020 Project Nayuki.\nLicensed under MIT license"}}},
+      {"Notes", "Copyright © 2020 Project Nayuki.\nLicensed under MIT license"}}},
     {"lunasvg",
      {{"Official site", "https://github.com/sammycage/lunasvg"},
       {"Notes", "Copyright (c) 2020 Nwutobo Samuel Ugochukwu.\nLicensed under MIT license"}}},
@@ -165,7 +165,7 @@ void SettingsActivity::onContentAvailable() {
     });
 
     btnProxyTest->registerClickAction([](...) -> bool {
-        // Testa o proxy fazendo uma requisiÃ§Ã£o simples
+        // Testa o proxy fazendo uma requisição simples
         std::string proxyUrl = ProgramConfig::instance().getProxyUrl();
         
         if (proxyUrl.empty()) {
@@ -175,9 +175,9 @@ void SettingsActivity::onContentAvailable() {
         
         brls::Application::notify("tsvitch/setting/tools/test/proxy_testing"_i18n + ": " + proxyUrl);
         
-        // Faz o teste usando a configuraÃ§Ã£o atual do sistema
+        // Faz o teste usando a configuração atual do sistema
         try {
-            // Usa a configuraÃ§Ã£o de proxy atual que jÃ¡ foi aplicada ao sistema
+            // Usa a configuração de proxy atual que já foi aplicada ao sistema
             auto response = cpr::Get(cpr::Url{"http://httpbin.org/ip"}, 
                                    cpr::Timeout{5000});
             
@@ -332,9 +332,9 @@ void SettingsActivity::onContentAvailable() {
     cellFullscreen->init("tsvitch/setting/app/others/fullscreen"_i18n, conf.getBoolOption(SettingItem::FULLSCREEN),
                          [](bool value) {
                              ProgramConfig::instance().setSettingItem(SettingItem::FULLSCREEN, value);
-                             // æ›´æ–°è®¾ç½®
+                             // 更新设置
                              VideoContext::FULLSCREEN = value;
-                             // è®¾ç½®å½“å‰çŠ¶æ€
+                             // 设置当前状态
                              brls::Application::getPlatform()->getVideoContext()->fullScreen(value);
                          });
 
@@ -462,7 +462,7 @@ void SettingsActivity::onContentAvailable() {
         "tsvitch/setting/app/others/language/header"_i18n,
         {
             // Each language in its own name, as in the order of the app_lang options
-            "English", "TÃ¼rkÃ§e", "Italiano", "PortuguÃªs (Brasil)",
+            "English", "Türkçe", "Italiano", "Português (Brasil)",
 #if defined(__SWITCH__) || defined(__PSV__) || defined(PS4)
             "tsvitch/setting/app/others/language/auto"_i18n,
 #endif
@@ -527,14 +527,14 @@ void SettingsActivity::onContentAvailable() {
                                MPVCore::instance().restart();
                            });
 
-    // Inizializza il selettore modalitÃ  IPTV
+    // Inizializza il selettore modalità IPTV
     auto iptvModeOption = conf.getOptionData(SettingItem::IPTV_MODE);
     selectorIPTVMode->init("tsvitch/setting/iptv/mode"_i18n, iptvModeOption.optionList,
                           conf.getIntOptionIndex(SettingItem::IPTV_MODE), [this, iptvModeOption](int data) {
                               ProgramConfig::instance().setSettingItem(SettingItem::IPTV_MODE,
                                                                        iptvModeOption.rawOptionList[data]);
                               this->updateIPTVSectionVisibility();
-                              OnIPTVModeChanged.fire(); // Notifica il cambio modalitÃ  IPTV
+                              OnIPTVModeChanged.fire(); // Notifica il cambio modalità IPTV
                           });
 
     // Inizializza i controlli M3U8
@@ -747,7 +747,7 @@ void SettingsActivity::onContentAvailable() {
                 ime->openForText(
                     [parentalCell](const std::string& newPin) {
                         if (newPin.empty()) {
-                            parentalCell->setOn(false, false);  // cancelou -> nÃ£o ativa
+                            parentalCell->setOn(false, false);  // cancelou -> não ativa
                             return;
                         }
                         ProgramConfig::instance().setParentalPin(newPin);
@@ -760,7 +760,7 @@ void SettingsActivity::onContentAvailable() {
                     [parentalCell](const std::string& current) {
                         if (current != ProgramConfig::instance().getParentalPin()) {
                             brls::Application::notify("tsvitch/parental/wrong_pin"_i18n);
-                            parentalCell->setOn(true, false);  // PIN errado -> mantÃ©m ligado
+                            parentalCell->setOn(true, false);  // PIN errado -> mantém ligado
                             return;
                         }
                         ProgramConfig::instance().setParentalEnabled(false);
@@ -783,7 +783,7 @@ void SettingsActivity::onContentAvailable() {
         return true;
     });
 
-    // Categorias bloqueadas: escolhe o tipo (Live/Filmes/SÃ©ries), busca as categorias
+    // Categorias bloqueadas: escolhe o tipo (Live/Filmes/Séries), busca as categorias
     // daquele tipo no servidor e mostra a lista com as bloqueadas no topo.
     btnParentalCategories->registerClickAction([promptCurrentPin](brls::View*) -> bool {
         // Abre a lista de toggles para um conjunto de categorias (bloqueadas primeiro)
@@ -795,14 +795,14 @@ void SettingsActivity::onContentAvailable() {
             std::stable_sort(names.begin(), names.end(), [](const std::string& a, const std::string& b) {
                 bool la = ProgramConfig::instance().isCategoryLocked(a);
                 bool lb = ProgramConfig::instance().isCategoryLocked(b);
-                return la != lb ? la : a < b;  // bloqueadas no topo, depois alfabÃ©tico
+                return la != lb ? la : a < b;  // bloqueadas no topo, depois alfabético
             });
             // Preenche toda a largura do popup (AppletFrame do Dialog) com 100%,
-            // esticando as cÃ©lulas (alignItems=stretch) e truncando nomes longos.
+            // esticando as células (alignItems=stretch) e truncando nomes longos.
             // Assim a barra de rolagem encosta na borda direita do popup.
-            // A AppletFrame do Dialog tem largura fixa 720 e injeta o conteÃºdo sem
+            // A AppletFrame do Dialog tem largura fixa 720 e injeta o conteúdo sem
             // esticar. Fixamos a lista nessa mesma largura para preencher todo o
-            // popup; as cÃ©lulas esticam (stretch) e nomes longos sÃ£o truncados.
+            // popup; as células esticam (stretch) e nomes longos são truncados.
             const float popupWidth = 720;
             auto* box              = new brls::Box(brls::Axis::COLUMN);
             box->setWidth(popupWidth);
@@ -811,8 +811,8 @@ void SettingsActivity::onContentAvailable() {
                 auto* cell = new brls::BooleanCell();
                 cell->init(cat, ProgramConfig::instance().isCategoryLocked(cat),
                            [cat](bool v) { ProgramConfig::instance().setCategoryLocked(cat, v); });
-                // Deixa o tÃ­tulo encolher em vez de forÃ§ar a largura (min-content):
-                // sem isso, nomes longos estouram a cÃ©lula alÃ©m do box e a barra de
+                // Deixa o título encolher em vez de forçar a largura (min-content):
+                // sem isso, nomes longos estouram a célula além do box e a barra de
                 // rolagem fica inboard.
                 cell->title->setSingleLine(true);
                 cell->title->setShrink(1);
@@ -847,8 +847,8 @@ void SettingsActivity::onContentAvailable() {
         return true;
     });
 
-    // Limpar histÃ³rico por tipo (TV ao vivo / Filmes / SÃ©ries / Tudo).
-    // Dialog aceita no mÃ¡x. 3 botÃµes, entÃ£o usamos uma lista de opÃ§Ãµes.
+    // Limpar histórico por tipo (TV ao vivo / Filmes / Séries / Tudo).
+    // Dialog aceita no máx. 3 botões, então usamos uma lista de opções.
     btnClearHistory->registerClickAction([](brls::View*) -> bool {
         struct Opcao {
             std::string label;
@@ -893,7 +893,7 @@ void SettingsActivity::onContentAvailable() {
         return true;
     });
 
-    // Imposta la visibilitÃ  iniziale delle sezioni
+    // Imposta la visibilità iniziale delle sezioni
     this->updateIPTVSectionVisibility();
 
     // Inizializza tutti gli altri selettori...

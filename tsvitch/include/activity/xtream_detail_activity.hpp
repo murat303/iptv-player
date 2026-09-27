@@ -8,6 +8,7 @@
 
 #include "api/tsvitch/result/home_live_result.h"
 #include "api/tsvitch/result/xtream_detail.h"
+#include "api/tmdb.hpp"
 
 namespace brls {
 class Box;
@@ -64,6 +65,10 @@ private:
 
     void updateFavoriteLabel();
 
+    // TMDB's rating, cast and similar titles, once they come
+    void requestTmdb();
+    void showTmdb(int id, const tsvitch::TmdbDetails& tmdb);
+
     tsvitch::LiveM3u8 item;
     std::function<void()> onClose;
     tsvitch::XtreamDetail detail;
@@ -77,6 +82,11 @@ private:
     size_t lastEpisode  = 0;
     std::shared_ptr<std::atomic<bool>> alive = std::make_shared<std::atomic<bool>>(true);
     std::vector<std::pair<CustomButton*, brls::Label*>> seasonButtons;
+    // What TMDB told, kept when the provider's details come later
+    float tmdbVote   = 0;
+    int tmdbVotes    = 0;
+    bool peopleShown = false;
+    std::string tmdbOverview;
 
     BRLS_BIND(brls::Image, backdrop, "detail/backdrop");
     BRLS_BIND(brls::Image, poster, "detail/poster");
@@ -99,6 +109,8 @@ private:
     BRLS_BIND(TextBox, plot, "detail/plot");
     BRLS_BIND(TextBox, director, "detail/director");
     BRLS_BIND(TextBox, cast, "detail/cast");
+    BRLS_BIND(brls::Box, peopleBox, "detail/people");
+    BRLS_BIND(brls::Box, similarBox, "detail/similar");
     BRLS_BIND(brls::Box, seriesBox, "detail/series");
     BRLS_BIND(brls::Box, seasonsBox, "detail/seasons");
     BRLS_BIND(RecyclingGrid, episodes, "detail/episodes");

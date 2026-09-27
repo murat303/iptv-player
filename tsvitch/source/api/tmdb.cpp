@@ -13,6 +13,7 @@
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 #include <borealis/core/application.hpp>
+#include <borealis/core/i18n.hpp>
 #include <borealis/core/logger.hpp>
 #include <borealis/core/thread.hpp>
 
@@ -32,8 +33,8 @@ namespace tsvitch {
 
 namespace {
 
-constexpr int WORKERS          = 4;
-constexpr int GAP_MS           = 150;  // from one request of a worker to its next: at most ~26 a second for all
+constexpr int WORKERS          = 5;
+constexpr int GAP_MS           = 150;  // from one request of a worker to its next: at most ~33 a second for all
                                        // (TMDB allows about 40 a second from one address)
 constexpr size_t MAX_LISTS     = 200;  // saved TMDB lists (recommendations of old seeds are dropped first)
 constexpr int64_t PAUSE_ERRORS = 120;  // seconds without catalogue requests after several errors in a row
@@ -141,6 +142,44 @@ TmdbMeta parseMeta(int type, const nlohmann::json& j, TmdbStore::Names& names) {
         if (auto k = j.find("keywords"); k != j.end() && k->is_object()) addIds(*k, "results", meta.keywords, 40);
     }
     return meta;
+}
+
+/// The detail screen's part of /movie/{id} or /tv/{id} with append_to_response=credits,recommendations
+TmdbDetails parseDetails(int type, const nlohmann::json& j, const std::string& directorRole) {
+    TmdbDetails d;
+    d.ok       = true;
+    d.vote     = static_cast<float>(number(j, "vote_average"));
+    d.votes    = static_cast<int>(number(j, "vote_count"));
+    d.overview = text(j, "overview");
+    if (auto c = j.find("belongs_to_collection"); c != j.end() && c->is_object())
+        d.collection = static_cast<int>(number(*c, "id"));
+    auto photo = [](const nlohmann::json& person) {
+        std::string path = text(person, "profile_path");
+        return path.empty() ? std::string() : "https://image.tmdb.org/t/p/w185" + path;
+    };
+    if (auto credits = j.find("credits"); credits != j.end() && credits->is_object()) {
+        if (auto crew = credits->find("crew"); crew != credits->end() && crew->is_array())
+            for (const auto& person : *crew)
+                if (person.is_object() && text(person, "job") == "Director") {
+                    d.people.push_back({text(person, "name"), directorRole, photo(person)});
+                    break;
+                }
+        if (auto cast = credits->find("cast"); cast != credits->end() && cast->is_array())
+            for (const auto& person : *cast) {
+                if (d.people.size() >= 12) break;
+                if (person.is_object()) d.people.push_back({text(person, "name"), text(person, "character"), photo(person)});
+            }
+    }
+    if (auto rec = j.find("recommendations"); rec != j.end() && rec->is_object())
+        if (auto results = rec->find("results"); results != rec->end() && results->is_array())
+            for (const auto& result : *results) {
+                if (!result.is_object()) continue;
+                std::string media = text(result, "media_type");
+                int refType       = media == "tv" ? 2 : media == "movie" ? 1 : type;
+                int id            = static_cast<int>(number(result, "id"));
+                if (id > 0) d.recommendations.push_back({refType, id});
+            }
+    return d;
 }
 
 }  // namespace
@@ -334,16 +373,57 @@ void TmdbService::list(const std::string& path, int pages, int64_t maxAge, const
 
 void TmdbService::stopFetching() {
     std::vector<ListCallback> waiting;
+    std::vector<DetailsCallback> waitingDetails;
     {
         std::lock_guard<std::mutex> lock(mutex);
         pending.clear();
         for (auto& job : listJobs)
             for (auto& callback : job.waiting) waiting.push_back(std::move(callback));
         listJobs.clear();
+        for (auto& job : detailJobs)
+            for (auto& callback : job.waiting) waitingDetails.push_back(std::move(callback));
+        detailJobs.clear();
     }
-    // Screens waiting for a list get an empty one
+    // Screens waiting for a list or details get an empty answer
     for (const auto& callback : waiting)
         if (callback) callback({});
+    for (const auto& callback : waitingDetails)
+        if (callback) callback({});
+}
+
+void TmdbService::details(int type, int id, const DetailsCallback& done) {
+    if (!enabled() || id <= 0) {
+        if (done) done({});
+        return;
+    }
+    this->startWorkers();
+    int64_t key = TmdbStore::key(type, id);
+    TmdbDetails cached;
+    bool have = false;
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        auto it = detailCache.find(key);
+        if (it != detailCache.end()) {
+            cached = it->second;
+            have   = true;
+        } else {
+            bool queued = false;
+            for (auto& job : detailJobs)
+                if (job.type == type && job.id == id) {
+                    job.waiting.push_back(done);
+                    queued = true;
+                }
+            if (!queued) {
+                DetailJob job;
+                job.type = type;
+                job.id   = id;
+                job.waiting.push_back(done);
+                detailJobs.push_back(std::move(job));
+                wake.notify_one();
+            }
+        }
+    }
+    if (have && done) done(cached);
 }
 
 void TmdbService::clearData() {
@@ -439,6 +519,7 @@ void TmdbService::worker(int index) {
 
     const std::string key  = apiKey();
     const bool bearer      = key.size() > 40;  // a v4 read token rather than a v3 key
+    const std::string directorRole = brls::getStr("tsvitch/detail/director_role");
     const std::string base = baseUrl();
     cpr::Session session;
     session.SetTimeout(cpr::Timeout{15000});
@@ -468,17 +549,23 @@ void TmdbService::worker(int index) {
 
     while (!stopping) {
         ListJob job;
+        DetailJob detailJob;
         TmdbRef ref;
-        bool haveJob = false, haveRef = false;
+        bool haveJob = false, haveRef = false, haveDetail = false;
         {
             std::unique_lock<std::mutex> lock(mutex);
             auto canFetch = [this]() {
                 return !paused && storeReady && !pending.empty() && steadyMs() >= resumeAt;
             };
-            wake.wait_for(lock, std::chrono::milliseconds(500),
-                          [this, &canFetch]() { return stopping || !listJobs.empty() || canFetch(); });
+            wake.wait_for(lock, std::chrono::milliseconds(500), [this, &canFetch]() {
+                return stopping || !detailJobs.empty() || !listJobs.empty() || canFetch();
+            });
             if (stopping) break;
-            if (!listJobs.empty()) {
+            if (!detailJobs.empty()) {
+                detailJob = std::move(detailJobs.front());
+                detailJobs.pop_front();
+                haveDetail = true;
+            } else if (!listJobs.empty()) {
                 job = std::move(listJobs.front());
                 listJobs.pop_front();
                 haveJob = true;
@@ -488,9 +575,40 @@ void TmdbService::worker(int index) {
                 haveRef = true;
             }
         }
-        if (!haveJob && !haveRef) {
+        if (!haveJob && !haveRef && !haveDetail) {
             TmdbStore::instance().save(false);
             this->saveLists(false);
+            continue;
+        }
+
+        if (haveDetail) {
+            // A detail screen waits for it: one request with the cast and the recommendations
+            TmdbDetails result;
+            if (waitGap(gapMs())) {
+                auto r = get(std::string(detailJob.type == 1 ? "/movie/" : "/tv/") + std::to_string(detailJob.id),
+                             cpr::Parameters{{"language", language()},
+                                             {"append_to_response", "credits,recommendations"}});
+                if (r.status_code == 401) rejected = true;
+                if (r.status_code == 200) {
+                    auto json = nlohmann::json::parse(r.text, nullptr, false);
+                    if (json.is_object()) result = parseDetails(detailJob.type, json, directorRole);
+                }
+            }
+            if (stopping) break;
+            if (result.ok) {
+                std::lock_guard<std::mutex> lock(mutex);
+                int64_t key = TmdbStore::key(detailJob.type, detailJob.id);
+                if (!detailCache.count(key)) detailOrder.push_back(key);
+                detailCache[key] = result;
+                while (detailOrder.size() > 40) {
+                    detailCache.erase(detailOrder.front());
+                    detailOrder.pop_front();
+                }
+            }
+            brls::sync([waiting = detailJob.waiting, result]() {
+                for (const auto& callback : waiting)
+                    if (callback) callback(result);
+            });
             continue;
         }
 

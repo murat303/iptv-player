@@ -11,6 +11,7 @@
 #include "view/auto_tab_frame.hpp"
 
 class LoadingRing;
+class ProgressLine;
 
 /// The discovery tab: a big title of the week, shelves of titles (continue watching, trending, for you, new...)
 /// and of collections (genres, themes, studios, awards, decades, film series), all from the catalogue the provider's
@@ -58,7 +59,10 @@ private:
 
     BRLS_BIND(brls::ScrollingFrame, scroll, "discover/scroll");
     BRLS_BIND(brls::Box, content, "discover/content");
-    BRLS_BIND(brls::Label, statusLabel, "discover/status");
+    BRLS_BIND(brls::Box, statusBox, "discover/status");
+    BRLS_BIND(LoadingRing, statusRing, "discover/status/ring");
+    BRLS_BIND(brls::Label, statusLabel, "discover/status/label");
+    BRLS_BIND(ProgressLine, statusBar, "discover/status/bar");
     BRLS_BIND(brls::Box, messageBox, "discover/message");
     BRLS_BIND(LoadingRing, messageRing, "discover/message/ring");
     BRLS_BIND(brls::Label, messageLabel, "discover/message/label");
