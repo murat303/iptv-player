@@ -16,6 +16,14 @@
 ### Genres
 - The movie and series lists have a "Genres" group: a tile per genre opens all of its titles.
 
+### Detail screen
+- Movies show TMDB's rating with its number of votes, the director and the cast with their photos, and similar
+  titles of the catalogue (the other movies of its film series first). Series show TMDB's rating.
+
+### Fixes
+- The language names in Settings showed broken letters.
+- The pictures of the guide to open the app through a game (and to add a HOME menu shortcut) show IPTV Player.
+
 ### How it works
 - The provider's lists already carry the TMDB id of most titles: each title is asked about once at TMDB
   (themoviedb.org) in the background, about 30 a second (a catalogue of 15,000 titles in about eight minutes the
