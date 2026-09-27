@@ -211,7 +211,8 @@
       "auto_refresh": "Aggiornamento automatico degli elenchi",
       "auto_refresh_daily": "Ogni giorno",
       "auto_refresh_weekly": "Ogni settimana",
-      "auto_refresh_off": "Disattivato (solo pulsante Aggiorna)"
+      "auto_refresh_off": "Disattivato (solo pulsante Aggiorna)",
+      "connection_test": "Test di connessione"
     },
     "imported": "Impostazioni, preferiti e cronologia sono stati importati da TsVitch."
   },
@@ -736,5 +737,32 @@
     "removed": "Rimosso dalla cronologia",
     "clear_confirm": "Cancellare tutta la cronologia?",
     "empty": "Non hai ancora guardato nulla"
+  },
+  "connection": {
+    "title": "Test di connessione",
+    "running": "Test del provider in corso…",
+    "account": "Account",
+    "categories": "Categorie delle serie",
+    "series": "Ultima serie aperta",
+    "seconds": "{} s",
+    "ok": "OK · {} · {}",
+    "failed": "Non riuscito: {} · {}",
+    "attempts": "{} tentativi",
+    "waited": "in attesa nell'app per {}",
+    "summary_good": "Il provider risponde normalmente.",
+    "summary_slow": "Il provider risponde lentamente o ha richiesto nuovi tentativi.",
+    "summary_fail": "Il provider non ha risposto a tutte le richieste.",
+    "recent": "Richieste recenti dell'app",
+    "none": "Ancora nessuna richiesta",
+    "error": {
+      "timeout": "tempo scaduto",
+      "connect": "connessione impossibile",
+      "host": "server non trovato",
+      "dropped": "connessione interrotta",
+      "ssl": "connessione sicura non riuscita",
+      "http": "HTTP {}",
+      "setup": "nessun account Xtream",
+      "other": "errore di rete"
+    }
   }
 }

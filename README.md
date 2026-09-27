@@ -23,7 +23,7 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
 - **Downloads:** save movies and episodes to the SD card, pause and continue them, and watch them without internet.
 - **Saved lists:** the lists of the provider are kept on the SD card and open at once. They are refreshed in the
   background every day, every week or only with the refresh button, and a card shows how the download goes.
-- **History and favorites**, a PIN lock for adult categories, and the account status (end date, connections).
+- **History and favorites**, a PIN lock for adult categories, the account status (end date, connections) and a connection test that times the provider's answers.
 - **Languages:** English, Turkish, Italian and Brazilian Portuguese.
 
 ## Screenshots
@@ -165,6 +165,8 @@ Arayüzü Türkçe yapmak için: Settings → UI → Language → Türkçe.
 
 **İzlendi:** %90'ı izlenen film ve bölümler izlendi sayılır. Detay ekranlarında Y ile elle de işaretleyebilirsin.
 Sonraki bölüm, videoda jenerik işareti varsa orada, yoksa ayarlardan seçtiğin sürede (varsayılan: bitmeden 1 dk önce) sorulur.
+
+**Bağlantı testi:** Bir ekran yavaş açılıyorsa Ayarlar → IPTV → Bağlantı testi, sağlayıcının cevap sürelerini ve uygulamanın son isteklerini gösterir.
 
 **Listeler:** Sağlayıcının listeleri SD karta kaydedilir ve hemen açılır. Arka planda her gün yenilenir;
 bunu Ayarlar → IPTV bölümünden haftada bire çekebilir ya da kapatabilirsin.

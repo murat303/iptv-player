@@ -210,6 +210,10 @@
                                                                         id="setting/iptv/account"
                                                                         title="@i18n/tsvitch/setting/iptv/account" />
 
+                                                                <brls:RadioCell
+                                                                        id="setting/iptv/connection_test"
+                                                                        title="@i18n/tsvitch/setting/iptv/connection_test" />
+
                                                                 <SelectorCell
                                                                         id="setting/iptv/auto_refresh" />
 

@@ -337,10 +337,13 @@ void XtreamDetailActivity::loadDetail() {
     auto onDetail = [this, alive](tsvitch::XtreamDetail result) {
         if (alive->load()) this->showDetail(result);
     };
-    if (isSeries)
-        CLIENT::get_xtream_series_detail(item.url.substr(SERIES_SCHEME.size()), onDetail, onError);
-    else
+    if (isSeries) {
+        std::string seriesId = item.url.substr(SERIES_SCHEME.size());
+        ProgramConfig::instance().setSettingItem(SettingItem::XTREAM_LAST_SERIES, seriesId);
+        CLIENT::get_xtream_series_detail(seriesId, onDetail, onError);
+    } else {
         CLIENT::get_xtream_movie_detail(item.id, onDetail, onError);
+    }
 }
 
 void XtreamDetailActivity::showDetail(const tsvitch::XtreamDetail& update) {

@@ -241,6 +241,7 @@ std::unordered_map<SettingItem, ProgramOption> ProgramConfig::SETTING_MAP = {
     {SettingItem::PLAYER_SUB_POSITION, {"player_sub_position", {}, {}, 0}},
     {SettingItem::PLAYER_AUTO_NEXT, {"player_auto_next", {}, {}, 1}},
     {SettingItem::PLAYER_NEXT_AT, {"player_next_at", {}, {}, 2}},
+    {SettingItem::XTREAM_LAST_SERIES, {"xtream_last_series", {}, {}, 0}},
     {SettingItem::XTREAM_ACCOUNT_CHECKED, {"xtream_account_checked", {}, {}, 0}},
     {SettingItem::XTREAM_AUTO_REFRESH, {"xtream_auto_refresh", {}, {}, 0}},
 };

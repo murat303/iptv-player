@@ -211,7 +211,8 @@
       "auto_refresh": "Refresh lists automatically",
       "auto_refresh_daily": "Every day",
       "auto_refresh_weekly": "Every week",
-      "auto_refresh_off": "Off (refresh button only)"
+      "auto_refresh_off": "Off (refresh button only)",
+      "connection_test": "Connection test"
     },
     "imported": "Your settings, favorites and history were brought over from TsVitch."
   },
@@ -724,5 +725,32 @@
     "removed": "Removed from the history",
     "clear_confirm": "Clear the whole watch history?",
     "empty": "Nothing watched yet"
+  },
+  "connection": {
+    "title": "Connection test",
+    "running": "Testing the provider…",
+    "account": "Account",
+    "categories": "Series categories",
+    "series": "Last opened series",
+    "seconds": "{} s",
+    "ok": "OK · {} · {}",
+    "failed": "Failed: {} · {}",
+    "attempts": "{} tries",
+    "waited": "waited {} in the app",
+    "summary_good": "The provider answers normally.",
+    "summary_slow": "The provider answers slowly or needed retries.",
+    "summary_fail": "The provider did not answer every request.",
+    "recent": "Recent requests of the app",
+    "none": "No requests yet",
+    "error": {
+      "timeout": "timeout",
+      "connect": "cannot connect",
+      "host": "server not found",
+      "dropped": "connection dropped",
+      "ssl": "secure connection failed",
+      "http": "HTTP {}",
+      "setup": "no Xtream account",
+      "other": "network error"
+    }
   }
 }

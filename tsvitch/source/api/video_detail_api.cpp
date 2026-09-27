@@ -1,3 +1,5 @@
+#include <ctime>
+#include <deque>
 #include <atomic>
 #include <nlohmann/json.hpp>
 #include <sstream>
@@ -541,13 +543,44 @@ void TsVitchClient::setXtreamLoadObserver(std::function<void(const XtreamLoadSta
     xtreamLoadObserver = std::move(observer);
 }
 
+namespace {
+
+std::mutex xtreamLogMutex;
+std::deque<XtreamRequestLog> xtreamLog;
+
+/// Keeps the outcome of a request for the connection test screen
+XtreamRequestLog recordXtreamRequest(const std::string& action, std::chrono::steady_clock::time_point submitted,
+                                     std::chrono::steady_clock::time_point firstTry, int attempts,
+                                     const cpr::Response& r) {
+    using namespace std::chrono;
+    auto now = steady_clock::now();
+    XtreamRequestLog log;
+    log.action     = action;
+    log.time       = static_cast<int64_t>(std::time(nullptr));
+    log.waitMs     = static_cast<int>(duration_cast<milliseconds>(firstTry - submitted).count());
+    log.durationMs = static_cast<int>(duration_cast<milliseconds>(now - firstTry).count());
+    log.attempts   = attempts;
+    log.status     = static_cast<int>(r.status_code);
+    log.error      = static_cast<int>(r.error.code);
+    log.cut        = !r.error && r.status_code == 200 && !looksLikeCompleteJson(r.text);
+    log.bytes      = r.downloaded_bytes > 0 ? static_cast<size_t>(r.downloaded_bytes) : r.text.size();
+    std::lock_guard<std::mutex> lock(xtreamLogMutex);
+    xtreamLog.push_front(log);
+    if (xtreamLog.size() > 20) xtreamLog.pop_back();
+    return log;
+}
+
+}  // namespace
+
 // reportType / reportPhase: the list (0 live, 1 movies, 2 series) whose download screen hears about this
-// request, and what the request is for it; -1 reports nothing
+// request, and what the request is for it; -1 reports nothing. onRecord: gets the request's log entry.
 static void xtreamApiGet(const XtreamAccount& account, const std::string& action,
                          const std::vector<std::pair<std::string, std::string>>& extra,
                          std::function<void(cpr::Response)> done, bool list = false, int reportType = -1,
-                         XtreamLoadState::Phase reportPhase = XtreamLoadState::CATEGORIES) {
-    cpr::async([account, action, extra, done, list, reportType, reportPhase]() {
+                         XtreamLoadState::Phase reportPhase                   = XtreamLoadState::CATEGORIES,
+                         std::function<void(const XtreamRequestLog&)> onRecord = nullptr) {
+    auto submitted = std::chrono::steady_clock::now();
+    cpr::async([account, action, extra, done, list, reportType, reportPhase, onRecord, submitted]() {
         static const int listRetryMs[] = {1500, 3000, 5000, 8000};
         static const int infoRetryMs[] = {1500, 3000};
         const int* retryDelaysMs       = list ? listRetryMs : infoRetryMs;
@@ -565,6 +598,8 @@ static void xtreamApiGet(const XtreamAccount& account, const std::string& action
             notifyXtreamLoad(state);
         };
         cpr::Response r;
+        auto firstTry = submitted;
+        int attempts  = 0;
         {
             // Another request of the lane is running (usually another list): the screen says it waits
             std::unique_lock<std::mutex> lock(lane.mutex, std::try_to_lock);
@@ -575,6 +610,7 @@ static void xtreamApiGet(const XtreamAccount& account, const std::string& action
             for (size_t attempt = 0;; attempt++) {
                 if (!waitUnlessStopping(lane.lastRequest + minGap - std::chrono::steady_clock::now())) return;
                 report({0, reportPhase});
+                if (attempts++ == 0) firstTry = std::chrono::steady_clock::now();
                 auto lastReport = std::make_shared<std::chrono::steady_clock::time_point>();
                 r = cpr::Get(cpr::Url{account.baseUrl + "player_api.php"}, params, cpr::Timeout{timeoutMs},
                              cpr::ConnectTimeout{10000}, HTTP::HEADERS, HTTP::COOKIES, HTTP::PROXIES, HTTP::VERIFY,
@@ -607,8 +643,36 @@ static void xtreamApiGet(const XtreamAccount& account, const std::string& action
                 if (!waitUnlessStopping(std::chrono::milliseconds(retryDelaysMs[attempt]))) return;
             }
         }
+        auto record = recordXtreamRequest(action, submitted, firstTry, attempts, r);
+        if (onRecord) onRecord(record);
         done(std::move(r));
     });
+}
+
+std::vector<XtreamRequestLog> TsVitchClient::recentXtreamRequests() {
+    std::lock_guard<std::mutex> lock(xtreamLogMutex);
+    return {xtreamLog.begin(), xtreamLog.end()};
+}
+
+void TsVitchClient::testXtreamRequest(const std::string& action,
+                                      const std::vector<std::pair<std::string, std::string>>& params,
+                                      const std::function<void(XtreamRequestLog)>& done) {
+    XtreamAccount account;
+    if (!getXtreamAccount(account)) {
+        XtreamRequestLog log;
+        log.action = action;
+        log.error  = -1;
+        brls::sync([done, log]() {
+            if (done) done(log);
+        });
+        return;
+    }
+    xtreamApiGet(account, action, params, [](cpr::Response) {}, false, -1, XtreamLoadState::CATEGORIES,
+                 [done](const XtreamRequestLog& log) {
+                     brls::sync([done, log]() {
+                         if (done) done(log);
+                     });
+                 });
 }
 
 /// Fetches the categories of a content type; on failure the map stays empty and items keep a fallback group

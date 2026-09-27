@@ -13,6 +13,10 @@
 - The next episode is offered at the closing credits: at a chapter named for them when the video has chapters, otherwise 30 s, 1 min (the default) or 2 min before the end, or when the episode ends (Settings > Playback).
 - Cancel keeps the credits playing; when the episode ends the next one is offered again.
 
+### Connection test
+- Settings > IPTV > Connection test asks the provider three small things one after the other (the account, the series categories, the series opened last) and shows how long each took and how many tries it needed.
+- The same screen lists the app's last 10 requests with their times, tries and how long they waited in the app, so a slow screen can be traced to the provider or to the app.
+
 ### Other
 - The L and R glyphs sit beside the season buttons, so the footer has room for Y.
 - Closing the app while a video or a detail screen is open no longer touches the lists behind them.

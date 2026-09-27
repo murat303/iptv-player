@@ -590,6 +590,10 @@ void SettingsActivity::onContentAvailable() {
         tsvitch::showXtreamAccountInfo();
         return true;
     });
+    btnConnectionTest->registerClickAction([](brls::View*) {
+        tsvitch::showXtreamConnectionTest();
+        return true;
+    });
     selectorAutoRefresh->init(
         "tsvitch/setting/iptv/auto_refresh"_i18n,
         {"tsvitch/setting/iptv/auto_refresh_daily"_i18n, "tsvitch/setting/iptv/auto_refresh_weekly"_i18n,

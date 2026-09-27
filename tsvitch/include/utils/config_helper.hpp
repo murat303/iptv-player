@@ -117,6 +117,8 @@ enum class SettingItem {
     // When the next episode is offered: 0 when the episode ends, 1/2/3 30 s/1 min/2 min before the end (a
     // chapter named for the closing credits wins)
     PLAYER_NEXT_AT,
+    // Id of the series whose details were opened last (the connection test asks for it)
+    XTREAM_LAST_SERIES,
     // Unix time of the last daily subscription check (the reminder before it ends)
     XTREAM_ACCOUNT_CHECKED,
     // Background refresh of the saved lists: 0 every day, 1 every week, 2 only with the refresh button

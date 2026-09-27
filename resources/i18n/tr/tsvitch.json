@@ -211,7 +211,8 @@
       "auto_refresh": "Listeleri kendiliğinden yenile",
       "auto_refresh_daily": "Her gün",
       "auto_refresh_weekly": "Her hafta",
-      "auto_refresh_off": "Kapalı (yalnızca yenile tuşu)"
+      "auto_refresh_off": "Kapalı (yalnızca yenile tuşu)",
+      "connection_test": "Bağlantı testi"
     },
     "imported": "Ayarların, favorilerin ve geçmişin TsVitch'ten aktarıldı."
   },
@@ -724,5 +725,32 @@
     "removed": "Geçmişten kaldırıldı",
     "clear_confirm": "Bütün izleme geçmişi silinsin mi?",
     "empty": "Henüz bir şey izlemedin"
+  },
+  "connection": {
+    "title": "Bağlantı testi",
+    "running": "Sağlayıcı test ediliyor…",
+    "account": "Hesap",
+    "categories": "Dizi kategorileri",
+    "series": "Son açılan dizi",
+    "seconds": "{} sn",
+    "ok": "Tamam · {} · {}",
+    "failed": "Olmadı: {} · {}",
+    "attempts": "{} deneme",
+    "waited": "uygulamada {} bekledi",
+    "summary_good": "Sağlayıcı normal cevap veriyor.",
+    "summary_slow": "Sağlayıcı yavaş cevap veriyor ya da tekrar denemek gerekti.",
+    "summary_fail": "Sağlayıcı her isteğe cevap vermedi.",
+    "recent": "Uygulamanın son istekleri",
+    "none": "Henüz istek yok",
+    "error": {
+      "timeout": "zaman aşımı",
+      "connect": "bağlanılamadı",
+      "host": "sunucu bulunamadı",
+      "dropped": "bağlantı kesildi",
+      "ssl": "güvenli bağlantı kurulamadı",
+      "http": "HTTP {}",
+      "setup": "Xtream hesabı yok",
+      "other": "ağ hatası"
+    }
   }
 }

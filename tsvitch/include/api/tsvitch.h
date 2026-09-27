@@ -27,6 +27,19 @@ struct XtreamLoadState {
     int retryInSeconds = 0;
 };
 
+/// One call to the provider's player_api.php, for the connection test (no address and no account in it)
+struct XtreamRequestLog {
+    std::string action;     // player_api action ("" is the account)
+    int64_t time   = 0;     // Unix time it was answered (or given up)
+    int waitMs     = 0;     // how long it waited in the app first (another request of its kind, the gap between them)
+    int durationMs = 0;     // from the first try to the answer, retries included
+    int attempts   = 0;
+    int status     = 0;     // HTTP status of the last try (0: no answer)
+    int error      = 0;     // cpr::ErrorCode of the last try (0: none, -1: no Xtream account)
+    bool cut       = false; // a 200 answer that stopped in the middle
+    size_t bytes   = 0;
+};
+
 #define CLIENT tsvitch::TsVitchClient
 #define CLIENT_ERR const std::string &error, int code
 
@@ -69,6 +82,14 @@ public:
 
     // The screen that shows list downloads; nullptr removes it
     static void setXtreamLoadObserver(std::function<void(const XtreamLoadState&)> observer);
+
+    // The last requests to the provider, newest first (at most 20)
+    static std::vector<XtreamRequestLog> recentXtreamRequests();
+
+    // One small request for the connection test (the lane of small requests); done gets its record on the UI thread
+    static void testXtreamRequest(const std::string& action,
+                                  const std::vector<std::pair<std::string, std::string>>& params,
+                                  const std::function<void(XtreamRequestLog)>& done);
 
     // Status, end date and connections of the subscription (player_api.php without an action)
     static void get_xtream_account_info(const std::function<void(XtreamAccountInfo)>& callback = nullptr,
