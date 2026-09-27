@@ -32,8 +32,9 @@ namespace tsvitch {
 
 namespace {
 
-constexpr int WORKERS          = 3;
-constexpr int GAP_MS           = 200;  // from one request of a worker to its next: at most 15 a second for all
+constexpr int WORKERS          = 4;
+constexpr int GAP_MS           = 150;  // from one request of a worker to its next: at most ~26 a second for all
+                                       // (TMDB allows about 40 a second from one address)
 constexpr size_t MAX_LISTS     = 200;  // saved TMDB lists (recommendations of old seeds are dropped first)
 constexpr int64_t PAUSE_ERRORS = 120;  // seconds without catalogue requests after several errors in a row
 
@@ -596,7 +597,8 @@ void TmdbService::worker(int index) {
             finished = pending.empty();
         }
         this->notifyChanged(finished || rejected);
-        if (finished) TmdbStore::instance().save(true);
+        // What came so far is on the SD card at most a minute later: a crash or a power cut loses little
+        TmdbStore::instance().save(finished);
     }
 
     {

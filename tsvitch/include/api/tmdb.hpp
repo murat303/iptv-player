@@ -28,8 +28,8 @@ struct TmdbRef {
  * The provider's lists already carry the TMDB id of most movies and series, so TMDB is never searched by name:
  * each title of the catalogue is asked about once (genres, year, votes, keywords...) and kept on the SD card for
  * six months at most, and a few lists (trending this week, recommendations) are kept for a day or a month.
- * Two worker threads send the requests one after the other with a gap, wait while a video plays and stop at once
- * when the app closes. Nothing goes to TMDB without a key (built in, or the user's own in <config>/tmdb_key.txt)
+ * Four worker threads send the requests with a gap (about 25 a second in all), wait while a video plays and stop at
+ * once when the app closes. What came is saved every minute, so a new start goes on where the last one stopped. Nothing goes to TMDB without a key (built in, or the user's own in <config>/tmdb_key.txt)
  * or when the setting is off.
  */
 class TmdbService {
