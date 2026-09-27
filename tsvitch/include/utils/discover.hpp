@@ -89,6 +89,9 @@ std::vector<LiveM3u8> sameCollection(int collection);
 /// Poster url of a title for a card (the provider's picture, TMDB's in the small size)
 std::string posterOf(const LiveM3u8& item);
 
+/// "12 titles" under a genre or collection ("1 title")
+std::string countText(size_t count);
+
 /// A title without the provider's tags at its end: "Pati (2023) TR" -> "Pati", "Film - 2014 4K HDR" -> "Film"
 std::string cleanTitle(const std::string& title);
 

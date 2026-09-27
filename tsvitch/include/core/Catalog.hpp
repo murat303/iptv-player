@@ -36,7 +36,9 @@ public:
 
     const tsvitch::LiveM3u8* find(int contentType, int tmdb) const;
 
-    const tsvitch::LiveM3u8* findSeries(const std::string& seriesId) const { return findById(2, seriesId); }
+    /// The series of an episode: by the id it was saved with, or for an entry saved before 1.2 by the start of its
+    /// name ("Name (2026) TR - S01E03 - ..." belongs to the series "Name (2026) TR")
+    const tsvitch::LiveM3u8* seriesOf(const tsvitch::LiveM3u8& episode) const;
 
     /// By the provider's id (stream_id of a movie, series_id of a series)
     const tsvitch::LiveM3u8* findById(int contentType, const std::string& id) const;
@@ -62,7 +64,8 @@ private:
         std::vector<tsvitch::LiveM3u8> items;
         std::unordered_map<int, uint32_t> byTmdb;
         std::unordered_map<std::string, uint32_t> byId;
-        std::unordered_map<int, uint16_t> versions;  // only TMDB ids found more than once
+        std::unordered_map<std::string, uint32_t> byTitle;  // series only, see seriesOf
+        std::unordered_map<int, uint16_t> versions;         // only TMDB ids found more than once
         bool upgrade = false;
         uint64_t seq = 0;
     };

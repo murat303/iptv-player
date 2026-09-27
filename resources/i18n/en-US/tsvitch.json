@@ -714,6 +714,7 @@
     "mark_unwatched": "Mark as unwatched",
     "director_role": "Director",
     "votes": "{} votes",
+    "thousands": ",",
     "similar": "More like this"
   },
   "cast": {
@@ -807,6 +808,7 @@
     },
     "details": "Details",
     "count": "{} titles",
+    "count_one": "1 title",
     "episode_note": "S{} · E{}",
     "next_episode": "Next episode",
     "network": "{} series",

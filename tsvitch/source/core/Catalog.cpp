@@ -7,6 +7,34 @@
 #include "core/XtreamStore.hpp"
 #include "utils/config_helper.hpp"
 
+namespace {
+
+/// A series name as the title index keeps it: without separators around it, ASCII letters in lower case
+std::string titleKey(const std::string& title) {
+    static const char* separators = " -:|.\t";
+    size_t start = title.find_first_not_of(separators);
+    if (start == std::string::npos) return "";
+    std::string key = title.substr(start, title.find_last_not_of(separators) - start + 1);
+    for (auto& c : key)
+        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+    return key;
+}
+
+/// Where the season and episode code (S01E03) of an episode's name starts, npos without one
+size_t seasonCode(const std::string& title) {
+    auto digit = [&title](size_t i) { return i < title.size() && title[i] >= '0' && title[i] <= '9'; };
+    auto apart = [](char c) { return c == ' ' || c == '-' || c == '|' || c == ':' || c == '.'; };
+    for (size_t i = 1; i < title.size(); i++) {
+        if ((title[i] != 'S' && title[i] != 's') || !digit(i + 1) || !apart(title[i - 1])) continue;
+        size_t j = i + 1;
+        while (digit(j)) j++;
+        if (j < title.size() && (title[j] == 'E' || title[j] == 'e') && digit(j + 1)) return i;
+    }
+    return std::string::npos;
+}
+
+}  // namespace
+
 Catalog& Catalog::instance() {
     // Never destroyed: background work may still finish while the app closes
     static auto* catalog = new Catalog();
@@ -26,20 +54,25 @@ std::shared_ptr<Catalog::Part> Catalog::build(const tsvitch::LiveM3u8ListResult&
         if (known == adultCategory.end())
             known = adultCategory.emplace(item.groupTitle, ProgramConfig::isAdultCategory(item.groupTitle)).first;
         if (known->second) continue;
+        auto index = static_cast<uint32_t>(part->items.size());
         if (item.tmdb > 0) {
             auto found = part->byTmdb.find(item.tmdb);
             if (found != part->byTmdb.end()) {
                 // The same movie again (another category, language or quality): the first one stays, and the id
                 // of this one finds it too
+                index       = found->second;
                 auto& count = part->versions[item.tmdb];
                 count       = count == 0 ? 2 : count + 1;
-                part->byId.emplace(item.id, found->second);
-                continue;
+            } else {
+                part->byTmdb.emplace(item.tmdb, index);
             }
-            part->byTmdb.emplace(item.tmdb, static_cast<uint32_t>(part->items.size()));
         }
-        part->byId.emplace(item.id, static_cast<uint32_t>(part->items.size()));
-        part->items.push_back(item);
+        part->byId.emplace(item.id, index);
+        if (item.type == 2) {
+            auto key = titleKey(item.title);
+            if (!key.empty()) part->byTitle.emplace(std::move(key), index);
+        }
+        if (index == part->items.size()) part->items.push_back(item);
     }
     part->items.shrink_to_fit();
     return part;
@@ -148,9 +181,19 @@ int Catalog::tmdbOf(const tsvitch::LiveM3u8& item, int& type) const {
         const auto* found = findById(2, item.id);
         return found ? found->tmdb : 0;
     }
-    // An episode: its series (entries saved before 1.2 do not know it)
-    const auto* series = findById(2, item.seriesId);
+    // An episode: its series
+    const auto* series = seriesOf(item);
     return series ? series->tmdb : 0;
+}
+
+const tsvitch::LiveM3u8* Catalog::seriesOf(const tsvitch::LiveM3u8& episode) const {
+    if (!episode.seriesId.empty()) return findById(2, episode.seriesId);
+    // Saved before 1.2: most providers start the name of an episode with the name of its series
+    const Part* p = part(2);
+    size_t code   = seasonCode(episode.title);
+    if (!p || code == std::string::npos) return nullptr;
+    auto it = p->byTitle.find(titleKey(episode.title.substr(0, code)));
+    return it != p->byTitle.end() ? &p->items[it->second] : nullptr;
 }
 
 int Catalog::versions(int contentType, int tmdb) const {

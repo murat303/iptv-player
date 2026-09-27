@@ -12,6 +12,8 @@
 - Only titles of the provider's lists are shown, without adult content and categories locked by the PIN; a movie that
   is in several categories shows once.
 - Settings → Discover: TMDB on or off, how far its data is, the shelves shown, and forgetting the data.
+- Episodes watched with an earlier version count too: their series is found by the name of the episode
+  ("Name - S01E03 - ...").
 
 ### Genres
 - The movie and series lists have a "Genres" group: a tile per genre opens all of its titles.
@@ -23,6 +25,8 @@
 ### Fixes
 - The language names in Settings showed broken letters.
 - The pictures of the guide to open the app through a game (and to add a HOME menu shortcut) show IPTV Player.
+- A card could show the picture of another title when a list opened while many pictures were loading (for example
+  the history right after the Discover tab): a picture that arrives late no longer replaces the newer one.
 
 ### How it works
 - The provider's lists already carry the TMDB id of most titles: each title is asked about once at TMDB

@@ -36,6 +36,33 @@ const std::string SERIES_SCHEME = "xtream-series://";
 constexpr size_t SHELF_SIZE     = 20;  // titles on a poster shelf
 constexpr size_t COVER_ITEMS    = 60;  // titles kept for a cover (its page computes all of them)
 
+/// "S1 · E2" under a series in Continue watching: the season from the episode's group ("Season 1"), the number
+/// from the episode; a provider without them still names the episode "Name - S01E02 - ..."
+std::string episodeNote(const LiveM3u8& episode) {
+    std::string season, number = episode.chno;
+    for (char c : episode.groupTitle)
+        if (c >= '0' && c <= '9') season += c;
+    const std::string& t = episode.title;
+    auto digit           = [&t](size_t i) { return i < t.size() && t[i] >= '0' && t[i] <= '9'; };
+    // the digits from..to without their leading zeros
+    auto value = [&t](size_t from, size_t to) {
+        while (from + 1 < to && t[from] == '0') from++;
+        return t.substr(from, to - from);
+    };
+    for (size_t i = 0; i < t.size() && (season.empty() || number.empty()); i++) {
+        if ((t[i] != 'S' && t[i] != 's') || !digit(i + 1)) continue;
+        size_t j = i + 1;
+        while (digit(j)) j++;
+        if (j >= t.size() || (t[j] != 'E' && t[j] != 'e') || !digit(j + 1)) continue;
+        size_t k = j + 1;
+        while (digit(k)) k++;
+        if (season.empty()) season = value(i + 1, j);
+        if (number.empty()) number = value(j + 1, k);
+    }
+    if (number.empty()) return "";
+    return brls::getStr("tsvitch/discover/episode_note", season.empty() ? "1" : season, number);
+}
+
 /// A visible title of the catalogue with its TMDB data (valid inside TmdbStore::read only)
 struct Entry {
     const LiveM3u8* item = nullptr;
@@ -391,9 +418,12 @@ struct Seen {
 
 Seen seenTitles() {
     Seen seen;
+    auto& catalog = Catalog::instance();
     for (const auto& item : HistoryManager::get()->recent(100)) {
         if (item.type == 1) seen.urls.insert(item.url);
-        if (item.type == 2 && !item.seriesId.empty()) seen.series.insert(item.seriesId);
+        if (item.type != 2) continue;
+        const LiveM3u8* series = catalog.seriesOf(item);
+        if (series) seen.series.insert(series->id);
     }
     return seen;
 }
@@ -537,6 +567,10 @@ void setHidden(const std::string& shelfId, bool hide) {
 
 std::string posterOf(const LiveM3u8& item) { return ImageHelper::smallPoster(item.logo); }
 
+std::string countText(size_t count) {
+    return count == 1 ? "tsvitch/discover/count_one"_i18n : brls::getStr("tsvitch/discover/count", count);
+}
+
 std::string cleanTitle(const std::string& title) {
     // Tags providers add at the end of a name (compared in capitals; the Turkish ones also with their dotted I)
     static const std::vector<std::string> tags = {"TR YERLI", "TR YERL\xC4\xB0", "YERLI", "YERL\xC4\xB0", "TR", "4K HDR",
@@ -661,19 +695,14 @@ Page build(const Inputs& in) {
                 cont.items.push_back(*item);
                 cont.notes.emplace_back("");
                 cont.progress.push_back(h.url);
-            } else if (h.type == 2 && h.url.rfind(SERIES_SCHEME, 0) != 0 && !h.seriesId.empty()) {
-                if (!seriesDone.insert(h.seriesId).second) continue;
+            } else if (h.type == 2 && h.url.rfind(SERIES_SCHEME, 0) != 0) {
+                const LiveM3u8* series = catalog.seriesOf(h);
+                if (!series || !seriesDone.insert(series->id).second) continue;
                 bool finished = WatchedManager::isWatched(h.url);
                 if (!started && !finished) continue;
-                const LiveM3u8* series = catalog.findSeries(h.seriesId);
-                if (!series || locked.count(series->groupTitle)) continue;
-                std::string season;
-                for (char c : h.groupTitle)
-                    if (c >= '0' && c <= '9') season += c;
+                if (locked.count(series->groupTitle)) continue;
                 cont.items.push_back(*series);
-                cont.notes.push_back(started ? brls::getStr("tsvitch/discover/episode_note",
-                                                            season.empty() ? "1" : season, h.chno)
-                                             : "tsvitch/discover/next_episode"_i18n);
+                cont.notes.push_back(started ? episodeNote(h) : "tsvitch/discover/next_episode"_i18n);
                 cont.progress.push_back(started ? h.url : "");
             }
         }

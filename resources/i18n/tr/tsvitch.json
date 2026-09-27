@@ -714,6 +714,7 @@
     "mark_unwatched": "İzlenmedi olarak işaretle",
     "director_role": "Yönetmen",
     "votes": "{} oy",
+    "thousands": ".",
     "similar": "Benzer yapımlar"
   },
   "cast": {
@@ -807,6 +808,7 @@
     },
     "details": "Ayrıntılar",
     "count": "{} yapım",
+    "count_one": "1 yapım",
     "episode_note": "S{} · B{}",
     "next_episode": "Sıradaki bölüm",
     "network": "{} dizileri",

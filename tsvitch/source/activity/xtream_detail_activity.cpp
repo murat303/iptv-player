@@ -338,8 +338,9 @@ void XtreamDetailActivity::requestTmdb() {
 namespace {
 std::string groupThousands(int number) {
     std::string digits = std::to_string(number), out;
+    std::string separator = "tsvitch/detail/thousands"_i18n;
     for (size_t i = 0; i < digits.size(); i++) {
-        if (i > 0 && (digits.size() - i) % 3 == 0) out += '.';
+        if (i > 0 && (digits.size() - i) % 3 == 0) out += separator;
         out += digits[i];
     }
     return out;

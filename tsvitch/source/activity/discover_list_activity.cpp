@@ -67,7 +67,7 @@ void DiscoverListActivity::onContentAvailable() {
     auto collection = tsvitch::discover::collection(collectionId);
     items           = std::move(collection.items);
     titleLabel->setText(collection.title.empty() ? title : collection.title);
-    countLabel->setText(brls::getStr("tsvitch/discover/count", items.size()));
+    countLabel->setText(tsvitch::discover::countText(items.size()));
 
     this->updateSortLabel();
     sortButton->registerClickAction([this](brls::View*) {

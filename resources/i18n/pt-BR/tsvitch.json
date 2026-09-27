@@ -714,6 +714,7 @@
     "mark_unwatched": "Marcar como não assistido",
     "director_role": "Diretor",
     "votes": "{} votos",
+    "thousands": ".",
     "similar": "Títulos parecidos"
   },
   "cast": {
@@ -807,6 +808,7 @@
     },
     "details": "Detalhes",
     "count": "{} títulos",
+    "count_one": "1 título",
     "episode_note": "T{} · E{}",
     "next_episode": "Próximo episódio",
     "network": "Séries {}",

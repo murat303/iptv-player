@@ -36,6 +36,10 @@ std::shared_ptr<ImageHelper> ImageHelper::with(brls::Image* view) {
     std::lock_guard<std::mutex> lock(requestMutex);
     std::shared_ptr<ImageHelper> item;
 
+    // A picture this view still waits for must not replace the new one when it arrives
+    auto previous = requestMap.find(view);
+    if (previous != requestMap.end() && (*previous->second)->imageView == view) (*previous->second)->cancel();
+
     if (!requestPool.empty() && (*requestPool.begin())->getImageView() == nullptr) {
         item = *requestPool.begin();
         item->setImageView(view);
@@ -142,7 +146,11 @@ void ImageHelper::requestImage() {
         int tex = brls::TextureCache::instance().getCache(this->imageUrl);
         if (tex > 0) {
             brls::Logger::verbose("cache hit 2: {}", this->imageUrl);
-            this->imageView->innerSetImage(tex);
+            // A view that was cleared or given another picture in the meantime keeps what it shows now
+            if (this->isCancel)
+                brls::TextureCache::instance().removeCache(tex);
+            else
+                this->imageView->innerSetImage(tex);
         } else {
             NVGcontext* vg = brls::Application::getNVGContext();
             if (paddedData) {
@@ -156,6 +164,9 @@ void ImageHelper::requestImage() {
                 if (!this->isCancel) {
                     brls::Logger::verbose("load image: {}", this->imageUrl);
                     this->imageView->innerSetImage(tex);
+                } else {
+                    // Nobody shows it: the cache keeps it for a later view and may drop it when full
+                    brls::TextureCache::instance().removeCache(tex);
                 }
             }
         }

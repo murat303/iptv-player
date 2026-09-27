@@ -206,7 +206,7 @@ GenreTile::GenreTile(const tsvitch::discover::Collection& genre, std::function<v
     this->setPadding(0, 14, 14, 16);
     auto* name = makeLabel(23, nvgRGB(255, 255, 255), genre.title);
     name->setSingleLine(true);
-    auto* count = makeLabel(14, nvgRGBA(255, 255, 255, 210), brls::getStr("tsvitch/discover/count", genre.count));
+    auto* count = makeLabel(14, nvgRGBA(255, 255, 255, 210), tsvitch::discover::countText(genre.count));
     count->setMarginTop(2);
     this->addView(name);
     this->addView(count);
@@ -245,7 +245,7 @@ void GenreGridCell::setGenre(const tsvitch::discover::Collection& genre) {
     colorA = rgb(genre.colorA);
     colorB = rgb(genre.colorB);
     name->setText(genre.title);
-    count->setText(brls::getStr("tsvitch/discover/count", genre.count));
+    count->setText(tsvitch::discover::countText(genre.count));
 }
 
 void GenreGridCell::draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
@@ -285,7 +285,7 @@ CoverCard::CoverCard(const tsvitch::discover::Collection& collection, std::funct
     auto* name = makeLabel(21, nvgRGB(255, 255, 255), collection.title);
     name->setWidth(WIDTH - 36);
     name->setLineHeight(1.1f);
-    auto* count = makeLabel(14, nvgRGBA(255, 255, 255, 215), brls::getStr("tsvitch/discover/count", collection.count));
+    auto* count = makeLabel(14, nvgRGBA(255, 255, 255, 215), tsvitch::discover::countText(collection.count));
     count->setMarginTop(2);
     this->addView(name);
     this->addView(count);

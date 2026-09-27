@@ -5,7 +5,7 @@
 <p align="center">Live TV, movies and series from your own IPTV subscription, on a Nintendo Switch running homebrew.</p>
 
 <p align="center">
-  <img src="docs/screenshots/movies.jpg" width="49%" alt="Movies"/>
+  <img src="docs/screenshots/discover.jpg" width="49%" alt="Discover"/>
   <img src="docs/screenshots/live-player.jpg" width="49%" alt="Live TV with the programme guide"/>
 </p>
 
@@ -52,8 +52,20 @@ the answers are kept on the SD card. Settings → Discover turns it off.
     <td><img src="docs/screenshots/live-tv.jpg" alt="Live TV"/><br/>Live TV</td>
   </tr>
   <tr>
+    <td><img src="docs/screenshots/discover.jpg" alt="Discover"/><br/>Discover</td>
+    <td><img src="docs/screenshots/discover-genres.jpg" alt="Genres and collections"/><br/>Genres and collections</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/collection.jpg" alt="A collection"/><br/>A collection</td>
+    <td><img src="docs/screenshots/genres.jpg" alt="Genres in the movie list"/><br/>Genres in the movie list</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/movies.jpg" alt="Movies"/><br/>Movies</td>
     <td><img src="docs/screenshots/movie-detail.jpg" alt="Movie details"/><br/>Movie details</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/movie-detail-tmdb.jpg" alt="Rating, cast and similar titles from TMDB"/><br/>Rating, cast and similar titles from TMDB</td>
+    <td><img src="docs/screenshots/settings-discover.jpg" alt="Discover settings"/><br/>Discover settings</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/series-detail.jpg" alt="Seasons and episodes"/><br/>Seasons and episodes</td>
@@ -86,7 +98,9 @@ The screenshots show the open movies of the Blender Foundation: *Big Buck Bunny*
 (© Blender Foundation / Blender Studio, [studio.blender.org](https://studio.blender.org), licensed
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) and [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/);
 posters from Wikimedia Commons, resized, and the Caminandes cover made from an episode picture).
-The channel names and logos are made up, and the ratings are sample values.
+The channel names and logos are made up, and the ratings are sample values. The Discover pictures add the made-up
+titles of an earlier showcase, and their TMDB data (genres, votes, people, similar titles) is made up too: the
+people's pictures are their initials. The top of the Discover tab shows a frame of *Sintel*.
 
 ## Installation
 
