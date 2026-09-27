@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 - not released yet
+## 1.1.0 - 2026-09-27
 
 ### Watched marks
 - Movies and episodes count as watched after 90% of them was played (as in Plex, Jellyfin and Kodi), or when the next episode is offered at the credits; their cards show a check.
