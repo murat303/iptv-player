@@ -26,6 +26,15 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
 - **History and favorites**, a PIN lock for adult categories, the account status (end date, connections) and a connection test that times the provider's answers.
 - **Languages:** English, Turkish, Italian and Brazilian Portuguese.
 
+## Privacy
+
+No analytics, no ads, no sign-up. The server address, username and password are saved only on your SD card and
+are sent only to your provider. Posters and logos load from the addresses in your provider's lists.
+
+The analytics (Google Analytics), the user registration and ad server and the update check of the original code are
+turned off when the app is built (`DISABLE_ANALYTICS`, `DISABLE_UPDATE_CHECK` and no `SERVER_URL` in
+[CMakeLists.txt](CMakeLists.txt)).
+
 ## Screenshots
 
 <table>
@@ -170,5 +179,8 @@ Sonraki bölüm, videoda jenerik işareti varsa orada, yoksa ayarlardan seçtiğ
 
 **Listeler:** Sağlayıcının listeleri SD karta kaydedilir ve hemen açılır. Arka planda her gün yenilenir;
 bunu Ayarlar → IPTV bölümünden haftada bire çekebilir ya da kapatabilirsin.
+
+**Gizlilik:** Analytics, reklam ve üyelik yok. Sunucu adresin, kullanıcı adın ve şifren yalnız SD kartında saklanır
+ve yalnız kendi sağlayıcına gönderilir.
 
 TsVitch'i kullandıysan ayarların, favorilerin ve geçmişin ilk açılışta kendiliğinden gelir.
