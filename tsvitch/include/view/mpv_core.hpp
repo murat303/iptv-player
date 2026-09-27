@@ -174,6 +174,17 @@ public:
     /// Subtitle size, color, background and position from the settings, as mpv options
     static std::vector<std::pair<std::string, std::string>> subtitleStyleOptions();
 
+    /// A track picked by hand ("audio" or "sub"; off: no subtitles). mpv finds the next one by its language;
+    /// a track without a language is found again by its title, or within the same series by its place.
+    void rememberTrack(const std::string &type, bool off, const std::vector<Track> &tracks, size_t index);
+
+    /// Once a video is loaded: selects the remembered tracks that mpv's language choice did not find
+    void applyTrackChoices();
+
+    /// What plays now: the series (its first episode) or the video. A place in the track list only counts
+    /// within the same one.
+    std::string trackContext;
+
     /// Applies the subtitle settings to the playing file
     void applySubtitleStyle();
 
@@ -323,6 +334,16 @@ public:
     inline static double VIDEO_GAMMA      = 0;
 
 private:
+    struct TrackChoice {
+        bool set = false;
+        bool off = false;
+        std::string lang, title, context;
+        size_t index = 0, count = 0;
+    };
+    TrackChoice audioChoice, subChoice;
+
+    void applyTrackChoice(const std::string &type, const TrackChoice &choice);
+
     mpv_handle *mpv                 = nullptr;
     mpv_render_context *mpv_context = nullptr;
     brls::Rect rect                 = {0, 0, 1920, 1080};

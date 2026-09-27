@@ -242,6 +242,8 @@ std::unordered_map<SettingItem, ProgramOption> ProgramConfig::SETTING_MAP = {
     {SettingItem::PLAYER_AUTO_NEXT, {"player_auto_next", {}, {}, 1}},
     {SettingItem::PLAYER_NEXT_AT, {"player_next_at", {}, {}, 2}},
     {SettingItem::XTREAM_LAST_SERIES, {"xtream_last_series", {}, {}, 0}},
+    {SettingItem::PLAYER_AUDIO_TITLE, {"player_audio_title", {}, {}, 0}},
+    {SettingItem::PLAYER_SUB_TITLE, {"player_sub_title", {}, {}, 0}},
     {SettingItem::XTREAM_ACCOUNT_CHECKED, {"xtream_account_checked", {}, {}, 0}},
     {SettingItem::XTREAM_AUTO_REFRESH, {"xtream_auto_refresh", {}, {}, 0}},
 };

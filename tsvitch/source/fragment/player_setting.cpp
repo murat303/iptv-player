@@ -116,7 +116,9 @@ void PlayerSetting::setupTrackSetting() {
                     size_t trackIndex = allowOff ? index - 1 : index;
                     bool off          = allowOff && index == 0;
                     std::string lang  = off ? "no" : tracks[trackIndex].lang == "und" ? "" : tracks[trackIndex].lang;
-                    // The language is remembered for the next videos, the track changes right away
+                    // The language is remembered for the next videos (a track without one by its title or
+                    // place), the track changes right away
+                    MPVCore::instance().rememberTrack(type, off, tracks, off ? 0 : trackIndex);
                     if (type == "audio") {
                         ProgramConfig::instance().setSettingItem(SettingItem::PLAYER_LANGUAGE, lang);
                         MPVCore::instance().setPreferredLanguages(lang, "");

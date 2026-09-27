@@ -197,6 +197,8 @@ void LiveActivity::startLive() {
     });
     
     this->video->setOnEndCallback([this]() { this->onVideoEnded(); });
+    // A track's place in the list is remembered within the same series (or the same video)
+    MPVCore::instance().trackContext = seriesPlaylist && !channelList.empty() ? channelList.front().url : liveData.url;
     this->video->setUrl(liveData.url);
     this->loadEpg();
 }
@@ -278,6 +280,8 @@ void LiveActivity::onMpvEvent(MpvEventEnum event) {
         return;
     }
     if (event != MpvEventEnum::MPV_LOADED || this->isAd) return;
+    // The audio and subtitle tracks picked in an earlier episode, also when they have no language
+    MPVCore::instance().applyTrackChoices();
     // The real duration tells a video from a live stream
     this->detectContentType();
     // A movie or episode continues where it was left

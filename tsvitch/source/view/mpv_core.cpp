@@ -338,6 +338,15 @@ void MPVCore::init() {
             mpvSetOptionString(mpv, "sid", "no");
         else if (!subLang.empty())
             mpvSetOptionString(mpv, "slang", subLang.c_str());
+        // Tracks without a language are found by their title
+        auto &config      = ProgramConfig::instance();
+        audioChoice.lang  = audioLang;
+        audioChoice.title = config.getSettingItem(SettingItem::PLAYER_AUDIO_TITLE, std::string{});
+        audioChoice.set   = !audioChoice.lang.empty() || !audioChoice.title.empty();
+        subChoice.off     = subLang == "no";
+        subChoice.lang    = subChoice.off ? "" : subLang;
+        subChoice.title   = config.getSettingItem(SettingItem::PLAYER_SUB_TITLE, std::string{});
+        subChoice.set     = subChoice.off || !subChoice.lang.empty() || !subChoice.title.empty();
     }
     for (const auto &option : subtitleStyleOptions()) mpvSetOptionString(mpv, option.first.c_str(), option.second.c_str());
     mpvSetOptionString(mpv, "audio-channels", "stereo");
@@ -1282,6 +1291,51 @@ std::vector<MPVCore::Track> MPVCore::getTracks(const std::string &type) {
         tracks.push_back(std::move(track));
     }
     return tracks;
+}
+
+void MPVCore::rememberTrack(const std::string &type, bool off, const std::vector<Track> &tracks, size_t index) {
+    TrackChoice &choice = type == "audio" ? audioChoice : subChoice;
+    choice              = TrackChoice{};
+    choice.set          = true;
+    choice.off          = off;
+    choice.context      = trackContext;
+    choice.count        = tracks.size();
+    if (!off && index < tracks.size()) {
+        choice.lang  = tracks[index].lang == "und" ? "" : tracks[index].lang;
+        choice.title = tracks[index].title;
+        choice.index = index;
+    }
+    ProgramConfig::instance().setSettingItem(
+        type == "audio" ? SettingItem::PLAYER_AUDIO_TITLE : SettingItem::PLAYER_SUB_TITLE, choice.title);
+}
+
+void MPVCore::applyTrackChoices() {
+    applyTrackChoice("sub", subChoice);
+    applyTrackChoice("audio", audioChoice);
+}
+
+void MPVCore::applyTrackChoice(const std::string &type, const TrackChoice &choice) {
+    // "Off" is set before the file loads (sid=no)
+    if (!choice.set || choice.off) return;
+    auto tracks = getTracks(type);
+    if (tracks.empty()) return;
+    auto sameLang  = [&choice](const Track &t) { return !choice.lang.empty() && t.lang == choice.lang; };
+    auto sameTitle = [&choice](const Track &t) { return !choice.title.empty() && t.title == choice.title; };
+    // mpv found it by the language already (or the selected one has the remembered title)
+    for (const auto &track : tracks)
+        if (track.selected && (sameLang(track) || (choice.lang.empty() && sameTitle(track)))) return;
+    const Track *pick = nullptr;
+    for (const auto &track : tracks)
+        if (!pick && sameLang(track)) pick = &track;
+    for (const auto &track : tracks)
+        if (!pick && sameTitle(track)) pick = &track;
+    // Neither language nor title: the same place, only within the same series with the same list of tracks
+    if (!pick && !trackContext.empty() && choice.context == trackContext && choice.count == tracks.size() &&
+        choice.index < tracks.size())
+        pick = &tracks[choice.index];
+    if (!pick) return;
+    brls::Logger::info("MPVCore: {} track {} '{}' picked like before", type, pick->id, pick->title);
+    command_async("set", type == "audio" ? "aid" : "sid", std::to_string(pick->id));
 }
 
 void MPVCore::setPreferredLanguages(const std::string &audio, const std::string &subtitle) {

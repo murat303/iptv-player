@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 - 2026-09-27
+
+- An audio or subtitle track picked by hand stays picked in the next episode also when the track has no language: it is found again by its title, or within the same series by its place in the list. Before, the next episode went back to the file's default track.
+
 ## 1.1.0 - 2026-09-27
 
 ### Watched marks

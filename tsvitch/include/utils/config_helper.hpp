@@ -119,6 +119,9 @@ enum class SettingItem {
     PLAYER_NEXT_AT,
     // Id of the series whose details were opened last (the connection test asks for it)
     XTREAM_LAST_SERIES,
+    // Title of the audio / subtitle track picked last (tracks without a language are found again by it)
+    PLAYER_AUDIO_TITLE,
+    PLAYER_SUB_TITLE,
     // Unix time of the last daily subscription check (the reminder before it ends)
     XTREAM_ACCOUNT_CHECKED,
     // Background refresh of the saved lists: 0 every day, 1 every week, 2 only with the refresh button
