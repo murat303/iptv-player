@@ -29,6 +29,10 @@
 #include "utils/video_download.hpp"
 #include "utils/xtream_account.hpp"
 #include "core/XtreamStore.hpp"
+#include "core/Catalog.hpp"
+#include "api/tmdb.hpp"
+#include "utils/discover.hpp"
+#include "view/discover_views.hpp"
 #include "tsvitch.h"
 
 #include <borealis/core/box.hpp>
@@ -256,6 +260,30 @@ static const std::string& groupOf(const tsvitch::LiveM3u8& item) {
 
 static std::string allGroupLabel() { return "tsvitch/xtream/group/all"_i18n; }
 static std::string recentGroupLabel() { return "tsvitch/xtream/group/recent"_i18n; }
+static std::string genresGroupLabel() { return "tsvitch/xtream/group/genres"_i18n; }
+
+/// The genre tiles of the movie or series list: a tile opens every title of that genre
+class DataSourceGenreTiles : public RecyclingGridDataSource {
+public:
+    explicit DataSourceGenreTiles(std::vector<tsvitch::discover::Collection> tiles) : tiles(std::move(tiles)) {}
+
+    RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
+        auto* cell = (GenreGridCell*)recycler->dequeueReusableCell("Genre");
+        cell->setGenre(tiles[index]);
+        return cell;
+    }
+
+    size_t getItemCount() override { return tiles.size(); }
+
+    void onItemSelected(RecyclingGrid* recycler, size_t index) override {
+        Intent::openDiscoverList(tiles[index].id, tiles[index].title);
+    }
+
+    void clearData() override { tiles.clear(); }
+
+private:
+    std::vector<tsvitch::discover::Collection> tiles;
+};
 
 namespace {
 // The HomeLive that receives the list download states (one home screen at a time)
@@ -282,6 +310,13 @@ HomeLive::HomeLive() {
 
     recyclingGrid->registerCell("Cell", []() { return RecyclingGridItemLiveVideoCard::create(); });
     recyclingGrid->registerCell("Poster", []() { return RecyclingGridItemLiveVideoCard::createPoster(); });
+    recyclingGrid->registerCell("Genre", []() { return GenreGridCell::create(); });
+
+    // The genre tiles wait for the catalogue when it was not read yet
+    auto genresValid    = validityFlag;
+    catalogSubscription = Catalog::instance().getChangedEvent()->subscribe([this, genresValid]() {
+        if (genresValid->load() && waitingGenres) this->showGenreTiles();
+    });
 
     upRecyclingGrid->registerCell("Cell", []() { return DynamicGroupChannels::create(); });
 
@@ -320,6 +355,7 @@ HomeLive::HomeLive() {
         contentCache.clear();
         episodesCache.clear();
         XtreamStore::clear();
+        Catalog::instance().reset();
         if (isXtreamMode) {
             this->showContentHub();
         } else {
@@ -478,15 +514,19 @@ void HomeLive::loadXtreamContent(int contentType, bool forceNetwork) {
         auto list       = std::make_shared<tsvitch::LiveM3u8ListResult>();
         int64_t savedAt = 0;
         bool found      = XtreamStore::load(contentType, *list, savedAt);
-        brls::sync([this, contentType, serial, isValid, list, found, savedAt]() {
+        bool upgrade    = found && XtreamStore::needsUpgrade(contentType);
+        brls::sync([this, contentType, serial, isValid, list, found, savedAt, upgrade]() {
             if (!isValid->load() || serial != xtreamLoadSerial) return;
             if (!found || list->empty()) {
                 this->fetchXtreamContent(contentType, serial, false);
                 return;
             }
             this->onLiveList(std::move(*list), false);
-            // An old list stays usable while a fresh one is downloaded for the next visit
-            if (XtreamStore::isStale(savedAt)) this->fetchXtreamContent(contentType, serial, true);
+            // An old list stays usable while a fresh one is downloaded for the next visit (a list saved by an older
+            // version too: it has no TMDB ids for the discovery screen), unless lists refresh only by hand
+            bool autoRefresh = ProgramConfig::instance().getSettingItem(SettingItem::XTREAM_AUTO_REFRESH, 0) != 2;
+            if (XtreamStore::isStale(savedAt) || (upgrade && autoRefresh))
+                this->fetchXtreamContent(contentType, serial, true);
         });
     });
 }
@@ -528,6 +568,8 @@ void HomeLive::fetchXtreamContent(int contentType, int serial, bool background) 
         if (!result.empty()) {
             auto toSave = std::make_shared<tsvitch::LiveM3u8ListResult>(result);
             cpr::async([contentType, toSave]() { XtreamStore::save(contentType, *toSave); });
+            // The discovery screen uses the new movies and series too
+            Catalog::instance().update(contentType, toSave);
         }
         if (!wanted()) {
             // Not on screen (or a background download): keep it for the next visit
@@ -735,10 +777,16 @@ void HomeLive::registerBackAction() {
 void HomeLive::prefetchMissingLists() {
     if (prefetchStarted || !isXtreamMode) return;
     prefetchStarted = true;
+    // Movie and series lists saved by an older version are downloaded again once: the discovery screen needs
+    // their TMDB ids (not when lists refresh only by hand)
+    bool autoRefresh = ProgramConfig::instance().getSettingItem(SettingItem::XTREAM_AUTO_REFRESH, 0) != 2;
     // Small lists first; the server gets one request at a time anyway
     for (int type : {0, 2, 1}) {
-        if (contentCache.count(type) || XtreamStore::exists(type)) continue;
-        brls::Logger::info("HomeLive: downloading list type {} in the background", type);
+        bool missing = !contentCache.count(type) && !XtreamStore::exists(type);
+        bool upgrade = autoRefresh && XtreamStore::needsUpgrade(type);
+        if (!missing && !upgrade) continue;
+        brls::Logger::info("HomeLive: downloading list type {} in the background ({})", type,
+                           missing ? "never saved" : "older format");
         this->fetchXtreamContent(type, 0, true);
     }
 }
@@ -890,6 +938,8 @@ std::vector<std::string> HomeLive::buildGroupTitles() {
             std::vector<std::string> virtualGroups;
             if (currentLoadType != 0 && hasAddedDates) virtualGroups.push_back(recentGroupLabel());
             virtualGroups.push_back(allGroupLabel());
+            // Movies and series: their genres as tiles (Action, Comedy...)
+            if (currentLoadType != 0) virtualGroups.push_back(genresGroupLabel());
             titles.insert(titles.begin(), virtualGroups.begin(), virtualGroups.end());
         }
     }
@@ -898,6 +948,7 @@ std::vector<std::string> HomeLive::buildGroupTitles() {
 
 tsvitch::LiveM3u8ListResult HomeLive::itemsForGroup(const std::string& group) const {
     tsvitch::LiveM3u8ListResult out;
+    if (this->isGenresGroup(group)) return out;
     bool virtualGroups = isXtreamMode && !inSeriesEpisodes;
     if (virtualGroups && group == allGroupLabel()) {
         out.reserve(channelsList.size());
@@ -1109,7 +1160,9 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
             restoreFocusId.clear();
         }
 
-        if (filtered.empty())
+        if (this->isGenresGroup(selectedGroup))
+            this->showGenreTiles();
+        else if (filtered.empty())
             recyclingGrid->setEmpty();
         else
             recyclingGrid->setDataSource(
@@ -1176,6 +1229,13 @@ void HomeLive::selectGroupContent(const std::string& group) {
         return;
     }
 
+    if (this->isGenresGroup(group)) {
+        this->showGenreTiles();
+        return;
+    }
+    waitingGenres = false;
+    // The genre tiles changed the grid's columns
+    this->applyGridLayout();
     auto filtered = this->itemsForGroup(group);
     if (filtered.empty())
         recyclingGrid->setEmpty();
@@ -1185,6 +1245,34 @@ void HomeLive::selectGroupContent(const std::string& group) {
 
 bool HomeLive::isVirtualGroup(const std::string& group) const {
     return isXtreamMode && !inSeriesEpisodes && (group == allGroupLabel() || group == recentGroupLabel());
+}
+
+bool HomeLive::isGenresGroup(const std::string& group) const {
+    return isXtreamMode && !inSeriesEpisodes && currentLoadType != 0 && group == genresGroupLabel();
+}
+
+void HomeLive::showGenreTiles() {
+    auto& catalog = Catalog::instance();
+    if (!catalog.isLoaded()) {
+        // The catalogue's changed event shows them
+        waitingGenres = true;
+        catalog.ensureLoaded();
+        recyclingGrid->showSkeleton();
+        return;
+    }
+    waitingGenres = false;
+    // The movies' genres come from TMDB: the fetch may have waited for the catalogue
+    tsvitch::TmdbService::instance().refresh();
+    auto tiles                        = tsvitch::discover::genreTiles(currentLoadType);
+    recyclingGrid->spanCount          = 4;
+    recyclingGrid->estimatedRowHeight = 118;
+    if (tiles.empty()) {
+        bool tmdb = tsvitch::TmdbService::instance().enabled();
+        recyclingGrid->setEmpty(currentLoadType == 1 && !tmdb ? "tsvitch/discover/genres_need_tmdb"_i18n
+                                                              : "tsvitch/discover/genres_wait"_i18n);
+        return;
+    }
+    recyclingGrid->setDataSource(new DataSourceGenreTiles(std::move(tiles)));
 }
 
 void HomeLive::promptCategoryPin(const std::string& category, std::function<void()> onUnlock) {
@@ -1256,6 +1344,9 @@ void HomeLive::filter(const std::string& key) {
 
     this->sortItems(found);
     upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+    // The results are posters even when the genre tiles were shown
+    waitingGenres = false;
+    this->applyGridLayout();
     if (found.empty()) {
         recyclingGrid->setEmpty();
         brls::Application::notify(brls::getStr("tsvitch/xtream/no_results", key));
@@ -1399,6 +1490,7 @@ HomeLive::~HomeLive() {
     if (validityFlag) {
         validityFlag->store(false);
     }
+    Catalog::instance().getChangedEvent()->unsubscribe(catalogSubscription);
 }
 
 brls::View* HomeLive::create() { 

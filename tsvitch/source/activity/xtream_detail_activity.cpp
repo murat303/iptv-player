@@ -595,7 +595,11 @@ void XtreamDetailActivity::playEpisode(size_t seasonIndex, size_t episodeIndex) 
     size_t start = 0;
     for (size_t s = 0; s < detail.seasons.size(); s++) {
         if (s == seasonIndex) start = playlist.size() + episodeIndex;
-        for (const auto& episode : detail.seasons[s].episodes) playlist.push_back(episode.item);
+        for (const auto& episode : detail.seasons[s].episodes) {
+            playlist.push_back(episode.item);
+            // The history keeps the series of an episode: the discovery screen continues it from its page
+            playlist.back().seriesId = item.id;
+        }
     }
     if (!ProgramConfig::instance().isAdultCategory(item.groupTitle)) HistoryManager::get()->add(playlist[start]);
 

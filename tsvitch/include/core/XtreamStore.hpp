@@ -33,4 +33,8 @@ public:
 
     /// True when a list of the content type was saved before (without reading it)
     static bool exists(int contentType);
+
+    /// A saved movie or series list from an older version, without the TMDB ids and genres the discovery screen
+    /// needs: it is downloaded again with the next automatic refresh
+    static bool needsUpgrade(int contentType);
 };

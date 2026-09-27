@@ -22,11 +22,13 @@ RecyclingGridItemLiveVideoCard::RecyclingGridItemLiveVideoCard(bool posterLayout
 
 RecyclingGridItemLiveVideoCard::~RecyclingGridItemLiveVideoCard() { ImageHelper::clear(this->picture); }
 
-void RecyclingGridItemLiveVideoCard::setChannel(tsvitch::LiveM3u8 liveData, bool showGroup) {
+void RecyclingGridItemLiveVideoCard::setChannel(tsvitch::LiveM3u8 liveData, bool showGroup, bool loadPicture) {
     this->liveData = liveData;
+    this->watchUrl.clear();
     this->labelTitle->setIsWrapping(posterLayout);
     this->labelTitle->setText(liveData.title);
-    ImageHelper::with(this->picture)->load(ImageHelper::smallPoster(liveData.logo));
+    this->pictureLoaded = false;
+    if (loadPicture) this->loadPicture();
 
     // Movies and series: the category is already chosen on the left and the server's running number
     // means nothing, so the card shows the rating instead
@@ -55,12 +57,35 @@ void RecyclingGridItemLiveVideoCard::setChannel(tsvitch::LiveM3u8 liveData, bool
     this->showWatchState();
 }
 
+void RecyclingGridItemLiveVideoCard::loadPicture() {
+    if (pictureLoaded) return;
+    pictureLoaded = true;
+    ImageHelper::with(this->picture)->load(ImageHelper::smallPoster(liveData.logo));
+}
+
+void RecyclingGridItemLiveVideoCard::releasePicture() {
+    if (!pictureLoaded) return;
+    pictureLoaded = false;
+    ImageHelper::clear(this->picture);
+}
+
+void RecyclingGridItemLiveVideoCard::setPosterHeight(float height) { this->boxPic->setHeight(height); }
+
+void RecyclingGridItemLiveVideoCard::setNote(const std::string& note) { this->labelChno->setText(note); }
+
+void RecyclingGridItemLiveVideoCard::setWatchUrl(const std::string& url) {
+    this->watchUrl = url;
+    this->showWatchState();
+}
+
 void RecyclingGridItemLiveVideoCard::showWatchState() {
-    // Channels and series cards have neither (a series card stands for all of its episodes)
+    // Channels and series cards have neither (a series card stands for all of its episodes), unless the card
+    // was given an episode to show
+    const std::string& url = watchUrl.empty() ? liveData.url : watchUrl;
     bool video       = liveData.type != 0;
-    bool watched     = video && tsvitch::WatchedManager::isWatched(liveData.url);
+    bool watched     = video && tsvitch::WatchedManager::isWatched(url);
     int64_t position = 0, duration = 0;
-    bool started = video && tsvitch::PlaybackPositionManager::getProgress(liveData.url, position, duration) &&
+    bool started = video && tsvitch::PlaybackPositionManager::getProgress(url, position, duration) &&
                    duration > 0;
     float part = started ? static_cast<float>(position) / duration : watched ? 1.0f : -1.0f;
     svgWatched->setVisibility(watched ? brls::Visibility::VISIBLE : brls::Visibility::GONE);

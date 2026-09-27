@@ -1,5 +1,6 @@
 
 
+#include "activity/discover_list_activity.hpp"
 #include <iostream>
 #include <borealis/core/application.hpp>
 
@@ -73,6 +74,14 @@ void Intent::openLive(const std::vector<tsvitch::LiveM3u8>& channelList, size_t 
 void Intent::openXtreamDetail(const tsvitch::LiveM3u8& item, std::function<void()> onClose) {
     watchClosing();
     auto activity = new XtreamDetailActivity(item, std::move(onClose));
+    brls::Application::pushActivity(activity);
+    registerFullscreen(activity);
+}
+
+void Intent::openDiscoverList(const std::string& collectionId, const std::string& title,
+                              std::function<void()> onClose) {
+    watchClosing();
+    auto activity = new DiscoverListActivity(collectionId, title, std::move(onClose));
     brls::Application::pushActivity(activity);
     registerFullscreen(activity);
 }

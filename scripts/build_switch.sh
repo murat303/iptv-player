@@ -28,6 +28,7 @@ cmake -B ${BUILD_DIR} \
     -DPLATFORM_SWITCH=ON \
     -DUSE_DEKO3D=OFF \
     -DBUILTIN_NSP=OFF \
-    -DBRLS_UNITY_BUILD=OFF
+    -DBRLS_UNITY_BUILD=OFF \
+    -DTMDB_API_KEY="${TMDB_API_KEY:-}"
 make -C ${BUILD_DIR} iptv-player.nro -j"$(nproc)"
 echo "Built ${BUILD_DIR}/iptv-player.nro"

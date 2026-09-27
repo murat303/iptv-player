@@ -16,7 +16,11 @@
 
 #include <borealis/core/touch/tap_gesture.hpp>
 
+#include <borealis/core/thread.hpp>
+
 #include "activity/main_activity.hpp"
+#include "api/tmdb.hpp"
+#include "core/Catalog.hpp"
 #include "utils/activity_helper.hpp"
 #include "utils/dialog_helper.hpp"
 #include "view/custom_button.hpp"
@@ -40,7 +44,7 @@ void MainActivity::onContentAvailable() {
         brls::Logger::info("No internet connection detected, navigating to Downloads tab");
         // Se non c'è internet, vai direttamente al tab Downloads (indice 2)
         if (this->tabFrame) {
-            this->tabFrame->focusTab(2); // Assumendo che Downloads sia il 3° tab (indice 2)
+            this->tabFrame->focusTab(3);  // Downloads: after Home, Discover and Favorites
         }
     }
     this->registerAction(
@@ -133,6 +137,13 @@ void MainActivity::onContentAvailable() {
         }
     });
     this->settingBtn->addGestureRecognizer(new brls::TapGestureRecognizer(this->settingBtn));
+
+    // The catalogue's TMDB data (genres, lists) is fetched in the background once the start is over: the missing
+    // lists and the account check go first
+    brls::delay(12000, []() {
+        Catalog::instance().ensureLoaded();
+        tsvitch::TmdbService::instance().refresh();
+    });
 }
 
 void MainActivity::resetSettingIcon() {

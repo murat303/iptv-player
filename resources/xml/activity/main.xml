@@ -24,6 +24,13 @@
 
             <Tab label=""
                  fontSize="18"
+                 icon="@res/svg/ico-discover.svg"
+                 iconActivate="@res/svg/ico-discover-activate.svg">
+                <HomeDiscover/>
+            </Tab>
+
+            <Tab label=""
+                 fontSize="18"
                  icon="@res/svg/ico-favorites.svg"
                  iconActivate="@res/svg/ico-favorites-activate.svg">
                 <HomeFavorites/>

@@ -128,6 +128,10 @@ enum class SettingItem {
     XTREAM_ACCOUNT_CHECKED,
     // Background refresh of the saved lists: 0 every day, 1 every week, 2 only with the refresh button
     XTREAM_AUTO_REFRESH,
+    // The discovery screen and the genre pages ask TMDB (themoviedb.org) about the catalogue (on by default)
+    TMDB_ENABLED,
+    // Rows of the discovery screen the user hid: their ids separated by commas
+    DISCOVER_HIDDEN,
 
     GROUP_SELECTED_INDEX,
 };

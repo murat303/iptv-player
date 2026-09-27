@@ -16,6 +16,11 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
 
 - **Live TV:** categories, channel logos, favorites, a now / next programme guide in the player, L and R to change the channel.
 - **Movies and series:** poster grids with ratings and years, watched marks and progress bars, sorting (recently added, rating, name, year), search, and detail pages with the plot, cast, backdrop and a resume button.
+- **Discover:** a tab with the title of the week, continue watching, this week's trending titles, recommendations
+  after what you watched, new movies and series, genre tiles, collections (box office hits, all-time classics, based on
+  books, mind twists...), studios and platforms, world cinema, award winners (Oscar, Cannes, Venice, Berlin, Emmy),
+  decades and film series. It shows only what your provider's lists have; shelves can be hidden in the settings.
+- **Genres:** movies and series by genre (Action, Comedy, Drama...) in the Discover tab and in the lists.
 - **Series:** seasons and episodes with stills and progress, L and R to change the season, and the next episode offered at the closing credits.
 - **Player:** audio and subtitle tracks, subtitle size / color / background / position / delay, 10-second skips with the D-pad, and playback resumes where you left off.
 - **Watched:** movies and episodes count as watched after 90% of them was played, like in Plex, Jellyfin and Kodi.
@@ -34,6 +39,10 @@ are sent only to your provider. Posters and logos load from the addresses in you
 The analytics (Google Analytics), the user registration and ad server and the update check of the original code are
 turned off when the app is built (`DISABLE_ANALYTICS`, `DISABLE_UPDATE_CHECK` and no `SERVER_URL` in
 [CMakeLists.txt](CMakeLists.txt)).
+
+The Discover tab and the genres ask [TMDB](https://www.themoviedb.org) about the titles of your lists by their TMDB
+ids, and for the recommendations about titles you watched. Your account, your lists and your history are never sent;
+the answers are kept on the SD card. Settings → Discover turns it off.
 
 ## Screenshots
 
@@ -117,7 +126,7 @@ In the history, **Y** removes the selected video. The player controls can also b
 ## Files
 
 Everything the app saves is in `/switch/iptv-player/`, next to the app: the settings, favorites, watch history,
-playback positions, the cached lists of the provider and the downloads.
+playback positions, the cached lists of the provider, the TMDB data of the Discover tab (`tmdb/`) and the downloads.
 
 When the app starts for the first time, it copies the settings, favorites and history of
 [TsVitch](https://github.com/giovannimirulla/TsVitch) from `/config/tsvitch` if they exist. It only copies them:
@@ -135,6 +144,10 @@ docker run --rm -v "$PWD:/data" devkitpro/devkita64 bash /data/scripts/build_swi
 
 The result is `cmake-build-switch/iptv-player.nro`. Every push is also built by GitHub Actions.
 
+The Discover tab and the genres need a [TMDB API key](https://developer.themoviedb.org/docs/getting-started):
+set `TMDB_API_KEY` for the build script (`docker run -e TMDB_API_KEY=...`). Without it they show only what the
+provider's lists tell. A key in `/switch/iptv-player/tmdb_key.txt` is used instead of the built-in one.
+
 Only the Nintendo Switch version is maintained. The files for the other platforms come from TsVitch and are not tested.
 
 ## Credits
@@ -146,6 +159,9 @@ with the Xtream movies and series support of **[ratk](https://github.com/ratk/Ts
 It is built with [borealis](https://github.com/xfangfang/borealis), [mpv](https://mpv.io),
 [FFmpeg](https://ffmpeg.org), [libass](https://github.com/libass/libass), [cpr](https://github.com/libcpr/cpr),
 [nlohmann/json](https://github.com/nlohmann/json) and [lunasvg](https://github.com/sammycage/lunasvg).
+
+Movie and series data for the Discover tab: [TMDB](https://www.themoviedb.org). This product uses the TMDB API but is
+not endorsed or certified by TMDB. The award winners come from [Wikidata](https://www.wikidata.org) (CC0).
 
 The changes of IPTV Player (2026, muratgokce) are listed in the [changelog](CHANGELOG.md).
 
@@ -175,12 +191,18 @@ Arayüzü Türkçe yapmak için: Settings → UI → Language → Türkçe.
 **İzlendi:** %90'ı izlenen film ve bölümler izlendi sayılır. Detay ekranlarında Y ile elle de işaretleyebilirsin.
 Sonraki bölüm, videoda jenerik işareti varsa orada, yoksa ayarlardan seçtiğin sürede (varsayılan: bitmeden 1 dk önce) sorulur.
 
+**Keşfet:** Haftanın yapımı, izlemeye devam et, bu hafta trend olanlar, izlediklerine göre öneriler, yeni filmler ve diziler,
+türler, koleksiyonlar (gişe rekortmenleri, klasikler, kitaptan uyarlamalar, akıl oyunları...), stüdyolar ve
+platformlar, dünya sineması, ödüllü yapımlar, on yıllar ve film serileri. Yalnız sağlayıcının listelerinde olanlar
+görünür. Film ve Dizi listelerinde de "Türler" grubu var. Satırlar Ayarlar → Keşfet bölümünden gizlenebilir.
+
 **Bağlantı testi:** Bir ekran yavaş açılıyorsa Ayarlar → IPTV → Bağlantı testi, sağlayıcının cevap sürelerini ve uygulamanın son isteklerini gösterir.
 
 **Listeler:** Sağlayıcının listeleri SD karta kaydedilir ve hemen açılır. Arka planda her gün yenilenir;
 bunu Ayarlar → IPTV bölümünden haftada bire çekebilir ya da kapatabilirsin.
 
 **Gizlilik:** Analytics, reklam ve üyelik yok. Sunucu adresin, kullanıcı adın ve şifren yalnız SD kartında saklanır
-ve yalnız kendi sağlayıcına gönderilir.
+ve yalnız kendi sağlayıcına gönderilir. Keşfet sekmesi TMDB'ye yalnız yapımların TMDB kimliklerini sorar (öneriler için
+izlediklerininkini de); hesabın, listelerin ve geçmişin gönderilmez. Ayarlar → Keşfet bölümünden kapatılabilir.
 
 TsVitch'i kullandıysan ayarların, favorilerin ve geçmişin ilk açılışta kendiliğinden gelir.

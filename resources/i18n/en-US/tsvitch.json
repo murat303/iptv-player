@@ -163,7 +163,9 @@
       "credits_header": "Based on",
       "credits": "TsVitch by giovannimirulla, Xtream movies/series support by ratk, wiliwili by xfangfang and the borealis UI library.",
       "license_header": "License",
-      "license": "GPL-3.0: free software, provided without any warranty. Source code: github.com/murat303/iptv-player"
+      "license": "GPL-3.0: free software, provided without any warranty. Source code: github.com/murat303/iptv-player",
+      "data_header": "Data",
+      "data": "Movie and series data of the Discover tab: TMDB (themoviedb.org), award winners: Wikidata. This product uses the TMDB API but is not endorsed or certified by TMDB."
     },
     "opensource": {
       "tab": "Opensource"
@@ -214,7 +216,24 @@
       "auto_refresh_off": "Off (refresh button only)",
       "connection_test": "Connection test"
     },
-    "imported": "Your settings, favorites and history were brought over from TsVitch."
+    "imported": "Your settings, favorites and history were brought over from TsVitch.",
+    "discover": {
+      "tab": "Discover",
+      "header": "Discover",
+      "tmdb": "Use TMDB (genres, collections, recommendations)",
+      "status": "TMDB data",
+      "status_value": "{} of {} titles",
+      "status_off": "Off",
+      "status_nokey": "No key in this build",
+      "status_rejected": "Key refused",
+      "shelves": "Shelves on the page",
+      "shelves_title": "Shown shelves",
+      "clear": "Forget TMDB data",
+      "clear_confirm": "The TMDB data of the catalogue is fetched again. Continue?",
+      "clear_done": "TMDB data forgotten",
+      "notice": "This product uses the TMDB API but is not endorsed or certified by TMDB.",
+      "privacy": "Only the TMDB ids of titles go to TMDB (for the recommendations: of titles you watched). Your account and your lists stay on the console."
+    }
   },
   "hints": {
     "hint1": "Select a game from the home screen",
@@ -547,7 +566,8 @@
     "season": "Season {}",
     "group": {
       "all": "All",
-      "recent": "★ Recently added"
+      "recent": "★ Recently added",
+      "genres": "Genres"
     },
     "search_results": "{} results for \"{}\"",
     "no_results": "No results for \"{}\"",
@@ -752,5 +772,143 @@
       "setup": "no Xtream account",
       "other": "network error"
     }
+  },
+  "discover": {
+    "shelf": {
+      "hero": "Title of the week",
+      "continue": "Continue watching",
+      "trending": "Trending this week",
+      "for_you": "For you",
+      "because": "Because you watched {}",
+      "because_setting": "Because you watched…",
+      "new_movies": "New movies",
+      "new_series": "New and updated series",
+      "movie_genres": "Movie genres",
+      "series_genres": "Series genres",
+      "themes": "Collections",
+      "favorite_genre": "Your genre: {}",
+      "favorite_genre_setting": "Your favourite genre",
+      "top_movies": "Top rated movies",
+      "top_series": "Top rated series",
+      "studios": "Studios and platforms",
+      "world": "World cinema",
+      "awards": "Award winners",
+      "decades": "Through the decades",
+      "franchises": "Film series",
+      "popular_movies": "Popular movies",
+      "popular_series": "Popular series"
+    },
+    "hero": {
+      "trending": "TRENDING THIS WEEK",
+      "new": "NEW IN YOUR LIST"
+    },
+    "details": "Details",
+    "count": "{} titles",
+    "episode_note": "S{} · E{}",
+    "next_episode": "Next episode",
+    "network": "{} series",
+    "franchise": "Film series",
+    "status": {
+      "progress": "Getting movie details: {}%",
+      "rejected": "TMDB refused the key"
+    },
+    "need_xtream": "The discovery page needs an Xtream Codes account (Settings > IPTV).",
+    "no_lists": "The movie and series lists are being downloaded. The page fills in when they are ready.",
+    "empty": "Nothing to discover yet.",
+    "tmdb_off": "TMDB is turned off: movie genres, collections and recommendations are missing (Settings > Discover).",
+    "tmdb_missing": "This build has no TMDB key: movie genres, collections and recommendations are missing.",
+    "genres_need_tmdb": "Movie genres come from TMDB, which is turned off (Settings > Discover).",
+    "genres_wait": "The genres are being prepared. Look again in a few minutes.",
+    "list_empty": "No titles in this collection.",
+    "sort": {
+      "suggested": "Suggested"
+    },
+    "theme": {
+      "blockbusters": "Box office hits",
+      "classics": "All-time classics",
+      "mind_twists": "Mind twists",
+      "books": "Based on books",
+      "true_stories": "True stories",
+      "epic_fantasy": "Epic fantasy",
+      "superheroes": "Superheroes",
+      "space": "Into space",
+      "time_travel": "Time travel",
+      "dystopia": "Dystopian worlds",
+      "heist": "Heists",
+      "serial_killers": "Serial killers",
+      "zombies": "Zombies",
+      "survival": "Survival",
+      "ai": "Artificial intelligence",
+      "martial_arts": "Martial arts",
+      "revenge": "Revenge",
+      "coming_of_age": "Coming of age",
+      "sports": "Sports",
+      "biographies": "Biographies",
+      "christmas": "Christmas",
+      "eye_openers": "Eye openers",
+      "true_crime": "True crime",
+      "family_animation": "Animation for the family",
+      "hidden_gems": "Hidden gems",
+      "miniseries": "Miniseries",
+      "completed": "Complete series"
+    },
+    "lang": {
+      "turkish": "Turkish productions",
+      "korean": "Korean productions",
+      "anime": "Anime",
+      "indian": "Indian cinema",
+      "spanish": "Spanish-language",
+      "french": "French productions",
+      "italian": "Italian productions",
+      "german": "German productions",
+      "japanese": "Japanese productions",
+      "chinese": "Chinese productions",
+      "nordic": "Swedish productions"
+    },
+    "decade": {
+      "2010": "The 2010s",
+      "2000": "The 2000s",
+      "1990": "The '90s",
+      "1980": "The '80s",
+      "1970": "The '70s",
+      "1960": "The '60s"
+    },
+    "award": {
+      "oscar_best_picture": "Oscar: Best Picture",
+      "oscar_animated": "Oscar: Best Animated Feature",
+      "oscar_international": "Oscar: Best International Film",
+      "golden_globe_drama": "Golden Globe: Best Drama",
+      "palme_dor": "Cannes: Palme d'Or",
+      "golden_lion": "Venice: Golden Lion",
+      "golden_bear": "Berlin: Golden Bear",
+      "emmy_drama": "Emmy: Best Drama Series",
+      "emmy_comedy": "Emmy: Best Comedy Series"
+    }
+  },
+  "genre": {
+    "action": "Action",
+    "adventure": "Adventure",
+    "animation": "Animation",
+    "comedy": "Comedy",
+    "crime": "Crime",
+    "documentary": "Documentary",
+    "drama": "Drama",
+    "family": "Family",
+    "fantasy": "Fantasy",
+    "history": "History",
+    "horror": "Horror",
+    "music": "Music",
+    "mystery": "Mystery",
+    "romance": "Romance",
+    "scifi": "Science fiction",
+    "thriller": "Thriller",
+    "war": "War",
+    "western": "Western",
+    "kids": "Kids",
+    "reality": "Reality",
+    "soap": "Soap",
+    "talk": "Talk shows",
+    "news": "News",
+    "politics": "Politics"
   }
 }

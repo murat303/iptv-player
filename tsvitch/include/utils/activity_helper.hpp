@@ -18,6 +18,9 @@ public:
     // Information screen of an Xtream movie or series (series items carry the xtream-series:// url)
     // onClose: the screen was left (the list shows what was marked there)
     static void openXtreamDetail(const tsvitch::LiveM3u8& item, std::function<void()> onClose = nullptr);
+    // A collection of the discovery screen (genre, theme, studio, award...) as a poster grid
+    static void openDiscoverList(const std::string& collectionId, const std::string& title,
+                                 std::function<void()> onClose = nullptr);
 
     // True once the app is closing: borealis then deletes the bottom screen first, so the close callbacks of the
     // screens above it must not touch the lists below

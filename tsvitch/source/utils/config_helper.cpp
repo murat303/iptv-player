@@ -247,6 +247,8 @@ std::unordered_map<SettingItem, ProgramOption> ProgramConfig::SETTING_MAP = {
     {SettingItem::PLAYER_SUB_FORCED, {"player_sub_forced", {}, {}, 0}},
     {SettingItem::XTREAM_ACCOUNT_CHECKED, {"xtream_account_checked", {}, {}, 0}},
     {SettingItem::XTREAM_AUTO_REFRESH, {"xtream_auto_refresh", {}, {}, 0}},
+    {SettingItem::TMDB_ENABLED, {"tmdb_enabled", {}, {}, 1}},
+    {SettingItem::DISCOVER_HIDDEN, {"discover_hidden", {}, {}, 0}},
 };
 
 ProgramConfig::ProgramConfig() = default;

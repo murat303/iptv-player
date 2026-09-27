@@ -27,7 +27,22 @@ public:
     ~RecyclingGridItemLiveVideoCard() override;
 
     // showGroup: the category tag under a channel (hidden when the list is one category already)
-    void setChannel(tsvitch::LiveM3u8 liveData, bool showGroup = true);
+    // loadPicture: false leaves the picture for loadPicture() (shelves load it once they come near the screen)
+    void setChannel(tsvitch::LiveM3u8 liveData, bool showGroup = true, bool loadPicture = true);
+
+    void loadPicture();
+
+    // Frees the picture of a card far from the screen (loadPicture shows it again)
+    void releasePicture();
+
+    // Shelves: a smaller poster than in the grid
+    void setPosterHeight(float height);
+
+    // A line instead of the year ("S2 · E4" on the discovery screen)
+    void setNote(const std::string& note);
+
+    // The bar and the check show this video's state (a series card shows its episode)
+    void setWatchUrl(const std::string& url);
 
    tsvitch::LiveM3u8 getChannel();
 
@@ -46,6 +61,8 @@ public:
 private:
 tsvitch::LiveM3u8 liveData;
     bool posterLayout = false;
+    bool pictureLoaded = false;
+    std::string watchUrl;
     BRLS_BIND(TextBox, labelTitle, "video/card/label/title");
     BRLS_BIND(brls::Label, labelGroup, "video/card/label/group");
     BRLS_BIND(brls::Label, labelChno, "video/card/label/chno");

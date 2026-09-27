@@ -25,6 +25,7 @@
 #include "tsvitch/result/home_live_result.h"
 #include "tsvitch/result/xtream_detail.h"
 #include "utils/text_fold.hpp"
+#include "utils/genres.hpp"
 #include "utils/config_helper.hpp"
 
 namespace tsvitch {
@@ -705,9 +706,10 @@ static void fetchXtreamCategories(const XtreamAccount& account, const XtreamCont
 // Switch's memory.
 static bool keepXtreamStreamKey(const std::string& key) {
     static const std::unordered_set<std::string> keys = {
-        "series_id", "cover",       "stream_id",           "stream_icon", "num",   "name",
-        "category_name", "category_id", "container_extension", "rating",      "added", "last_modified",
-        "releaseDate",   "release_date",  "year"};
+        "series_id",     "cover",        "stream_id", "stream_icon", "num",     "name",
+        "category_name", "category_id",  "container_extension",      "rating",  "added",
+        "last_modified", "releaseDate",  "release_date",             "year",    "tmdb",
+        "tmdb_id",       "is_adult",     "genre"};
     return keys.count(key) > 0;
 }
 
@@ -775,6 +777,14 @@ static void xtreamFetchContent(const std::function<void(LiveM3u8ListResult)>& ca
                 // Movies: some servers send the year in its own field, others only in the title
                 if (!live.year && kind.contentType == 1) live.year = yearFromText(safeGetIdString(item, "year"));
                 if (!live.year && kind.contentType != 0) live.year = yearFromText(live.title);
+                // For the discovery screen: the TMDB id (most panels), adult content, and the genres of series
+                if (kind.contentType != 0) {
+                    live.tmdb = static_cast<int>(safeGetNumber(item, "tmdb"));
+                    if (live.tmdb <= 0) live.tmdb = static_cast<int>(safeGetNumber(item, "tmdb_id"));
+                    if (live.tmdb < 0) live.tmdb = 0;
+                    live.adult = safeGetNumber(item, "is_adult") != 0;
+                    if (kind.isSeriesList) live.genres = genre::fromText(safeGetString(item, "genre"));
+                }
 
                 // get_*_streams only exposes category_id: the name comes from the category list
                 std::string categoryId   = safeGetIdString(item, "category_id");

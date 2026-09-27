@@ -6,6 +6,7 @@
 namespace brls {
 class RadioCell;
 class BooleanCell;
+class DetailCell;
 class InputCell;
 class Label;
 }  // namespace brls
@@ -57,6 +58,10 @@ private:
     BRLS_BIND(brls::InputCell, btnXtreamPassword, "setting/iptv/xtream_password");
     BRLS_BIND(brls::RadioCell, btnXtreamAccount, "setting/iptv/account");
     BRLS_BIND(brls::RadioCell, btnConnectionTest, "setting/iptv/connection_test");
+    BRLS_BIND(brls::BooleanCell, btnTmdb, "setting/discover/tmdb");
+    BRLS_BIND(brls::DetailCell, cellTmdbStatus, "setting/discover/status");
+    BRLS_BIND(brls::RadioCell, btnDiscoverShelves, "setting/discover/shelves");
+    BRLS_BIND(brls::RadioCell, btnTmdbClear, "setting/discover/clear");
     BRLS_BIND(TsVitchSelectorCell, selectorAutoRefresh, "setting/iptv/auto_refresh");
 
     // Parental control

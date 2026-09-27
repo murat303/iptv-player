@@ -1,0 +1,66 @@
+<brls:AppletFrame
+        iconInterpolation="linear"
+        backgroundColor="@theme/brls/background"
+        headerHidden="true"
+        footerHidden="false">
+
+    <brls:Box
+            id="discover/list/root"
+            width="100%"
+            height="100%"
+            axis="column">
+
+        <!-- The collection's name and size, and the sort button -->
+        <brls:Box
+                width="100%"
+                height="auto"
+                axis="row"
+                alignItems="center"
+                paddingTop="26"
+                paddingLeft="44"
+                paddingRight="44"
+                paddingBottom="12">
+            <brls:Box
+                    height="auto"
+                    axis="column"
+                    grow="1">
+                <brls:Label
+                        id="discover/list/title"
+                        fontSize="30"
+                        singleLine="true" />
+                <brls:Label
+                        id="discover/list/count"
+                        fontSize="16"
+                        marginTop="6"
+                        textColor="@theme/font/grey" />
+            </brls:Box>
+            <CustomButton
+                    id="discover/list/sort"
+                    focusable="true"
+                    highlightCornerRadius="6"
+                    hideHighlightBackground="true"
+                    width="250"
+                    height="38"
+                    paddingLeft="15"
+                    cornerRadius="6"
+                    alignItems="center"
+                    backgroundColor="#E3E5E7">
+                <brls:Label
+                        id="discover/list/sort/label"
+                        fontSize="15"
+                        singleLine="true"
+                        textColor="#18191c" />
+            </CustomButton>
+        </brls:Box>
+
+        <RecyclingGrid
+                id="discover/list/grid"
+                grow="1"
+                paddingLeft="30"
+                paddingRight="30"
+                spanCount="7"
+                itemHeight="305"
+                preFetchLine="2"
+                wireframe="false" />
+    </brls:Box>
+</brls:AppletFrame>

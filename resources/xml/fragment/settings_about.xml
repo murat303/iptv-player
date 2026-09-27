@@ -51,6 +51,19 @@
                 marginBottom="@style/tsvitch/margin/20"
                 text="@i18n/tsvitch/setting/about/credits"/>
         <brls:Header
+                title="@i18n/tsvitch/setting/about/data_header"
+                marginBottom="@style/tsvitch/margin/20"/>
+        <SVGImage
+                width="164"
+                height="21"
+                marginLeft="20"
+                marginBottom="12"
+                SVG="@res/svg/tmdb-logo.svg"/>
+        <brls:Label
+                marginLeft="20"
+                marginBottom="@style/tsvitch/margin/20"
+                text="@i18n/tsvitch/setting/about/data"/>
+        <brls:Header
                 title="@i18n/tsvitch/setting/about/license_header"
                 marginBottom="@style/tsvitch/margin/20"/>
         <brls:Label

@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.0 - not released yet
+
+### Discover
+- A new Discover tab: the title of the week, continue watching (a series continues at its episode, or at the next one
+  once it was finished), trending this week, recommendations after the watched titles, new movies and series.
+- Genre tiles for movies and series, and collections as cards with their posters: box office hits, all-time classics,
+  based on books, mind twists, true stories, epic fantasy, superheroes, time travel and more.
+- Studios and platforms (Pixar, Disney, Marvel, Netflix, HBO... and the TV channels of the provider's series), world
+  cinema (Turkish, Korean, anime...), award winners (Oscar, Cannes, Venice, Berlin, Emmy), decades and film series.
+- Only titles of the provider's lists are shown, without adult content and categories locked by the PIN; a movie that
+  is in several categories shows once.
+- Settings → Discover: TMDB on or off, how far its data is, the shelves shown, and forgetting the data.
+
+### Genres
+- The movie and series lists have a "Genres" group: a tile per genre opens all of its titles.
+
+### How it works
+- The provider's lists already carry the TMDB id of most titles: each title is asked about once at TMDB
+  (themoviedb.org) in the background, a few a second, and kept on the SD card. It waits while a video plays.
+- Lists saved by an earlier version are downloaded again once, with the next automatic refresh.
+
 ## 1.1.2 - 2026-09-27
 
 - A subtitle picked by hand stays picked also when another subtitle has the same language, such as a forced Turkish one next to the full Turkish one: the title and the forced flag tell them apart. Before, the player went back to the forced one when a video was opened again.

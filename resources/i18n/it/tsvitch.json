@@ -163,7 +163,9 @@
       "credits_header": "Basato su",
       "credits": "TsVitch di giovannimirulla, supporto a film e serie Xtream di ratk, wiliwili di xfangfang e la libreria grafica borealis.",
       "license_header": "Licenza",
-      "license": "GPL-3.0: software libero, fornito senza alcuna garanzia. Codice sorgente: github.com/murat303/iptv-player"
+      "license": "GPL-3.0: software libero, fornito senza alcuna garanzia. Codice sorgente: github.com/murat303/iptv-player",
+      "data_header": "Dati",
+      "data": "Dati di film e serie della scheda Scopri: TMDB (themoviedb.org), premiati: Wikidata. Questo prodotto usa l'API di TMDB ma non è approvato né certificato da TMDB."
     },
     "opensource": {
       "tab": "Opensource"
@@ -214,7 +216,24 @@
       "auto_refresh_off": "Disattivato (solo pulsante Aggiorna)",
       "connection_test": "Test di connessione"
     },
-    "imported": "Impostazioni, preferiti e cronologia sono stati importati da TsVitch."
+    "imported": "Impostazioni, preferiti e cronologia sono stati importati da TsVitch.",
+    "discover": {
+      "tab": "Scopri",
+      "header": "Scopri",
+      "tmdb": "Usa TMDB (generi, raccolte, consigli)",
+      "status": "Dati TMDB",
+      "status_value": "{} di {} titoli",
+      "status_off": "Disattivato",
+      "status_nokey": "Nessuna chiave in questa versione",
+      "status_rejected": "Chiave rifiutata",
+      "shelves": "Righe della pagina",
+      "shelves_title": "Righe mostrate",
+      "clear": "Elimina i dati TMDB",
+      "clear_confirm": "I dati TMDB del catalogo verranno scaricati di nuovo. Continuare?",
+      "clear_done": "Dati TMDB eliminati",
+      "notice": "Questo prodotto usa l'API di TMDB ma non è approvato né certificato da TMDB.",
+      "privacy": "A TMDB vengono inviati solo gli ID TMDB dei titoli (per i consigli: di quelli che hai visto). Account e liste restano sulla console."
+    }
   },
   "hints": {
     "hint1": "Seleziona un gioco dalla schermata home",
@@ -559,7 +578,8 @@
     "season": "Stagione {}",
     "group": {
       "all": "Tutti",
-      "recent": "★ Aggiunti di recente"
+      "recent": "★ Aggiunti di recente",
+      "genres": "Generi"
     },
     "search_results": "{} risultati per \"{}\"",
     "no_results": "Nessun risultato per \"{}\"",
@@ -764,5 +784,143 @@
       "setup": "nessun account Xtream",
       "other": "errore di rete"
     }
+  },
+  "discover": {
+    "shelf": {
+      "hero": "Titolo della settimana",
+      "continue": "Continua a guardare",
+      "trending": "Di tendenza questa settimana",
+      "for_you": "Per te",
+      "because": "Perché hai visto {}",
+      "because_setting": "Perché hai visto…",
+      "new_movies": "Nuovi film",
+      "new_series": "Serie nuove e aggiornate",
+      "movie_genres": "Generi dei film",
+      "series_genres": "Generi delle serie",
+      "themes": "Raccolte",
+      "favorite_genre": "Il tuo genere: {}",
+      "favorite_genre_setting": "Il tuo genere preferito",
+      "top_movies": "Film più votati",
+      "top_series": "Serie più votate",
+      "studios": "Studi e piattaforme",
+      "world": "Cinema dal mondo",
+      "awards": "Premiati",
+      "decades": "Decenni",
+      "franchises": "Saghe",
+      "popular_movies": "Film popolari",
+      "popular_series": "Serie popolari"
+    },
+    "hero": {
+      "trending": "DI TENDENZA",
+      "new": "NUOVO NELLA TUA LISTA"
+    },
+    "details": "Dettagli",
+    "count": "{} titoli",
+    "episode_note": "S{} · E{}",
+    "next_episode": "Prossimo episodio",
+    "network": "Serie {}",
+    "franchise": "Saga",
+    "status": {
+      "progress": "Dettagli dei film: {}%",
+      "rejected": "TMDB ha rifiutato la chiave"
+    },
+    "need_xtream": "La pagina Scopri richiede un account Xtream Codes (Impostazioni > IPTV).",
+    "no_lists": "Download delle liste di film e serie in corso. La pagina si riempie quando sono pronte.",
+    "empty": "Ancora niente da scoprire.",
+    "tmdb_off": "TMDB è disattivato: mancano generi dei film, raccolte e consigli (Impostazioni > Scopri).",
+    "tmdb_missing": "Questa versione non ha una chiave TMDB: mancano generi dei film, raccolte e consigli.",
+    "genres_need_tmdb": "I generi dei film vengono da TMDB, che è disattivato (Impostazioni > Scopri).",
+    "genres_wait": "Generi in preparazione. Riprova tra qualche minuto.",
+    "list_empty": "Nessun titolo in questa raccolta.",
+    "sort": {
+      "suggested": "Consigliati"
+    },
+    "theme": {
+      "blockbusters": "Successi al botteghino",
+      "classics": "Classici di sempre",
+      "mind_twists": "Colpi di scena",
+      "books": "Tratti da libri",
+      "true_stories": "Storie vere",
+      "epic_fantasy": "Fantasy epico",
+      "superheroes": "Supereroi",
+      "space": "Nello spazio",
+      "time_travel": "Viaggi nel tempo",
+      "dystopia": "Mondi distopici",
+      "heist": "Colpi grossi",
+      "serial_killers": "Serial killer",
+      "zombies": "Zombi",
+      "survival": "Sopravvivenza",
+      "ai": "Intelligenza artificiale",
+      "martial_arts": "Arti marziali",
+      "revenge": "Vendetta",
+      "coming_of_age": "Romanzi di formazione",
+      "sports": "Sport",
+      "biographies": "Biografie",
+      "christmas": "Natale",
+      "eye_openers": "Documentari illuminanti",
+      "true_crime": "True crime",
+      "family_animation": "Animazione per famiglie",
+      "hidden_gems": "Gemme nascoste",
+      "miniseries": "Miniserie",
+      "completed": "Serie complete"
+    },
+    "lang": {
+      "turkish": "Produzioni turche",
+      "korean": "Produzioni coreane",
+      "anime": "Anime",
+      "indian": "Cinema indiano",
+      "spanish": "In lingua spagnola",
+      "french": "Produzioni francesi",
+      "italian": "Produzioni italiane",
+      "german": "Produzioni tedesche",
+      "japanese": "Produzioni giapponesi",
+      "chinese": "Produzioni cinesi",
+      "nordic": "Produzioni svedesi"
+    },
+    "decade": {
+      "2010": "Anni 2010",
+      "2000": "Anni 2000",
+      "1990": "Anni '90",
+      "1980": "Anni '80",
+      "1970": "Anni '70",
+      "1960": "Anni '60"
+    },
+    "award": {
+      "oscar_best_picture": "Oscar: miglior film",
+      "oscar_animated": "Oscar: miglior film d'animazione",
+      "oscar_international": "Oscar: miglior film internazionale",
+      "golden_globe_drama": "Golden Globe: miglior dramma",
+      "palme_dor": "Cannes: Palma d'oro",
+      "golden_lion": "Venezia: Leone d'oro",
+      "golden_bear": "Berlino: Orso d'oro",
+      "emmy_drama": "Emmy: miglior serie drammatica",
+      "emmy_comedy": "Emmy: miglior serie comica"
+    }
+  },
+  "genre": {
+    "action": "Azione",
+    "adventure": "Avventura",
+    "animation": "Animazione",
+    "comedy": "Commedia",
+    "crime": "Crime",
+    "documentary": "Documentario",
+    "drama": "Dramma",
+    "family": "Famiglia",
+    "fantasy": "Fantasy",
+    "history": "Storia",
+    "horror": "Horror",
+    "music": "Musica",
+    "mystery": "Mistero",
+    "romance": "Romance",
+    "scifi": "Fantascienza",
+    "thriller": "Thriller",
+    "war": "Guerra",
+    "western": "Western",
+    "kids": "Bambini",
+    "reality": "Reality",
+    "soap": "Soap",
+    "talk": "Talk show",
+    "news": "Notizie",
+    "politics": "Politica"
   }
 }

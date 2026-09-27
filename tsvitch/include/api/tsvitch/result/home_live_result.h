@@ -117,9 +117,13 @@ public:
     float rating  = 0;  // Xtream rating (0-10), 0 = unknown
     int64_t added = 0;  // unix time the item was added/updated on the server, 0 = unknown
     int year      = 0;  // year of release (movies and series), 0 = unknown
+    int tmdb        = 0;      // TMDB id of a movie or a series from the provider's list, 0 = unknown
+    uint32_t genres = 0;      // genre bits (utils/genres.hpp): series from the provider's list, 0 = unknown
+    bool adult      = false;  // the provider marks the movie as adult content
+    std::string seriesId;     // episodes: the series they belong to (finds it again from the history)
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(LiveM3u8, id, chno, title, logo, groupTitle, url, type, rating, added,
-                                                year)
+                                                year, tmdb, genres, adult, seriesId)
 
 typedef std::vector<LiveM3u8> LiveM3u8ListResult;
 

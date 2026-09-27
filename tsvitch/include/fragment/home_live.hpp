@@ -108,6 +108,10 @@ private:
     // "All" / "Recently added": groups that mix categories
     bool isVirtualGroup(const std::string &group) const;
 
+    // "Genres" of the movie and series lists: tiles instead of titles
+    bool isGenresGroup(const std::string &group) const;
+    void showGenreTiles();
+
     // Movies and series: big posters in 5 columns; live TV keeps the channel cards
     void applyGridLayout();
 
@@ -145,6 +149,8 @@ private:
     int waitingSerial = 0;
     bool prefetchStarted = false;
     int sortActionId     = -1;                      // L = sort, only while movies/series are shown
+    bool waitingGenres   = false;                   // the genre tiles wait for the catalogue to be read
+    brls::Event<>::Subscription catalogSubscription;
 
     // In-memory caches so going back does not refetch from the server
     std::map<int, tsvitch::LiveM3u8ListResult> contentCache;          // per content type

@@ -52,6 +52,13 @@ if (NOT "${SERVER_TOKEN}" STREQUAL "")
     list(APPEND APP_PLATFORM_OPTION -DSERVER_TOKEN="${SERVER_TOKEN}")
 endif()
 
+# TMDB key for the discovery screen (never in the sources: the build scripts read it from a file outside the repo).
+# Without it the app shows only what the provider's lists tell.
+set(TMDB_API_KEY "" CACHE STRING "TMDB API key")
+if (NOT "${TMDB_API_KEY}" STREQUAL "")
+    list(APPEND APP_PLATFORM_OPTION -DTMDB_API_KEY="${TMDB_API_KEY}")
+endif()
+
 # Default M3U8 URL
 option(M3U8_URL "Default M3U8 URL" "")
 if (M3U8_URL)
@@ -108,8 +115,8 @@ add_definitions(-DFONS_HASH_LUT_SIZE=4096)
 # Project Info
 project(iptv_player)
 set(VERSION_MAJOR "1")
-set(VERSION_MINOR "1")
-set(VERSION_REVISION "2")
+set(VERSION_MINOR "2")
+set(VERSION_REVISION "0")
 if (NOT VERSION_BUILD)
     set(VERSION_BUILD "0")
 endif ()

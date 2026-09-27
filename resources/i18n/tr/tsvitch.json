@@ -163,7 +163,9 @@
       "credits_header": "Temel aldığı projeler",
       "credits": "giovannimirulla'nın TsVitch uygulaması, ratk'ın Xtream film/dizi desteği, xfangfang'ın wiliwili uygulaması ve borealis arayüz kitaplığı.",
       "license_header": "Lisans",
-      "license": "GPL-3.0: özgür yazılımdır ve hiçbir garanti verilmez. Kaynak kodu: github.com/murat303/iptv-player"
+      "license": "GPL-3.0: özgür yazılımdır ve hiçbir garanti verilmez. Kaynak kodu: github.com/murat303/iptv-player",
+      "data_header": "Veriler",
+      "data": "Keşfet sekmesinin film ve dizi bilgileri: TMDB (themoviedb.org), ödüllüler: Wikidata. Bu ürün TMDB API'sini kullanır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır."
     },
     "opensource": {
       "tab": "Açık kaynak"
@@ -214,7 +216,24 @@
       "auto_refresh_off": "Kapalı (yalnızca yenile tuşu)",
       "connection_test": "Bağlantı testi"
     },
-    "imported": "Ayarların, favorilerin ve geçmişin TsVitch'ten aktarıldı."
+    "imported": "Ayarların, favorilerin ve geçmişin TsVitch'ten aktarıldı.",
+    "discover": {
+      "tab": "Keşfet",
+      "header": "Keşfet",
+      "tmdb": "TMDB kullan (türler, koleksiyonlar, öneriler)",
+      "status": "TMDB bilgileri",
+      "status_value": "{} / {} yapım",
+      "status_off": "Kapalı",
+      "status_nokey": "Bu sürümde anahtar yok",
+      "status_rejected": "Anahtar reddedildi",
+      "shelves": "Sayfadaki satırlar",
+      "shelves_title": "Gösterilen satırlar",
+      "clear": "TMDB bilgilerini sil",
+      "clear_confirm": "Kataloğun TMDB bilgileri yeniden alınacak. Devam edilsin mi?",
+      "clear_done": "TMDB bilgileri silindi",
+      "notice": "Bu ürün TMDB API'sini kullanır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır.",
+      "privacy": "TMDB'ye yalnızca yapımların TMDB kimlikleri gider (öneriler için: izlediklerinin). Hesabın ve listelerin konsolda kalır."
+    }
   },
   "hints": {
     "hint1": "Ana ekrandan bir oyun seç",
@@ -547,7 +566,8 @@
     "season": "{}. Sezon",
     "group": {
       "all": "Tümü",
-      "recent": "★ Son eklenenler"
+      "recent": "★ Son eklenenler",
+      "genres": "Türler"
     },
     "search_results": "\"{1}\" için {0} sonuç",
     "no_results": "\"{}\" için sonuç yok",
@@ -752,5 +772,143 @@
       "setup": "Xtream hesabı yok",
       "other": "ağ hatası"
     }
+  },
+  "discover": {
+    "shelf": {
+      "hero": "Haftanın yapımı",
+      "continue": "İzlemeye devam et",
+      "trending": "Bu hafta trend",
+      "for_you": "Senin için",
+      "because": "{} izlediğin için",
+      "because_setting": "… izlediğin için",
+      "new_movies": "Yeni eklenen filmler",
+      "new_series": "Yeni ve güncellenen diziler",
+      "movie_genres": "Film türleri",
+      "series_genres": "Dizi türleri",
+      "themes": "Koleksiyonlar",
+      "favorite_genre": "Sevdiğin tür: {}",
+      "favorite_genre_setting": "Sevdiğin tür",
+      "top_movies": "En yüksek puanlı filmler",
+      "top_series": "En yüksek puanlı diziler",
+      "studios": "Stüdyolar ve platformlar",
+      "world": "Dünya sineması",
+      "awards": "Ödüllü yapımlar",
+      "decades": "On yıllar",
+      "franchises": "Film serileri",
+      "popular_movies": "Popüler filmler",
+      "popular_series": "Popüler diziler"
+    },
+    "hero": {
+      "trending": "BU HAFTA TREND",
+      "new": "LİSTENE YENİ EKLENDİ"
+    },
+    "details": "Ayrıntılar",
+    "count": "{} yapım",
+    "episode_note": "S{} · B{}",
+    "next_episode": "Sıradaki bölüm",
+    "network": "{} dizileri",
+    "franchise": "Film serisi",
+    "status": {
+      "progress": "Film bilgileri alınıyor: %{}",
+      "rejected": "TMDB anahtarı kabul etmedi"
+    },
+    "need_xtream": "Keşfet sayfası bir Xtream Codes hesabı ister (Ayarlar > IPTV).",
+    "no_lists": "Film ve dizi listeleri indiriliyor. Hazır olunca sayfa dolar.",
+    "empty": "Henüz keşfedilecek bir şey yok.",
+    "tmdb_off": "TMDB kapalı: film türleri, koleksiyonlar ve öneriler görünmüyor (Ayarlar > Keşfet).",
+    "tmdb_missing": "Bu sürümde TMDB anahtarı yok: film türleri, koleksiyonlar ve öneriler görünmüyor.",
+    "genres_need_tmdb": "Film türleri TMDB'den gelir; TMDB kapalı (Ayarlar > Keşfet).",
+    "genres_wait": "Türler hazırlanıyor. Birkaç dakika sonra tekrar bakın.",
+    "list_empty": "Bu koleksiyonda yapım yok.",
+    "sort": {
+      "suggested": "Önerilen"
+    },
+    "theme": {
+      "blockbusters": "Gişe rekortmenleri",
+      "classics": "Tüm zamanların klasikleri",
+      "mind_twists": "Akıl oyunları",
+      "books": "Kitaptan uyarlamalar",
+      "true_stories": "Gerçek hikâyeler",
+      "epic_fantasy": "Epik fantastik",
+      "superheroes": "Süper kahramanlar",
+      "space": "Uzaya yolculuk",
+      "time_travel": "Zaman yolculuğu",
+      "dystopia": "Distopik dünyalar",
+      "heist": "Soygun",
+      "serial_killers": "Seri katiller",
+      "zombies": "Zombiler",
+      "survival": "Hayatta kalma",
+      "ai": "Yapay zekâ",
+      "martial_arts": "Dövüş sanatları",
+      "revenge": "İntikam",
+      "coming_of_age": "Büyüme hikâyeleri",
+      "sports": "Spor",
+      "biographies": "Biyografiler",
+      "christmas": "Yılbaşı filmleri",
+      "eye_openers": "Ufuk açan belgeseller",
+      "true_crime": "Gerçek suç",
+      "family_animation": "Aile için animasyon",
+      "hidden_gems": "Keşfedilmemiş cevherler",
+      "miniseries": "Mini diziler",
+      "completed": "Tamamlanmış diziler"
+    },
+    "lang": {
+      "turkish": "Türk yapımları",
+      "korean": "Kore yapımları",
+      "anime": "Anime",
+      "indian": "Hint sineması",
+      "spanish": "İspanyolca yapımlar",
+      "french": "Fransız yapımları",
+      "italian": "İtalyan yapımları",
+      "german": "Alman yapımları",
+      "japanese": "Japon yapımları",
+      "chinese": "Çin yapımları",
+      "nordic": "İsveç yapımları"
+    },
+    "decade": {
+      "2010": "2010'lar",
+      "2000": "2000'ler",
+      "1990": "90'lar",
+      "1980": "80'ler",
+      "1970": "70'ler",
+      "1960": "60'lar"
+    },
+    "award": {
+      "oscar_best_picture": "Oscar: En İyi Film",
+      "oscar_animated": "Oscar: En İyi Animasyon",
+      "oscar_international": "Oscar: En İyi Uluslararası Film",
+      "golden_globe_drama": "Altın Küre: En İyi Dram",
+      "palme_dor": "Cannes: Altın Palmiye",
+      "golden_lion": "Venedik: Altın Aslan",
+      "golden_bear": "Berlin: Altın Ayı",
+      "emmy_drama": "Emmy: En İyi Drama Dizisi",
+      "emmy_comedy": "Emmy: En İyi Komedi Dizisi"
+    }
+  },
+  "genre": {
+    "action": "Aksiyon",
+    "adventure": "Macera",
+    "animation": "Animasyon",
+    "comedy": "Komedi",
+    "crime": "Suç",
+    "documentary": "Belgesel",
+    "drama": "Dram",
+    "family": "Aile",
+    "fantasy": "Fantastik",
+    "history": "Tarih",
+    "horror": "Korku",
+    "music": "Müzik",
+    "mystery": "Gizem",
+    "romance": "Romantik",
+    "scifi": "Bilim kurgu",
+    "thriller": "Gerilim",
+    "war": "Savaş",
+    "western": "Western",
+    "kids": "Çocuk",
+    "reality": "Gerçeklik",
+    "soap": "Pembe dizi",
+    "talk": "Talk show",
+    "news": "Haber",
+    "politics": "Siyaset"
   }
 }

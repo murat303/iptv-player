@@ -1,5 +1,6 @@
 
 
+#include "fragment/home_discover.hpp"
 #include "fragment/home_live.hpp"
 #include "fragment/home_history.hpp"
 #include "fragment/home_favorites.hpp"
@@ -59,6 +60,7 @@ void Register::initCustomView() {
     brls::Application::registerXMLView("DownloadItemCell", DownloadItemCell::create);
 
     brls::Application::registerXMLView("HomeLive", HomeLive::create);
+    brls::Application::registerXMLView("HomeDiscover", HomeDiscover::create);
     brls::Application::registerXMLView("HomeHistory", HomeHistory::create);
     brls::Application::registerXMLView("HomeFavorites", HomeFavorites::create);
     brls::Application::registerXMLView("HomeDownloads", HomeDownloads::create);

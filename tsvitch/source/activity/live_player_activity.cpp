@@ -12,6 +12,7 @@
 #include <fmt/format.h>
 
 #include "tsvitch.h"
+#include "api/tmdb.hpp"
 
 #include "utils/shader_helper.hpp"
 #include "utils/config_helper.hpp"
@@ -71,6 +72,8 @@ LiveActivity::LiveActivity(const std::vector<tsvitch::LiveM3u8>& channels, size_
     this->liveData = channelList[currentChannelIndex];
     brls::Logger::debug("LiveActivity: create: {}", liveData.title);
     ShaderHelper::instance().clearShader(false);
+    // The catalogue's TMDB data waits while a video plays
+    tsvitch::TmdbService::instance().setPaused(true);
 }
 
 void LiveActivity::onContentAvailable() {
@@ -525,6 +528,7 @@ void LiveActivity::getAdUrlFromServer(std::function<void(const std::string&)> ca
 
 LiveActivity::~LiveActivity() {
     brls::Logger::debug("LiveActivity: delete");
+    tsvitch::TmdbService::instance().setPaused(false);
     
     this->savePlaybackPosition();
     brls::cancelDelay(nextEpisodeDelay);

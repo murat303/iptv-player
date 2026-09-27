@@ -7,6 +7,7 @@
 #include <borealis/views/cells/cell_bool.hpp>
 #include <borealis/views/cells/cell_input.hpp>
 #include <borealis/views/cells/cell_radio.hpp>
+#include <borealis/views/cells/cell_detail.hpp>
 #include <borealis/views/scrolling_frame.hpp>
 #include <borealis/core/box.hpp>
 #include <algorithm>
@@ -15,6 +16,8 @@
 #include "utils/xtream_account.hpp"
 #include "tsvitch.h"
 #include "activity/settings_activity.hpp"
+#include "api/tmdb.hpp"
+#include "utils/discover.hpp"
 #include "fragment/setting_network.hpp"
 #include "fragment/test_rumble.hpp"
 #include "utils/config_helper.hpp"
@@ -57,7 +60,7 @@ const std::map<std::string, std::map<std::string, std::string>> OPENSOURCE = {
     {"QR-Code-generator",
      {{"Official site", "https://www.nayuki.io/page/qr-code-generator-library"},
       {"GitHub", "https://github.com/nayuki/QR-Code-generator"},
-      {"Notes", "Copyright © 2020 Project Nayuki.\nLicensed under MIT license"}}},
+      {"Notes", "Copyright Â© 2020 Project Nayuki.\nLicensed under MIT license"}}},
     {"lunasvg",
      {{"Official site", "https://github.com/sammycage/lunasvg"},
       {"Notes", "Copyright (c) 2020 Nwutobo Samuel Ugochukwu.\nLicensed under MIT license"}}},
@@ -162,7 +165,7 @@ void SettingsActivity::onContentAvailable() {
     });
 
     btnProxyTest->registerClickAction([](...) -> bool {
-        // Testa o proxy fazendo uma requisição simples
+        // Testa o proxy fazendo uma requisiÃ§Ã£o simples
         std::string proxyUrl = ProgramConfig::instance().getProxyUrl();
         
         if (proxyUrl.empty()) {
@@ -172,9 +175,9 @@ void SettingsActivity::onContentAvailable() {
         
         brls::Application::notify("tsvitch/setting/tools/test/proxy_testing"_i18n + ": " + proxyUrl);
         
-        // Faz o teste usando a configuração atual do sistema
+        // Faz o teste usando a configuraÃ§Ã£o atual do sistema
         try {
-            // Usa a configuração de proxy atual que já foi aplicada ao sistema
+            // Usa a configuraÃ§Ã£o de proxy atual que jÃ¡ foi aplicada ao sistema
             auto response = cpr::Get(cpr::Url{"http://httpbin.org/ip"}, 
                                    cpr::Timeout{5000});
             
@@ -329,9 +332,9 @@ void SettingsActivity::onContentAvailable() {
     cellFullscreen->init("tsvitch/setting/app/others/fullscreen"_i18n, conf.getBoolOption(SettingItem::FULLSCREEN),
                          [](bool value) {
                              ProgramConfig::instance().setSettingItem(SettingItem::FULLSCREEN, value);
-                             // 更新设置
+                             // æ›´æ–°è®¾ç½®
                              VideoContext::FULLSCREEN = value;
-                             // 设置当前状态
+                             // è®¾ç½®å½“å‰çŠ¶æ€
                              brls::Application::getPlatform()->getVideoContext()->fullScreen(value);
                          });
 
@@ -459,7 +462,7 @@ void SettingsActivity::onContentAvailable() {
         "tsvitch/setting/app/others/language/header"_i18n,
         {
             // Each language in its own name, as in the order of the app_lang options
-            "English", "Türkçe", "Italiano", "Português (Brasil)",
+            "English", "TÃ¼rkÃ§e", "Italiano", "PortuguÃªs (Brasil)",
 #if defined(__SWITCH__) || defined(__PSV__) || defined(PS4)
             "tsvitch/setting/app/others/language/auto"_i18n,
 #endif
@@ -524,14 +527,14 @@ void SettingsActivity::onContentAvailable() {
                                MPVCore::instance().restart();
                            });
 
-    // Inizializza il selettore modalità IPTV
+    // Inizializza il selettore modalitÃ  IPTV
     auto iptvModeOption = conf.getOptionData(SettingItem::IPTV_MODE);
     selectorIPTVMode->init("tsvitch/setting/iptv/mode"_i18n, iptvModeOption.optionList,
                           conf.getIntOptionIndex(SettingItem::IPTV_MODE), [this, iptvModeOption](int data) {
                               ProgramConfig::instance().setSettingItem(SettingItem::IPTV_MODE,
                                                                        iptvModeOption.rawOptionList[data]);
                               this->updateIPTVSectionVisibility();
-                              OnIPTVModeChanged.fire(); // Notifica il cambio modalità IPTV
+                              OnIPTVModeChanged.fire(); // Notifica il cambio modalitÃ  IPTV
                           });
 
     // Inizializza i controlli M3U8
@@ -592,6 +595,75 @@ void SettingsActivity::onContentAvailable() {
     });
     btnConnectionTest->registerClickAction([](brls::View*) {
         tsvitch::showXtreamConnectionTest();
+        return true;
+    });
+
+    // Discover: TMDB on or off, how far its data is, the shelves of the page, forgetting the data
+    auto updateTmdbStatus = [this]() {
+        auto& tmdb = tsvitch::TmdbService::instance();
+        std::string text;
+        if (!tmdb.hasKey())
+            text = "tsvitch/setting/discover/status_nokey"_i18n;
+        else if (tmdb.keyRejected())
+            text = "tsvitch/setting/discover/status_rejected"_i18n;
+        else if (ProgramConfig::instance().getSettingItem(SettingItem::TMDB_ENABLED, 1) == 0)
+            text = "tsvitch/setting/discover/status_off"_i18n;
+        else {
+            size_t done = 0, total = 0;
+            tmdb.progress(done, total);
+            text = brls::getStr("tsvitch/setting/discover/status_value", done, total);
+        }
+        cellTmdbStatus->setDetailText(text);
+    };
+    cellTmdbStatus->setText("tsvitch/setting/discover/status"_i18n);
+    updateTmdbStatus();
+    btnTmdb->init("tsvitch/setting/discover/tmdb"_i18n, conf.getSettingItem(SettingItem::TMDB_ENABLED, 1) != 0,
+                  [updateTmdbStatus](bool value) {
+                      ProgramConfig::instance().setSettingItem(SettingItem::TMDB_ENABLED, value ? 1 : 0);
+                      auto& tmdb = tsvitch::TmdbService::instance();
+                      if (value)
+                          tmdb.refresh();
+                      else
+                          tmdb.stopFetching();
+                      updateTmdbStatus();
+                      tsvitch::discover::getChangedEvent()->fire();
+                  });
+    btnDiscoverShelves->registerClickAction([](brls::View*) {
+        const float popupWidth = 720;
+        auto* box              = new brls::Box(brls::Axis::COLUMN);
+        box->setWidth(popupWidth);
+        box->setAlignItems(brls::AlignItems::STRETCH);
+        for (const auto& [id, key] : tsvitch::discover::shelfList()) {
+            auto* cell        = new brls::BooleanCell();
+            std::string shelf = id;
+            cell->init(brls::getStr(key), !tsvitch::discover::isHidden(shelf), [shelf](bool shown) {
+                tsvitch::discover::setHidden(shelf, !shown);
+                tsvitch::discover::getChangedEvent()->fire();
+            });
+            cell->title->setSingleLine(true);
+            cell->title->setShrink(1);
+            cell->title->setMinWidth(0);
+            box->addView(cell);
+        }
+        auto* scroll = new brls::ScrollingFrame();
+        scroll->setWidth(popupWidth);
+        scroll->setHeight(440);
+        scroll->setContentView(box);
+        auto* dialog = new brls::Dialog((brls::Box*)scroll);
+        dialog->addButton("hints/ok"_i18n, []() {});
+        dialog->open();
+        return true;
+    });
+    btnTmdbClear->registerClickAction([updateTmdbStatus](brls::View*) {
+        auto* dialog = new brls::Dialog("tsvitch/setting/discover/clear_confirm"_i18n);
+        dialog->addButton("hints/cancel"_i18n, []() {});
+        dialog->addButton("hints/ok"_i18n, [updateTmdbStatus]() {
+            tsvitch::TmdbService::instance().clearData();
+            updateTmdbStatus();
+            tsvitch::discover::getChangedEvent()->fire();
+            brls::Application::notify("tsvitch/setting/discover/clear_done"_i18n);
+        });
+        dialog->open();
         return true;
     });
     selectorAutoRefresh->init(
@@ -675,7 +747,7 @@ void SettingsActivity::onContentAvailable() {
                 ime->openForText(
                     [parentalCell](const std::string& newPin) {
                         if (newPin.empty()) {
-                            parentalCell->setOn(false, false);  // cancelou -> não ativa
+                            parentalCell->setOn(false, false);  // cancelou -> nÃ£o ativa
                             return;
                         }
                         ProgramConfig::instance().setParentalPin(newPin);
@@ -688,7 +760,7 @@ void SettingsActivity::onContentAvailable() {
                     [parentalCell](const std::string& current) {
                         if (current != ProgramConfig::instance().getParentalPin()) {
                             brls::Application::notify("tsvitch/parental/wrong_pin"_i18n);
-                            parentalCell->setOn(true, false);  // PIN errado -> mantém ligado
+                            parentalCell->setOn(true, false);  // PIN errado -> mantÃ©m ligado
                             return;
                         }
                         ProgramConfig::instance().setParentalEnabled(false);
@@ -711,7 +783,7 @@ void SettingsActivity::onContentAvailable() {
         return true;
     });
 
-    // Categorias bloqueadas: escolhe o tipo (Live/Filmes/Séries), busca as categorias
+    // Categorias bloqueadas: escolhe o tipo (Live/Filmes/SÃ©ries), busca as categorias
     // daquele tipo no servidor e mostra a lista com as bloqueadas no topo.
     btnParentalCategories->registerClickAction([promptCurrentPin](brls::View*) -> bool {
         // Abre a lista de toggles para um conjunto de categorias (bloqueadas primeiro)
@@ -723,14 +795,14 @@ void SettingsActivity::onContentAvailable() {
             std::stable_sort(names.begin(), names.end(), [](const std::string& a, const std::string& b) {
                 bool la = ProgramConfig::instance().isCategoryLocked(a);
                 bool lb = ProgramConfig::instance().isCategoryLocked(b);
-                return la != lb ? la : a < b;  // bloqueadas no topo, depois alfabético
+                return la != lb ? la : a < b;  // bloqueadas no topo, depois alfabÃ©tico
             });
             // Preenche toda a largura do popup (AppletFrame do Dialog) com 100%,
-            // esticando as células (alignItems=stretch) e truncando nomes longos.
+            // esticando as cÃ©lulas (alignItems=stretch) e truncando nomes longos.
             // Assim a barra de rolagem encosta na borda direita do popup.
-            // A AppletFrame do Dialog tem largura fixa 720 e injeta o conteúdo sem
+            // A AppletFrame do Dialog tem largura fixa 720 e injeta o conteÃºdo sem
             // esticar. Fixamos a lista nessa mesma largura para preencher todo o
-            // popup; as células esticam (stretch) e nomes longos são truncados.
+            // popup; as cÃ©lulas esticam (stretch) e nomes longos sÃ£o truncados.
             const float popupWidth = 720;
             auto* box              = new brls::Box(brls::Axis::COLUMN);
             box->setWidth(popupWidth);
@@ -739,8 +811,8 @@ void SettingsActivity::onContentAvailable() {
                 auto* cell = new brls::BooleanCell();
                 cell->init(cat, ProgramConfig::instance().isCategoryLocked(cat),
                            [cat](bool v) { ProgramConfig::instance().setCategoryLocked(cat, v); });
-                // Deixa o título encolher em vez de forçar a largura (min-content):
-                // sem isso, nomes longos estouram a célula além do box e a barra de
+                // Deixa o tÃ­tulo encolher em vez de forÃ§ar a largura (min-content):
+                // sem isso, nomes longos estouram a cÃ©lula alÃ©m do box e a barra de
                 // rolagem fica inboard.
                 cell->title->setSingleLine(true);
                 cell->title->setShrink(1);
@@ -775,8 +847,8 @@ void SettingsActivity::onContentAvailable() {
         return true;
     });
 
-    // Limpar histórico por tipo (TV ao vivo / Filmes / Séries / Tudo).
-    // Dialog aceita no máx. 3 botões, então usamos uma lista de opções.
+    // Limpar histÃ³rico por tipo (TV ao vivo / Filmes / SÃ©ries / Tudo).
+    // Dialog aceita no mÃ¡x. 3 botÃµes, entÃ£o usamos uma lista de opÃ§Ãµes.
     btnClearHistory->registerClickAction([](brls::View*) -> bool {
         struct Opcao {
             std::string label;
@@ -821,7 +893,7 @@ void SettingsActivity::onContentAvailable() {
         return true;
     });
 
-    // Imposta la visibilità iniziale delle sezioni
+    // Imposta la visibilitÃ  iniziale delle sezioni
     this->updateIPTVSectionVisibility();
 
     // Inizializza tutti gli altri selettori...

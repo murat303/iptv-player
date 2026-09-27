@@ -11,8 +11,10 @@
 
 namespace {
 
-// Bumped whenever the item layout changes. Version 1 files (no year) are still read.
-constexpr char MAGIC[4]          = {'X', 'T', 'C', '2'};
+// Bumped whenever the item layout changes. Older files are still read: version 1 has no year, version 2 no
+// TMDB id, genres and adult flag (the discovery screen waits for the next download of such a list).
+constexpr char MAGIC[4]          = {'X', 'T', 'C', '3'};
+constexpr char MAGIC_V2[4]       = {'X', 'T', 'C', '2'};
 constexpr char MAGIC_V1[4]       = {'X', 'T', 'C', '1'};
 constexpr uint32_t MAX_ITEMS     = 1000000;  // guards against a damaged file
 
@@ -84,8 +86,9 @@ bool XtreamStore::load(int contentType, tsvitch::LiveM3u8ListResult& list, int64
         if (!reader.get(c)) return false;
     uint32_t count = 0;
     bool version1  = std::memcmp(magic, MAGIC_V1, sizeof(MAGIC_V1)) == 0;
-    if ((!version1 && std::memcmp(magic, MAGIC, sizeof(MAGIC)) != 0) || !reader.get(savedAt) || !reader.get(count) ||
-        count > MAX_ITEMS) {
+    bool version2  = std::memcmp(magic, MAGIC_V2, sizeof(MAGIC_V2)) == 0;
+    if ((!version1 && !version2 && std::memcmp(magic, MAGIC, sizeof(MAGIC)) != 0) || !reader.get(savedAt) ||
+        !reader.get(count) || count > MAX_ITEMS) {
         brls::Logger::warning("XtreamStore: {} has an unknown format, ignoring it", file.string());
         return false;
     }
@@ -94,16 +97,22 @@ bool XtreamStore::load(int contentType, tsvitch::LiveM3u8ListResult& list, int64
     items.reserve(count);
     for (uint32_t i = 0; i < count; i++) {
         tsvitch::LiveM3u8 item;
-        int32_t type = 0, year = 0;
+        int32_t type = 0, year = 0, tmdb = 0;
+        uint32_t genres = 0;
+        uint8_t adult   = 0;
         if (!reader.getString(item.id) || !reader.getString(item.chno) || !reader.getString(item.title) ||
             !reader.getString(item.logo) || !reader.getString(item.groupTitle) || !reader.getString(item.url) ||
             !reader.get(item.rating) || !reader.get(item.added) || !reader.get(type) ||
-            (!version1 && !reader.get(year))) {
+            (!version1 && !reader.get(year)) ||
+            (!version1 && !version2 && (!reader.get(tmdb) || !reader.get(genres) || !reader.get(adult)))) {
             brls::Logger::warning("XtreamStore: {} is damaged, ignoring it", file.string());
             return false;
         }
-        item.type = type;
-        item.year = version1 && type != 0 ? tsvitch::yearFromText(item.title) : year;
+        item.type   = type;
+        item.year   = version1 && type != 0 ? tsvitch::yearFromText(item.title) : year;
+        item.tmdb   = tmdb;
+        item.genres = genres;
+        item.adult  = adult != 0;
         items.push_back(std::move(item));
     }
     list = std::move(items);
@@ -131,6 +140,9 @@ void XtreamStore::save(int contentType, const tsvitch::LiveM3u8ListResult& list)
         put<int64_t>(data, item.added);
         put<int32_t>(data, static_cast<int32_t>(item.type));
         put<int32_t>(data, static_cast<int32_t>(item.year));
+        put<int32_t>(data, static_cast<int32_t>(item.tmdb));
+        put<uint32_t>(data, item.genres);
+        put<uint8_t>(data, item.adult ? 1 : 0);
     }
 
     // Write a temporary file first so a crash mid-write never leaves a broken cache behind
@@ -174,10 +186,20 @@ bool XtreamStore::header(int contentType, int64_t& savedAt, uint32_t& count) {
     std::ifstream in(storeFile(contentType), std::ios::binary);
     char data[16];
     if (!in.read(data, sizeof(data))) return false;
-    if (std::memcmp(data, MAGIC, 4) != 0 && std::memcmp(data, MAGIC_V1, 4) != 0) return false;
+    if (std::memcmp(data, MAGIC, 4) != 0 && std::memcmp(data, MAGIC_V2, 4) != 0 &&
+        std::memcmp(data, MAGIC_V1, 4) != 0)
+        return false;
     std::memcpy(&savedAt, data + 4, sizeof(savedAt));
     std::memcpy(&count, data + 12, sizeof(count));
     return count <= MAX_ITEMS;
+}
+
+bool XtreamStore::needsUpgrade(int contentType) {
+    if (contentType != 1 && contentType != 2) return false;
+    std::ifstream in(storeFile(contentType), std::ios::binary);
+    char magic[4];
+    if (!in.read(magic, sizeof(magic))) return false;
+    return std::memcmp(magic, MAGIC_V2, 4) == 0 || std::memcmp(magic, MAGIC_V1, 4) == 0;
 }
 
 namespace {
