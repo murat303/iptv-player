@@ -346,6 +346,7 @@ void MPVCore::init() {
         subChoice.off     = subLang == "no";
         subChoice.lang    = subChoice.off ? "" : subLang;
         subChoice.title   = config.getSettingItem(SettingItem::PLAYER_SUB_TITLE, std::string{});
+        subChoice.forced  = config.getSettingItem(SettingItem::PLAYER_SUB_FORCED, 0) != 0;
         subChoice.set     = subChoice.off || !subChoice.lang.empty() || !subChoice.title.empty();
     }
     for (const auto &option : subtitleStyleOptions()) mpvSetOptionString(mpv, option.first.c_str(), option.second.c_str());
@@ -1288,6 +1289,7 @@ std::vector<MPVCore::Track> MPVCore::getTracks(const std::string &type) {
         track.codec    = getString(prefix + "codec");
         track.channels = getInt(prefix + "demux-channel-count");
         track.selected = getString(prefix + "selected") == "yes";
+        track.forced   = getString(prefix + "forced") == "yes";
         tracks.push_back(std::move(track));
     }
     return tracks;
@@ -1301,12 +1303,15 @@ void MPVCore::rememberTrack(const std::string &type, bool off, const std::vector
     choice.context      = trackContext;
     choice.count        = tracks.size();
     if (!off && index < tracks.size()) {
-        choice.lang  = tracks[index].lang == "und" ? "" : tracks[index].lang;
-        choice.title = tracks[index].title;
-        choice.index = index;
+        choice.lang   = tracks[index].lang == "und" ? "" : tracks[index].lang;
+        choice.title  = tracks[index].title;
+        choice.forced = tracks[index].forced;
+        choice.index  = index;
     }
-    ProgramConfig::instance().setSettingItem(
-        type == "audio" ? SettingItem::PLAYER_AUDIO_TITLE : SettingItem::PLAYER_SUB_TITLE, choice.title);
+    auto &config = ProgramConfig::instance();
+    config.setSettingItem(type == "audio" ? SettingItem::PLAYER_AUDIO_TITLE : SettingItem::PLAYER_SUB_TITLE,
+                          choice.title);
+    if (type != "audio") config.setSettingItem(SettingItem::PLAYER_SUB_FORCED, choice.forced ? 1 : 0);
 }
 
 void MPVCore::applyTrackChoices() {
@@ -1319,21 +1324,32 @@ void MPVCore::applyTrackChoice(const std::string &type, const TrackChoice &choic
     if (!choice.set || choice.off) return;
     auto tracks = getTracks(type);
     if (tracks.empty()) return;
-    auto sameLang  = [&choice](const Track &t) { return !choice.lang.empty() && t.lang == choice.lang; };
-    auto sameTitle = [&choice](const Track &t) { return !choice.title.empty() && t.title == choice.title; };
-    // mpv found it by the language already (or the selected one has the remembered title)
-    for (const auto &track : tracks)
-        if (track.selected && (sameLang(track) || (choice.lang.empty() && sameTitle(track)))) return;
-    const Track *pick = nullptr;
-    for (const auto &track : tracks)
-        if (!pick && sameLang(track)) pick = &track;
-    for (const auto &track : tracks)
-        if (!pick && sameTitle(track)) pick = &track;
-    // Neither language nor title: the same place, only within the same series with the same list of tracks
-    if (!pick && !trackContext.empty() && choice.context == trackContext && choice.count == tracks.size() &&
-        choice.index < tracks.size())
-        pick = &tracks[choice.index];
-    if (!pick) return;
+    // A place in the list only counts within the same series, when the list of tracks is the same
+    bool sameList = !trackContext.empty() && choice.context == trackContext && choice.count == tracks.size();
+    // How well a track fits the remembered one: its language first, then its title (an empty one too), the forced
+    // flag, and its place. A forced and a full subtitle of the same language are told apart by the rest.
+    auto score = [&](size_t i) {
+        const Track &t = tracks[i];
+        bool lang      = !choice.lang.empty() && t.lang == choice.lang;
+        bool title     = t.title == choice.title;
+        bool place     = sameList && i == choice.index;
+        // Not the same track at all (e.g. another language)
+        if (!lang && !(title && !choice.title.empty()) && !place) return -1;
+        return (lang ? 8 : 0) + (title ? 4 : 0) + (t.forced == choice.forced ? 2 : 0) + (place ? 1 : 0);
+    };
+    int best = -1, current = -1;
+    size_t bestIndex = 0;
+    for (size_t i = 0; i < tracks.size(); i++) {
+        int s = score(i);
+        if (s > best) {
+            best      = s;
+            bestIndex = i;
+        }
+        if (tracks[i].selected) current = s;
+    }
+    // Nothing fits, or the track mpv selected fits as well as any
+    if (best < 0 || current == best) return;
+    const Track *pick = &tracks[bestIndex];
     brls::Logger::info("MPVCore: {} track {} '{}' picked like before", type, pick->id, pick->title);
     command_async("set", type == "audio" ? "aid" : "sid", std::to_string(pick->id));
 }

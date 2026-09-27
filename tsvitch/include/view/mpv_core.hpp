@@ -162,6 +162,7 @@ public:
         std::string codec;
         int64_t channels = 0;
         bool selected    = false;
+        bool forced      = false;  // only for parts in another language (signs, songs)
     };
 
     /// Tracks of one type ("audio" or "sub") of the current file
@@ -335,8 +336,9 @@ public:
 
 private:
     struct TrackChoice {
-        bool set = false;
-        bool off = false;
+        bool set    = false;
+        bool off    = false;
+        bool forced = false;
         std::string lang, title, context;
         size_t index = 0, count = 0;
     };
