@@ -20,8 +20,8 @@
 
 ### Detail screen
 - Movies show TMDB's rating with its number of votes and similar titles of the catalogue (the other movies of its
-  film series first). Series show TMDB's rating. The director and the cast come from TMDB when the provider does
-  not list them.
+  film series first). Series show TMDB's rating. The plot, the director and the cast come from TMDB when the
+  provider does not list them; the plot in the app's language, or in English when TMDB has none in it.
 
 ### Fixes
 - The language names in Settings showed broken letters.

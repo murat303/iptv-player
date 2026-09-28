@@ -585,14 +585,22 @@ void TmdbService::worker(int index) {
         if (haveDetail) {
             // A detail screen waits for it: one request with the cast and the recommendations
             TmdbDetails result;
+            std::string path = std::string(detailJob.type == 1 ? "/movie/" : "/tv/") + std::to_string(detailJob.id);
+            std::string lang = language();
             if (waitGap(gapMs())) {
-                auto r = get(std::string(detailJob.type == 1 ? "/movie/" : "/tv/") + std::to_string(detailJob.id),
-                             cpr::Parameters{{"language", language()},
-                                             {"append_to_response", "credits,recommendations"}});
+                auto r = get(path, cpr::Parameters{{"language", lang}, {"append_to_response", "credits,recommendations"}});
                 if (r.status_code == 401) rejected = true;
                 if (r.status_code == 200) {
                     auto json = nlohmann::json::parse(r.text, nullptr, false);
                     if (json.is_object()) result = parseDetails(detailJob.type, json);
+                }
+            }
+            // TMDB leaves the overview empty when it has none in the app's language: the English one then
+            if (result.ok && result.overview.empty() && lang != "en-US" && !stopping && waitGap(gapMs())) {
+                auto r = get(path, cpr::Parameters{{"language", "en-US"}});
+                if (r.status_code == 200) {
+                    auto json = nlohmann::json::parse(r.text, nullptr, false);
+                    if (json.is_object()) result.overview = text(json, "overview");
                 }
             }
             if (stopping) break;
