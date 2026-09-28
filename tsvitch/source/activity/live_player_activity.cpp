@@ -137,7 +137,7 @@ void LiveActivity::onContentAvailable() {
     this->video->disableCloseOnEndOfFile();
     this->video->setFullscreenIcon(true);
     this->video->setTitle(liveData.title);
-    this->video->setFavoriteIcon(FavoriteManager::get()->isFavorite(liveData.url));
+    this->video->setFavoriteIcon(FavoriteManager::get()->isFavorite(liveData));
     this->video->setStatusLabelLeft("");
     this->video->setFavoriteCallback([this](bool state) { FavoriteManager::get()->toggle(this->liveData); });
 
@@ -310,7 +310,7 @@ void LiveActivity::switchTo(size_t index) {
     creditsAt           = -1;
     markedWatched       = false;
     this->video->setTitle(liveData.title);
-    this->video->setFavoriteIcon(FavoriteManager::get()->isFavorite(liveData.url));
+    this->video->setFavoriteIcon(FavoriteManager::get()->isFavorite(liveData));
     // The episode goes to the history, so the series screen offers the right one to continue
     if (liveData.type == 2 && !ProgramConfig::instance().isAdultCategory(liveData.groupTitle))
         HistoryManager::get()->add(liveData);

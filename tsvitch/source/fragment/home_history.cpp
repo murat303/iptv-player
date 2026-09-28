@@ -98,7 +98,7 @@ void HomeHistory::toggleFavorite(){
    
     FavoriteManager::get()->toggle(channel);
 
-    if (FavoriteManager::get()->isFavorite(channel.url)) {
+    if (FavoriteManager::get()->isFavorite(channel)) {
         item->setFavoriteIcon(true);
     } else {
         item->setFavoriteIcon(false);

@@ -1,11 +1,14 @@
 //
-// Mostra i canali preferiti dell'utente
+// The favorites tab: live channels, movies and series, one kind at a time
 //
 
+#include <algorithm>
 #include <utility>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/core/thread.hpp>
 #include <borealis/views/dialog.hpp>
+#include <borealis/views/label.hpp>
+#include <fmt/format.h>
 #include "view/recycling_grid.hpp"
 #include "view/video_card.hpp"
 #include "view/custom_button.hpp"
@@ -21,15 +24,42 @@
 
 using namespace brls::literals;
 
-// DataSource per i canali preferiti
+namespace {
+
+// The kind shown last: the tab opens on it again while it has favorites
+int lastKind = -1;
+
+// The kind of a favorite: 0 live TV, 1 movie, 2 series (a series page, or an episode whose series is not known)
+int kindOf(const tsvitch::LiveM3u8& item) {
+    if (item.url.rfind("xtream-series://", 0) == 0) return 2;
+    return item.type == 1 || item.type == 2 ? item.type : 0;
+}
+
+bool isPoster(int kind) { return kind == 1 || kind == 2; }
+
+}  // namespace
+
+/// The chip row: the focus comes to the chip of the kind shown
+class FavoriteKindChips : public brls::Box {
+public:
+    FavoriteKindChips() : brls::Box(brls::Axis::ROW) { this->setAlignItems(brls::AlignItems::CENTER); }
+
+    brls::View* getDefaultFocus() override { return selected ? selected : brls::Box::getDefaultFocus(); }
+
+    brls::View* selected = nullptr;
+};
+
+// The favorites of one kind
 class DataSourceFavoriteChannels : public RecyclingGridDataSource {
 public:
-    explicit DataSourceFavoriteChannels(const std::vector<tsvitch::LiveM3u8>& favorites)
-        : favoriteChannels(favorites) {}
+    explicit DataSourceFavoriteChannels(std::vector<tsvitch::LiveM3u8> favorites)
+        : favoriteChannels(std::move(favorites)) {}
 
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
-        const auto& r                        = favoriteChannels[index];
-        RecyclingGridItemLiveVideoCard* item = (RecyclingGridItemLiveVideoCard*)recycler->dequeueReusableCell("Cell");
+        const auto& r = favoriteChannels[index];
+        // Movies and series use the poster card of the lists
+        auto* item = (RecyclingGridItemLiveVideoCard*)recycler->dequeueReusableCell(isPoster(kindOf(r)) ? "Poster"
+                                                                                                          : "Cell");
         item->setChannel(r);
         return item;
     }
@@ -46,10 +76,13 @@ public:
         HistoryManager::get()->add(item);
         size_t start  = 0;
         auto playlist = sameKindPlaylist(favoriteChannels, index, start);
-        Intent::openLive(playlist, start, [recycler, playlist]() {
+        int kind      = kindOf(item);
+        Intent::openLive(playlist, start, [recycler, playlist, kind]() {
             // The favorite that played last (next/previous buttons) gets the focus
-            auto favorites = FavoriteManager::get()->getFavorites();
-            size_t last    = LiveActivity::lastPlayedIndex(), focus = 0;
+            std::vector<tsvitch::LiveM3u8> favorites;
+            for (const auto& favorite : FavoriteManager::get()->getFavorites())
+                if (kindOf(favorite) == kind) favorites.push_back(favorite);
+            size_t last = LiveActivity::lastPlayedIndex(), focus = 0;
             for (size_t i = 0; last < playlist.size() && i < favorites.size(); i++)
                 if (favorites[i].url == playlist[last].url) focus = i;
             recycler->reloadWithFocus(focus, new DataSourceFavoriteChannels(favorites));
@@ -67,10 +100,10 @@ private:
 HomeFavorites::HomeFavorites() {
     this->inflateFromXMLRes("xml/fragment/home_favorites.xml");
     recyclingGrid->registerCell("Cell", []() { return RecyclingGridItemLiveVideoCard::create(); });
-
-    // Carica i canali preferiti
-    this->favoritesList = FavoriteManager::get()->getFavorites();
-    recyclingGrid->setDataSource(new DataSourceFavoriteChannels(this->favoritesList));
+    recyclingGrid->registerCell("Poster", []() { return RecyclingGridItemLiveVideoCard::createPoster(); });
+    kindPrev->setText("");
+    kindNext->setText("");
+    this->reload(0);
 
     this->registerAction("hints/toggle_favorite"_i18n, brls::BUTTON_X, [this](...) {
         this->toggleFavorite();
@@ -81,65 +114,174 @@ HomeFavorites::HomeFavorites() {
         this->downloadVideo();
         return true;
     });
-}
 
+    // L and R change the kind; the glyphs beside the chips are their hints
+    this->registerAction(
+        "", brls::BUTTON_LB,
+        [this](brls::View*) {
+            this->stepKind(-1);
+            return true;
+        },
+        true);
+    this->registerAction(
+        "", brls::BUTTON_RB,
+        [this](brls::View*) {
+            this->stepKind(1);
+            return true;
+        },
+        true);
+}
 
 void HomeFavorites::onCreate() { this->refreshFavorites(); }
 
 void HomeFavorites::onShow() { this->refreshFavorites(); }
 
-void HomeFavorites::refreshFavorites() {
+void HomeFavorites::refreshFavorites() { this->reload(0); }
+
+brls::View* HomeFavorites::getDefaultFocus() {
+    if (!this->favoritesOf(lastKind).empty())
+        if (brls::View* view = recyclingGrid->getDefaultFocus()) return view;
+    return AttachedView::getDefaultFocus();
+}
+
+std::vector<tsvitch::LiveM3u8> HomeFavorites::favoritesOf(int kind) const {
+    std::vector<tsvitch::LiveM3u8> items;
+    for (const auto& favorite : favoritesList)
+        if (kindOf(favorite) == kind) items.push_back(favorite);
+    return items;
+}
+
+void HomeFavorites::reload(size_t focus) {
+    // Episodes saved as favorites by an earlier version show as their series
+    FavoriteManager::get()->convertEpisodes();
     this->favoritesList = FavoriteManager::get()->getFavorites();
-    recyclingGrid->setDataSource(new DataSourceFavoriteChannels(this->favoritesList));
+    kinds.clear();
+    for (int kind : {0, 1, 2})
+        if (!this->favoritesOf(kind).empty()) kinds.push_back(kind);
+    if (std::find(kinds.begin(), kinds.end(), lastKind) == kinds.end()) {
+        lastKind = kinds.empty() ? -1 : kinds.front();
+        focus    = 0;
+    }
+    this->buildKindChips();
+    this->showKind(lastKind, focus);
+}
+
+bool HomeFavorites::focusInGrid() {
+    for (brls::View* view = brls::Application::getCurrentFocus(); view; view = view->getParent())
+        if (view == recyclingGrid) return true;
+    return false;
+}
+
+void HomeFavorites::buildKindChips() {
+    // Chips only when there is a choice: one kind needs none
+    std::vector<int> wanted = kinds.size() > 1 ? kinds : std::vector<int>{};
+    std::vector<int> built;
+    for (const auto& chip : kindChips) built.push_back(chip.kind);
+    if (built != wanted) {
+        // A focused chip must not be deleted under the focus
+        bool chipFocused = false;
+        for (brls::View* view = brls::Application::getCurrentFocus(); view && !chipFocused; view = view->getParent())
+            chipFocused = view == kindBox;
+        if (chipFocused) brls::Application::giveFocus(this->getTabBar());
+        kindBox->clearViews();
+        kindChips.clear();
+        chipRow = nullptr;
+        if (!wanted.empty()) {
+            chipRow = new FavoriteKindChips();
+            for (int kind : wanted) {
+                auto* chip = new CustomButton();
+                chip->setFocusable(true);
+                chip->setHeight(38);
+                chip->setPaddingLeft(16);
+                chip->setPaddingRight(16);
+                chip->setMarginRight(10);
+                chip->setCornerRadius(8);
+                chip->setHighlightCornerRadius(8);
+                chip->setHideHighlightBackground(true);
+                chip->setAlignItems(brls::AlignItems::CENTER);
+                auto* label = new brls::Label();
+                label->setFontSize(17);
+                label->setSingleLine(true);
+                label->setTextColor(nvgRGB(255, 255, 255));
+                chip->addView(label);
+                chip->registerClickAction([this, kind](brls::View*) {
+                    this->showKind(kind);
+                    return true;
+                });
+                chip->addGestureRecognizer(new brls::TapGestureRecognizer(chip));
+                chipRow->addView(chip);
+                kindChips.push_back({chip, label, kind});
+            }
+            kindBox->addView(chipRow);
+        }
+    }
+    bool several = !kindChips.empty();
+    kindPrev->setVisibility(several ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    kindNext->setVisibility(several ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    this->updateKindChips();
+}
+
+void HomeFavorites::updateKindChips() {
+    static const NVGcolor selected   = nvgRGB(255, 145, 0);
+    static const NVGcolor other      = nvgRGBA(255, 255, 255, 38);
+    static const char* const names[] = {"tsvitch/xtream/content/live", "tsvitch/xtream/content/movies",
+                                        "tsvitch/xtream/content/series"};
+    for (const auto& chip : kindChips) {
+        chip.label->setText(fmt::format("{} ({})", brls::getStr(names[chip.kind]), this->favoritesOf(chip.kind).size()));
+        chip.button->setBackgroundColor(chip.kind == lastKind ? selected : other);
+        if (chip.kind == lastKind && chipRow) chipRow->selected = chip.button;
+    }
+}
+
+void HomeFavorites::showKind(int kind, size_t focus) {
+    lastKind    = kind;
+    bool poster = isPoster(kind);
+    recyclingGrid->spanCount          = poster ? 5 : 4;
+    recyclingGrid->estimatedRowHeight = poster ? 305 : 200;
+    // The focus stays in the grid when it was there
+    recyclingGrid->reloadWithFocus(focus, new DataSourceFavoriteChannels(this->favoritesOf(kind)));
+    this->updateKindChips();
+}
+
+void HomeFavorites::stepKind(int step) {
+    auto it = std::find(kinds.begin(), kinds.end(), lastKind);
+    if (kinds.size() < 2 || it == kinds.end()) return;
+    brls::View* focus = brls::Application::getCurrentFocus();
+    long next         = (it - kinds.begin()) + step;
+    if (next < 0 || next >= (long)kinds.size()) {
+        if (focus) focus->shakeHighlight(step < 0 ? brls::FocusDirection::LEFT : brls::FocusDirection::RIGHT);
+        return;
+    }
+    bool onChip = false;
+    for (const auto& chip : kindChips) onChip = onChip || chip.button == focus;
+    this->showKind(kinds[next]);
+    // On a chip the focus moves along to the chip of the new kind
+    if (onChip)
+        for (const auto& chip : kindChips)
+            if (chip.kind == lastKind) brls::Application::giveFocus(chip.button);
 }
 
 void HomeFavorites::toggleFavorite() {
     auto* item = dynamic_cast<RecyclingGridItemLiveVideoCard*>(this->recyclingGrid->getFocusedItem());
-    if (!item) return;
+    if (!item || !this->focusInGrid()) return;
 
     tsvitch::LiveM3u8 channel = item->getChannel();
-
+    size_t index              = item->getIndex();
     brls::Logger::debug("toggleFavorite: {}", channel.title);
-
     FavoriteManager::get()->toggle(channel);
 
-    if (FavoriteManager::get()->isFavorite(channel.url)) {
-        item->setFavoriteIcon(true);
-    } else {
-        item->setFavoriteIcon(false);
-        // rimuovi l'item dalla lista
-        auto it = std::remove_if(this->favoritesList.begin(), this->favoritesList.end(),
-                                 [&channel](const tsvitch::LiveM3u8& c) { return c.url == channel.url; });
-        size_t removedIndex = std::distance(this->favoritesList.begin(), it);
-        this->favoritesList.erase(it, this->favoritesList.end());
-        this->recyclingGrid->setDataSource(new DataSourceFavoriteChannels(this->favoritesList));
-
-        if (!this->favoritesList.empty()) {
-            size_t newFocus = removedIndex;
-            if (newFocus >= this->favoritesList.size() && newFocus > 0)
-                newFocus = this->favoritesList.size() - 1;
-
-            // Dai focus alla griglia e poi alla cella, con un piccolo delay per sicurezza
-            brls::Application::giveFocus(this->recyclingGrid);
-            brls::delay(10, [this, newFocus]() {
-                this->recyclingGrid->setDefaultCellFocus(newFocus);
-            });
-        }else {
-           //focus sidebar
-            brls::Application::giveFocus(this->getTabBar());
-        }
-    }
+    // It left the tab: the focus goes to the next card, to the first card of another kind when this one has none
+    // left, and back to the sidebar without favorites
+    this->reload(index);
+    if (kinds.empty()) brls::Application::giveFocus(this->getTabBar());
 }
 
 void HomeFavorites::downloadVideo() {
-    // Ottieni l'item attualmente focalizzato
     auto* item = dynamic_cast<RecyclingGridItemLiveVideoCard*>(this->recyclingGrid->getFocusedItem());
-    if (!item) {
+    if (!item || !this->focusInGrid()) {
         brls::Logger::warning("HomeFavorites::downloadVideo: No focused item");
         return;
     }
-
-    // Ottieni il canale
     tsvitch::LiveM3u8 channel = item->getChannel();
     tsvitch::startVideoDownload(channel);
 }

@@ -1,4 +1,5 @@
 #include "core/FavoriteManager.hpp"
+#include "core/Catalog.hpp"
 #include "utils/config_helper.hpp"
 #include <fstream>
 #include <iostream>
@@ -16,7 +17,15 @@ FavoriteManager* FavoriteManager::get() {
     return &instance;
 }
 
-void FavoriteManager::toggle(const tsvitch::LiveM3u8& channel) {
+tsvitch::LiveM3u8 FavoriteManager::target(const tsvitch::LiveM3u8& item) {
+    bool episode = item.type == 2 && item.url.rfind("xtream-series://", 0) != 0;
+    if (episode)
+        if (const auto* series = Catalog::instance().seriesOf(item)) return *series;
+    return item;
+}
+
+void FavoriteManager::toggle(const tsvitch::LiveM3u8& item) {
+    const tsvitch::LiveM3u8 channel = target(item);
     auto it = std::find_if(set_.begin(), set_.end(),
         [&](const tsvitch::LiveM3u8& c){ return c.url == channel.url; });
     if (it != set_.end()) {
@@ -38,6 +47,30 @@ void FavoriteManager::toggle(const tsvitch::LiveM3u8& channel) {
 
 bool FavoriteManager::isFavorite(const std::string& url ) const {
     return urlCache_.count(url) > 0;
+}
+
+bool FavoriteManager::isFavorite(const tsvitch::LiveM3u8& item) const { return isFavorite(target(item).url); }
+
+void FavoriteManager::convertEpisodes() {
+    bool changed = false;
+    for (size_t i = 0; i < set_.size();) {
+        tsvitch::LiveM3u8 series = target(set_[i]);
+        if (series.url == set_[i].url) {
+            i++;
+            continue;
+        }
+        urlCache_.erase(set_[i].url);
+        changed = true;
+        // The series may be a favorite already
+        if (urlCache_.count(series.url)) {
+            set_.erase(set_.begin() + static_cast<long>(i));
+            continue;
+        }
+        set_[i] = series;
+        urlCache_.insert(series.url);
+        i++;
+    }
+    if (changed) save();
 }
 
 void FavoriteManager::save() const {

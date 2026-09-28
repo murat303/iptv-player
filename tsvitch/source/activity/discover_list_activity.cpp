@@ -87,7 +87,7 @@ void DiscoverListActivity::onContentAvailable() {
         const tsvitch::LiveM3u8* item = source->itemAt(card->getIndex());
         if (!item) return true;
         FavoriteManager::get()->toggle(*item);
-        card->setFavoriteIcon(FavoriteManager::get()->isFavorite(item->url));
+        card->setFavoriteIcon(FavoriteManager::get()->isFavorite(*item));
         return true;
     });
     this->show();

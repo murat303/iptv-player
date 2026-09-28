@@ -4,6 +4,35 @@
         marginBottom="8"
         width="auto"
         height="auto">
+        <!-- A chip per kind of favorites (live TV, movies, series); L and R change it -->
+        <brls:Box
+                axis="row"
+                width="100%"
+                alignItems="center"
+                paddingLeft="30"
+                paddingRight="30"
+                marginBottom="10">
+                <brls:Label
+                        fontSize="28"
+                        marginRight="24"
+                        text="@i18n/tsvitch/mine/collection" />
+                <brls:Label
+                        id="home/favorites/kinds/prev"
+                        fontSize="26"
+                        marginRight="12"
+                        textColor="#FFFFFF"
+                        visibility="gone" />
+                <brls:Box
+                        id="home/favorites/kinds"
+                        axis="row"
+                        alignItems="center" />
+                <brls:Label
+                        id="home/favorites/kinds/next"
+                        fontSize="26"
+                        marginLeft="2"
+                        textColor="#FFFFFF"
+                        visibility="gone" />
+        </brls:Box>
         <RecyclingGrid
                 paddingLeft="20"
                 paddingRight="20"

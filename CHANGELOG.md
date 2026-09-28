@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1 - not released yet
+
+- Favorites: movies and series show as posters like in the lists, channels as channel cards. With favorites of
+  several kinds a chip per kind (Live TV, Movies, Series) picks what is shown; L and R change it.
+- A series is a favorite, not its episodes: the heart of the player and X in the history add the series of an
+  episode. Episodes added by an earlier version turn into their series.
+
 ## 1.3.0 - 2026-09-29
 
 ### Trailers
