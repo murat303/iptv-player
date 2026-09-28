@@ -145,7 +145,7 @@ TmdbMeta parseMeta(int type, const nlohmann::json& j, TmdbStore::Names& names) {
 }
 
 /// The detail screen's part of /movie/{id} or /tv/{id} with append_to_response=credits,recommendations
-TmdbDetails parseDetails(int type, const nlohmann::json& j, const std::string& directorRole) {
+TmdbDetails parseDetails(int type, const nlohmann::json& j) {
     TmdbDetails d;
     d.ok       = true;
     d.vote     = static_cast<float>(number(j, "vote_average"));
@@ -153,22 +153,24 @@ TmdbDetails parseDetails(int type, const nlohmann::json& j, const std::string& d
     d.overview = text(j, "overview");
     if (auto c = j.find("belongs_to_collection"); c != j.end() && c->is_object())
         d.collection = static_cast<int>(number(*c, "id"));
-    auto photo = [](const nlohmann::json& person) {
-        std::string path = text(person, "profile_path");
-        return path.empty() ? std::string() : "https://image.tmdb.org/t/p/w185" + path;
+    auto add = [](std::string& list, const std::string& name) {
+        if (name.empty()) return;
+        if (!list.empty()) list += ", ";
+        list += name;
     };
     if (auto credits = j.find("credits"); credits != j.end() && credits->is_object()) {
         if (auto crew = credits->find("crew"); crew != credits->end() && crew->is_array())
             for (const auto& person : *crew)
-                if (person.is_object() && text(person, "job") == "Director") {
-                    d.people.push_back({text(person, "name"), directorRole, photo(person)});
-                    break;
-                }
-        if (auto cast = credits->find("cast"); cast != credits->end() && cast->is_array())
+                if (person.is_object() && text(person, "job") == "Director") add(d.directors, text(person, "name"));
+        if (auto cast = credits->find("cast"); cast != credits->end() && cast->is_array()) {
+            int count = 0;
             for (const auto& person : *cast) {
-                if (d.people.size() >= 12) break;
-                if (person.is_object()) d.people.push_back({text(person, "name"), text(person, "character"), photo(person)});
+                if (count == 6) break;
+                if (!person.is_object()) continue;
+                add(d.cast, text(person, "name"));
+                count++;
             }
+        }
     }
     if (auto rec = j.find("recommendations"); rec != j.end() && rec->is_object())
         if (auto results = rec->find("results"); results != rec->end() && results->is_array())
@@ -519,7 +521,6 @@ void TmdbService::worker(int index) {
 
     const std::string key  = apiKey();
     const bool bearer      = key.size() > 40;  // a v4 read token rather than a v3 key
-    const std::string directorRole = brls::getStr("tsvitch/detail/director_role");
     const std::string base = baseUrl();
     cpr::Session session;
     session.SetTimeout(cpr::Timeout{15000});
@@ -591,7 +592,7 @@ void TmdbService::worker(int index) {
                 if (r.status_code == 401) rejected = true;
                 if (r.status_code == 200) {
                     auto json = nlohmann::json::parse(r.text, nullptr, false);
-                    if (json.is_object()) result = parseDetails(detailJob.type, json, directorRole);
+                    if (json.is_object()) result = parseDetails(detailJob.type, json);
                 }
             }
             if (stopping) break;

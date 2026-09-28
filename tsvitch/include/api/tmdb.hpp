@@ -22,13 +22,6 @@ struct TmdbRef {
     int id   = 0;
 };
 
-/// Someone of the cast or the director, for the detail screen
-struct TmdbPerson {
-    std::string name;
-    std::string role;   // the character, or "director" for the director
-    std::string photo;  // picture url (small size), empty when TMDB has none
-};
-
 /// What the detail screen of a title shows from TMDB
 struct TmdbDetails {
     bool ok       = false;
@@ -36,7 +29,8 @@ struct TmdbDetails {
     int votes     = 0;
     int collection = 0;  // the film series of a movie
     std::string overview;
-    std::vector<TmdbPerson> people;  // the director first (movies), then the cast
+    std::string directors;  // "Name, Name" (movies)
+    std::string cast;       // the first names of the cast
     std::vector<TmdbRef> recommendations;
 };
 

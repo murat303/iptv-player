@@ -107,17 +107,6 @@ private:
     PictureSet posters;
 };
 
-/// Someone of a title's cast (or its director): a round photo, the name and the role under it
-class PersonCard : public brls::Box {
-public:
-    explicit PersonCard(const tsvitch::TmdbPerson& person);
-    ~PersonCard() override;
-
-    static constexpr float WIDTH = 92;
-
-private:
-    brls::Image* photo = nullptr;
-};
 
 /// One shelf of the discovery screen: a title and a row that scrolls sideways. Its cards are made when the shelf
 /// first comes near the screen, and their pictures are freed when it is far away again.

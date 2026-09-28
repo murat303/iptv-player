@@ -724,7 +724,6 @@
     "watched": "Visto",
     "mark_watched": "Segna come visto",
     "mark_unwatched": "Segna come non visto",
-    "director_role": "Regista",
     "votes": "{} voti",
     "thousands": ".",
     "similar": "Titoli simili"
@@ -792,7 +791,6 @@
   "discover": {
     "shelf": {
       "hero": "Titolo della settimana",
-      "continue": "Continua a guardare",
       "trending": "Di tendenza questa settimana",
       "for_you": "Per te",
       "because": "Perché hai visto {}",
@@ -821,8 +819,6 @@
     "details": "Dettagli",
     "count": "{} titoli",
     "count_one": "1 titolo",
-    "episode_note": "S{} · E{}",
-    "next_episode": "Prossimo episodio",
     "network": "Serie {}",
     "franchise": "Saga",
     "status": {

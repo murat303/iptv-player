@@ -32,8 +32,6 @@ struct Shelf {
     std::string title;
     Kind kind = POSTERS;
     std::vector<LiveM3u8> items;          // POSTERS
-    std::vector<std::string> notes;       // POSTERS: a line under the title instead of the year ("S2 · E4")
-    std::vector<std::string> progress;    // POSTERS: the url whose playback position the card shows ("" = its own)
     std::vector<Collection> collections;  // GENRES, COVERS
 };
 

@@ -16,7 +16,7 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
 
 - **Live TV:** categories, channel logos, favorites, a now / next programme guide in the player, L and R to change the channel.
 - **Movies and series:** poster grids with ratings and years, watched marks and progress bars, sorting (recently added, rating, name, year), search, and detail pages with the plot, cast, backdrop and a resume button.
-- **Discover:** a tab with the title of the week, continue watching, this week's trending titles, recommendations
+- **Discover:** a tab with the title of the week, this week's trending titles, recommendations
   after what you watched, new movies and series, genre tiles, collections (box office hits, all-time classics, based on
   books, mind twists...), studios and platforms, world cinema, award winners (Oscar, Cannes, Venice, Berlin, Emmy),
   decades and film series. It shows only what your provider's lists have; shelves can be hidden in the settings.
@@ -64,7 +64,7 @@ the answers are kept on the SD card. Settings → Discover turns it off.
     <td><img src="docs/screenshots/movie-detail.jpg" alt="Movie details"/><br/>Movie details</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/movie-detail-tmdb.jpg" alt="Rating, cast and similar titles from TMDB"/><br/>Rating, cast and similar titles from TMDB</td>
+    <td><img src="docs/screenshots/movie-detail-tmdb.jpg" alt="Rating and similar titles from TMDB"/><br/>Rating and similar titles from TMDB</td>
     <td><img src="docs/screenshots/settings-discover.jpg" alt="Discover settings"/><br/>Discover settings</td>
   </tr>
   <tr>
@@ -99,8 +99,8 @@ The screenshots show the open movies of the Blender Foundation: *Big Buck Bunny*
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) and [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/);
 posters from Wikimedia Commons, resized, and the Caminandes cover made from an episode picture).
 The channel names and logos are made up, and the ratings are sample values. The Discover pictures add the made-up
-titles of an earlier showcase, and their TMDB data (genres, votes, people, similar titles) is made up too: the
-people's pictures are their initials. The top of the Discover tab shows a frame of *Sintel*.
+titles of an earlier showcase, and their TMDB data (genres, votes, similar titles) is made up too. The top of the
+Discover tab shows a frame of *Sintel*.
 
 ## Installation
 
@@ -205,7 +205,7 @@ Arayüzü Türkçe yapmak için: Settings → UI → Language → Türkçe.
 **İzlendi:** %90'ı izlenen film ve bölümler izlendi sayılır. Detay ekranlarında Y ile elle de işaretleyebilirsin.
 Sonraki bölüm, videoda jenerik işareti varsa orada, yoksa ayarlardan seçtiğin sürede (varsayılan: bitmeden 1 dk önce) sorulur.
 
-**Keşfet:** Haftanın yapımı, izlemeye devam et, bu hafta trend olanlar, izlediklerine göre öneriler, yeni filmler ve diziler,
+**Keşfet:** Haftanın yapımı, bu hafta trend olanlar, izlediklerine göre öneriler, yeni filmler ve diziler,
 türler, koleksiyonlar (gişe rekortmenleri, klasikler, kitaptan uyarlamalar, akıl oyunları...), stüdyolar ve
 platformlar, dünya sineması, ödüllü yapımlar, on yıllar ve film serileri. Yalnız sağlayıcının listelerinde olanlar
 görünür. Film ve Dizi listelerinde de "Türler" grubu var. Satırlar Ayarlar → Keşfet bölümünden gizlenebilir.

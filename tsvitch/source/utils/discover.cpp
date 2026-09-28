@@ -23,7 +23,6 @@
 #include "utils/config_helper.hpp"
 #include "utils/genres.hpp"
 #include "utils/image_helper.hpp"
-#include "utils/playback_position_manager.hpp"
 #include "utils/watched_manager.hpp"
 
 using namespace brls::literals;
@@ -32,36 +31,8 @@ namespace tsvitch::discover {
 
 namespace {
 
-const std::string SERIES_SCHEME = "xtream-series://";
-constexpr size_t SHELF_SIZE     = 20;  // titles on a poster shelf
-constexpr size_t COVER_ITEMS    = 60;  // titles kept for a cover (its page computes all of them)
-
-/// "S1 · E2" under a series in Continue watching: the season from the episode's group ("Season 1"), the number
-/// from the episode; a provider without them still names the episode "Name - S01E02 - ..."
-std::string episodeNote(const LiveM3u8& episode) {
-    std::string season, number = episode.chno;
-    for (char c : episode.groupTitle)
-        if (c >= '0' && c <= '9') season += c;
-    const std::string& t = episode.title;
-    auto digit           = [&t](size_t i) { return i < t.size() && t[i] >= '0' && t[i] <= '9'; };
-    // the digits from..to without their leading zeros
-    auto value = [&t](size_t from, size_t to) {
-        while (from + 1 < to && t[from] == '0') from++;
-        return t.substr(from, to - from);
-    };
-    for (size_t i = 0; i < t.size() && (season.empty() || number.empty()); i++) {
-        if ((t[i] != 'S' && t[i] != 's') || !digit(i + 1)) continue;
-        size_t j = i + 1;
-        while (digit(j)) j++;
-        if (j >= t.size() || (t[j] != 'E' && t[j] != 'e') || !digit(j + 1)) continue;
-        size_t k = j + 1;
-        while (digit(k)) k++;
-        if (season.empty()) season = value(i + 1, j);
-        if (number.empty()) number = value(j + 1, k);
-    }
-    if (number.empty()) return "";
-    return brls::getStr("tsvitch/discover/episode_note", season.empty() ? "1" : season, number);
-}
+constexpr size_t SHELF_SIZE  = 20;  // titles on a poster shelf
+constexpr size_t COVER_ITEMS = 60;  // titles kept for a cover (its page computes all of them)
 
 /// A visible title of the catalogue with its TMDB data (valid inside TmdbStore::read only)
 struct Entry {
@@ -528,7 +499,6 @@ std::vector<std::string> hiddenShelves() {
 const std::vector<std::pair<std::string, std::string>>& shelfList() {
     static const std::vector<std::pair<std::string, std::string>> list = {
         {"hero", "tsvitch/discover/shelf/hero"},
-        {"continue", "tsvitch/discover/shelf/continue"},
         {"trending", "tsvitch/discover/shelf/trending"},
         {"for_you", "tsvitch/discover/shelf/for_you"},
         {"because", "tsvitch/discover/shelf/because_setting"},
@@ -668,7 +638,6 @@ std::vector<Seed> seeds(size_t max) {
 
 Page build(const Inputs& in) {
     Page page;
-    auto& catalog   = Catalog::instance();
     auto hidden     = hiddenShelves();
     auto show       = [&hidden](const char* id) { return std::find(hidden.begin(), hidden.end(), id) == hidden.end(); };
     auto locked     = lockedCategories();
@@ -676,37 +645,6 @@ Page build(const Inputs& in) {
     int64_t now     = static_cast<int64_t>(std::time(nullptr));
     std::vector<int> franchiseIds;
     std::vector<std::pair<int, size_t>> networkCounts;
-
-    // Continue watching: the history's movies with a position, and the newest episode of each series (the next one
-    // once it was finished). It needs no TMDB data.
-    Shelf cont;
-    cont.id    = "continue";
-    cont.title = "tsvitch/discover/shelf/continue"_i18n;
-    if (show("continue")) {
-        std::unordered_set<std::string> seriesDone;
-        for (const auto& h : HistoryManager::get()->recent(100)) {
-            if (cont.items.size() >= 15) break;
-            int64_t position = 0, duration = 0;
-            bool started = PlaybackPositionManager::getProgress(h.url, position, duration) && position > 0;
-            if (h.type == 1) {
-                if (!started) continue;
-                const LiveM3u8* item = catalog.findById(1, h.id);
-                if (!item || locked.count(item->groupTitle)) continue;
-                cont.items.push_back(*item);
-                cont.notes.emplace_back("");
-                cont.progress.push_back(h.url);
-            } else if (h.type == 2 && h.url.rfind(SERIES_SCHEME, 0) != 0) {
-                const LiveM3u8* series = catalog.seriesOf(h);
-                if (!series || !seriesDone.insert(series->id).second) continue;
-                bool finished = WatchedManager::isWatched(h.url);
-                if (!started && !finished) continue;
-                if (locked.count(series->groupTitle)) continue;
-                cont.items.push_back(*series);
-                cont.notes.push_back(started ? episodeNote(h) : "tsvitch/discover/next_episode"_i18n);
-                cont.progress.push_back(started ? h.url : "");
-            }
-        }
-    }
 
     TmdbStore::instance().read([&](const TmdbStore::Map& map) {
         auto all   = entries(map, locked);
@@ -727,8 +665,6 @@ Page build(const Inputs& in) {
             for (const auto* e : list) {
                 if (shelf.items.size() >= SHELF_SIZE) break;
                 shelf.items.push_back(*e->item);
-                shelf.notes.emplace_back("");
-                shelf.progress.emplace_back("");
             }
             return shelf;
         };
@@ -762,8 +698,6 @@ Page build(const Inputs& in) {
                 }
             }
         }
-
-        if (!cont.items.empty()) page.shelves.push_back(cont);
 
         if (show("trending") && !trending.empty())
             page.shelves.push_back(posters("trending", "tsvitch/discover/shelf/trending"_i18n, trending));

@@ -355,23 +355,16 @@ void XtreamDetailActivity::showTmdb(int id, const tsvitch::TmdbDetails& tmdb) {
                         brls::getStr("tsvitch/detail/votes", groupThousands(tmdb.votes)));
         ratingBox->setVisibility(brls::Visibility::VISIBLE);
     }
-    tmdbOverview = tmdb.overview;
+    // What the provider does not tell
+    tmdbOverview  = tmdb.overview;
+    tmdbDirectors = tmdb.directors;
+    tmdbCast      = tmdb.cast;
     if (detail.plot.empty() && !tmdbOverview.empty()) plot->setText(tmdbOverview);
+    if (detail.director.empty() && !tmdbDirectors.empty())
+        director->setText(brls::getStr("tsvitch/detail/director", tmdbDirectors));
+    if (detail.cast.empty() && !tmdbCast.empty()) cast->setText(brls::getStr("tsvitch/detail/cast", tmdbCast));
     // A series needs the room for its episodes
     if (isSeries) return;
-
-    if (!tmdb.people.empty()) {
-        peopleBox->clearViews();
-        size_t count = 0;
-        for (const auto& person : tmdb.people) {
-            if (count++ == 9) break;
-            peopleBox->addView(new PersonCard(person));
-        }
-        peopleShown = true;
-        peopleBox->setVisibility(brls::Visibility::VISIBLE);
-        director->setVisibility(brls::Visibility::GONE);
-        cast->setVisibility(brls::Visibility::GONE);
-    }
 
     // The other movies of its film series first, then what TMDB recommends; only titles of the catalogue
     std::vector<tsvitch::LiveM3u8> similar;
@@ -388,8 +381,6 @@ void XtreamDetailActivity::showTmdb(int id, const tsvitch::TmdbDetails& tmdb) {
         shelf.id    = "similar";
         shelf.title = "tsvitch/detail/similar"_i18n;
         shelf.items = std::move(similar);
-        shelf.notes.assign(shelf.items.size(), "");
-        shelf.progress.assign(shelf.items.size(), "");
         auto alive = this->alive;
         similarBox->clearViews();
         similarBox->addView(new DiscoverShelfView(
@@ -400,8 +391,8 @@ void XtreamDetailActivity::showTmdb(int id, const tsvitch::TmdbDetails& tmdb) {
             nullptr, true));
         similarBox->setVisibility(brls::Visibility::VISIBLE);
     }
-    // Room for the rows
-    if (peopleShown || similarBox->getVisibility() == brls::Visibility::VISIBLE) plot->setMaxRows(3);
+    // Room for the row
+    if (similarBox->getVisibility() == brls::Visibility::VISIBLE) plot->setMaxRows(3);
 }
 
 void XtreamDetailActivity::loadDetail() {
@@ -464,8 +455,10 @@ void XtreamDetailActivity::showDetail(const tsvitch::XtreamDetail& update) {
     meta->setText(joinParts({detail.year > 0 ? std::to_string(detail.year) : "", detail.genre,
                              formatDuration(detail.duration), detail.country}));
     plot->setText(detail.plot.empty() ? tmdbOverview : detail.plot);
-    director->setText(detail.director.empty() ? "" : brls::getStr("tsvitch/detail/director", detail.director));
-    cast->setText(detail.cast.empty() ? "" : brls::getStr("tsvitch/detail/cast", detail.cast));
+    const std::string& directors = detail.director.empty() ? tmdbDirectors : detail.director;
+    const std::string& names     = detail.cast.empty() ? tmdbCast : detail.cast;
+    director->setText(directors.empty() ? "" : brls::getStr("tsvitch/detail/director", directors));
+    cast->setText(names.empty() ? "" : brls::getStr("tsvitch/detail/cast", names));
     if (newPoster) ImageHelper::with(poster)->load(tmdbSize(detail.cover, "w342"));
     if (newBackdrop) ImageHelper::with(backdrop)->load(tmdbSize(detail.backdrop, "w780"));
 

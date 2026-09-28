@@ -712,7 +712,6 @@
     "watched": "Assistido",
     "mark_watched": "Marcar como assistido",
     "mark_unwatched": "Marcar como não assistido",
-    "director_role": "Diretor",
     "votes": "{} votos",
     "thousands": ".",
     "similar": "Títulos parecidos"
@@ -780,7 +779,6 @@
   "discover": {
     "shelf": {
       "hero": "Destaque da semana",
-      "continue": "Continuar assistindo",
       "trending": "Em alta nesta semana",
       "for_you": "Para você",
       "because": "Porque você assistiu {}",
@@ -809,8 +807,6 @@
     "details": "Detalhes",
     "count": "{} títulos",
     "count_one": "1 título",
-    "episode_note": "T{} · E{}",
-    "next_episode": "Próximo episódio",
     "network": "Séries {}",
     "franchise": "Saga",
     "status": {

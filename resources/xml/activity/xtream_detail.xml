@@ -226,13 +226,7 @@
                     width="100%"
                     textColor="#B4B9C2"/>
 
-            <!-- From TMDB (movies): the director and the cast with photos, and similar titles of the catalogue -->
-            <brls:Box
-                    id="detail/people"
-                    axis="row"
-                    width="100%"
-                    marginTop="16"
-                    visibility="gone"/>
+            <!-- From TMDB (movies): similar titles of the catalogue -->
             <brls:Box
                     id="detail/similar"
                     axis="column"

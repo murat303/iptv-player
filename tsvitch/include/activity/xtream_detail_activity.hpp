@@ -83,10 +83,9 @@ private:
     std::shared_ptr<std::atomic<bool>> alive = std::make_shared<std::atomic<bool>>(true);
     std::vector<std::pair<CustomButton*, brls::Label*>> seasonButtons;
     // What TMDB told, kept when the provider's details come later
-    float tmdbVote   = 0;
-    int tmdbVotes    = 0;
-    bool peopleShown = false;
-    std::string tmdbOverview;
+    float tmdbVote = 0;
+    int tmdbVotes  = 0;
+    std::string tmdbOverview, tmdbDirectors, tmdbCast;
 
     BRLS_BIND(brls::Image, backdrop, "detail/backdrop");
     BRLS_BIND(brls::Image, poster, "detail/poster");
@@ -109,7 +108,6 @@ private:
     BRLS_BIND(TextBox, plot, "detail/plot");
     BRLS_BIND(TextBox, director, "detail/director");
     BRLS_BIND(TextBox, cast, "detail/cast");
-    BRLS_BIND(brls::Box, peopleBox, "detail/people");
     BRLS_BIND(brls::Box, similarBox, "detail/similar");
     BRLS_BIND(brls::Box, seriesBox, "detail/series");
     BRLS_BIND(brls::Box, seasonsBox, "detail/seasons");

@@ -38,12 +38,6 @@ public:
     // Shelves: a smaller poster than in the grid
     void setPosterHeight(float height);
 
-    // A line instead of the year ("S2 · E4" on the discovery screen)
-    void setNote(const std::string& note);
-
-    // The bar and the check show this video's state (a series card shows its episode)
-    void setWatchUrl(const std::string& url);
-
    tsvitch::LiveM3u8 getChannel();
 
                                              void setFavoriteIcon(bool isFavorite);
@@ -62,7 +56,6 @@ private:
 tsvitch::LiveM3u8 liveData;
     bool posterLayout = false;
     bool pictureLoaded = false;
-    std::string watchUrl;
     BRLS_BIND(TextBox, labelTitle, "video/card/label/title");
     BRLS_BIND(brls::Label, labelGroup, "video/card/label/group");
     BRLS_BIND(brls::Label, labelChno, "video/card/label/chno");

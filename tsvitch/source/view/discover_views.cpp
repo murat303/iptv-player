@@ -326,38 +326,6 @@ void CoverCard::draw(NVGcontext* vg, float x, float y, float width, float height
     brls::Box::draw(vg, x, y, width, height, style, ctx);
 }
 
-// PersonCard
-
-PersonCard::PersonCard(const tsvitch::TmdbPerson& person) {
-    this->setAxis(brls::Axis::COLUMN);
-    this->setAlignItems(brls::AlignItems::CENTER);
-    this->setWidth(WIDTH);
-    this->setMarginRight(8);
-    photo = new brls::Image();
-    photo->setWidth(64);
-    photo->setHeight(64);
-    photo->setCornerRadius(32);
-    photo->setScalingType(brls::ImageScalingType::FILL);
-    // TMDB's photos are portraits: the face is in their top part
-    photo->setImageAlign(brls::ImageAlignment::TOP);
-    photo->setBackgroundColor(nvgRGBA(255, 255, 255, 28));
-    this->addView(photo);
-    if (!person.photo.empty()) ImageHelper::with(photo)->load(person.photo);
-    // Left aligned with at most the card's width (the card centers them): borealis shortens a long name with an
-    // ellipsis only when the text is not centered
-    auto* name = makeLabel(13, nvgRGB(255, 255, 255), person.name);
-    name->setSingleLine(true);
-    name->setMaxWidth(WIDTH);
-    name->setMarginTop(6);
-    auto* role = makeLabel(12, nvgRGBA(255, 255, 255, 150), person.role);
-    role->setSingleLine(true);
-    role->setMaxWidth(WIDTH);
-    this->addView(name);
-    this->addView(role);
-}
-
-PersonCard::~PersonCard() { ImageHelper::clear(photo); }
-
 // DiscoverShelfView
 
 DiscoverShelfView::DiscoverShelfView(tsvitch::discover::Shelf shelf, OpenItem openItem, OpenCollection openCollection,
@@ -404,8 +372,6 @@ void DiscoverShelfView::buildCards() {
             auto shown  = shelf.items[i];
             shown.title = tsvitch::discover::cleanTitle(shown.title);
             card->setChannel(shown, false, false);
-            if (i < shelf.notes.size() && !shelf.notes[i].empty()) card->setNote(shelf.notes[i]);
-            if (i < shelf.progress.size() && !shelf.progress[i].empty()) card->setWatchUrl(shelf.progress[i]);
             auto item = shelf.items[i];
             auto open = openItem;
             card->registerClickAction([item, open](brls::View*) {

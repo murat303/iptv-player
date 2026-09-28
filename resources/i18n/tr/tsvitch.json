@@ -712,7 +712,6 @@
     "watched": "İzlendi",
     "mark_watched": "İzlendi olarak işaretle",
     "mark_unwatched": "İzlenmedi olarak işaretle",
-    "director_role": "Yönetmen",
     "votes": "{} oy",
     "thousands": ".",
     "similar": "Benzer yapımlar"
@@ -780,7 +779,6 @@
   "discover": {
     "shelf": {
       "hero": "Haftanın yapımı",
-      "continue": "İzlemeye devam et",
       "trending": "Bu hafta trend",
       "for_you": "Senin için",
       "because": "{} izlediğin için",
@@ -809,8 +807,6 @@
     "details": "Ayrıntılar",
     "count": "{} yapım",
     "count_one": "1 yapım",
-    "episode_note": "S{} · B{}",
-    "next_episode": "Sıradaki bölüm",
     "network": "{} dizileri",
     "franchise": "Film serisi",
     "status": {

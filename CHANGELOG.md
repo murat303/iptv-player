@@ -3,8 +3,8 @@
 ## 1.2.0 - not released yet
 
 ### Discover
-- A new Discover tab: the title of the week, continue watching (a series continues at its episode, or at the next one
-  once it was finished), trending this week, recommendations after the watched titles, new movies and series.
+- A new Discover tab: the title of the week, trending this week, recommendations after the watched titles, new
+  movies and series.
 - Genre tiles for movies and series, and collections as cards with their posters: box office hits, all-time classics,
   based on books, mind twists, true stories, epic fantasy, superheroes, time travel and more.
 - Studios and platforms (Pixar, Disney, Marvel, Netflix, HBO... and the TV channels of the provider's series), world
@@ -12,15 +12,16 @@
 - Only titles of the provider's lists are shown, without adult content and categories locked by the PIN; a movie that
   is in several categories shows once.
 - Settings → Discover: TMDB on or off, how far its data is, the shelves shown, and forgetting the data.
-- Episodes watched with an earlier version count too: their series is found by the name of the episode
-  ("Name - S01E03 - ...").
+- Episodes watched with an earlier version count for the recommendations too: their series is found by the name of
+  the episode ("Name - S01E03 - ...").
 
 ### Genres
 - The movie and series lists have a "Genres" group: a tile per genre opens all of its titles.
 
 ### Detail screen
-- Movies show TMDB's rating with its number of votes, the director and the cast with their photos, and similar
-  titles of the catalogue (the other movies of its film series first). Series show TMDB's rating.
+- Movies show TMDB's rating with its number of votes and similar titles of the catalogue (the other movies of its
+  film series first). Series show TMDB's rating. The director and the cast come from TMDB when the provider does
+  not list them.
 
 ### Fixes
 - The language names in Settings showed broken letters.
