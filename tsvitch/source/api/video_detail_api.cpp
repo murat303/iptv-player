@@ -24,6 +24,7 @@
 
 #include "tsvitch/result/home_live_result.h"
 #include "tsvitch/result/xtream_detail.h"
+#include "youtube.hpp"
 #include "utils/text_fold.hpp"
 #include "utils/genres.hpp"
 #include "utils/config_helper.hpp"
@@ -1105,6 +1106,7 @@ void TsVitchClient::get_xtream_series_detail(const std::string& seriesId,
                         detail->director = sanitizeText(safeGetString(info, "director"));
                         detail->cover    = safeGetString(info, "cover");
                         detail->backdrop = firstBackdrop(info);
+                        detail->trailer  = youtube::videoId(safeGetString(info, "youtube_trailer"));
                         detail->rating   = static_cast<float>(safeGetNumber(info, "rating"));
                         detail->year     = yearFromText(safeGetString(info, "releaseDate"));
                         if (!detail->year) detail->year = yearFromText(safeGetString(info, "release_date"));
@@ -1144,6 +1146,8 @@ void TsVitchClient::get_xtream_movie_detail(const std::string& vodId,
                         detail->cover    = safeGetString(info, "movie_image");
                         if (detail->cover.empty()) detail->cover = safeGetString(info, "cover_big");
                         detail->backdrop = firstBackdrop(info);
+                        detail->trailer  = youtube::videoId(safeGetString(info, "youtube_trailer"));
+                        if (detail->trailer.empty()) detail->trailer = youtube::videoId(safeGetString(info, "trailer"));
                         detail->rating   = static_cast<float>(safeGetNumber(info, "rating"));
                         detail->year     = yearFromText(safeGetString(info, "releasedate"));
                         if (!detail->year) detail->year = yearFromText(detail->title);

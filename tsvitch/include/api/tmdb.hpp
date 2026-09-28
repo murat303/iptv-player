@@ -22,6 +22,12 @@ struct TmdbRef {
     int id   = 0;
 };
 
+/// A trailer of a title on YouTube
+struct TmdbVideo {
+    std::string key;   // the YouTube id
+    std::string name;  // "Official Trailer", "Türkçe Altyazılı 1. Fragman"...
+};
+
 /// What the detail screen of a title shows from TMDB
 struct TmdbDetails {
     bool ok       = false;
@@ -32,6 +38,7 @@ struct TmdbDetails {
     std::string directors;  // "Name, Name" (movies)
     std::string cast;       // the first names of the cast
     std::vector<TmdbRef> recommendations;
+    std::vector<TmdbVideo> trailers;  // on YouTube, the best first: the app's language, then English
 };
 
 /**
@@ -75,8 +82,8 @@ public:
     /// saved copy: done is called when the list arrived (empty on failure). done runs on the UI thread.
     void list(const std::string& path, int pages, int64_t maxAge, const ListCallback& done);
 
-    /// The rating, cast and recommendations of one title (one request, kept in memory while the app runs); done runs
-    /// on the UI thread, with ok false when TMDB is off or did not answer
+    /// The rating, cast, recommendations and trailers of one title (one request, kept in memory while the app runs);
+    /// done runs on the UI thread, with ok false when TMDB is off or did not answer
     void details(int type, int id, const DetailsCallback& done);
 
     /// Forgets the TMDB data and lists (Settings)

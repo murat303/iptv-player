@@ -715,7 +715,9 @@
     "votes": "{} votos",
     "thousands": ".",
     "similar": "Títulos parecidos",
-    "read_more": "Ler mais"
+    "read_more": "Ler mais",
+    "trailer": "Trailer",
+    "trailer_error": "Não foi possível reproduzir o trailer agora."
   },
   "cast": {
     "live_download_error": "Download indisponível",

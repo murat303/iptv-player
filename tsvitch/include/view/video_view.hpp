@@ -51,6 +51,9 @@ public:
 
     void setUrl(const std::vector<EDLUrl>& edl_urls, int start = 0, int end = -1);
 
+    /// Plays url with mpv options for this file only: "key=value,key=value" (quote values as %length%value)
+    void setUrlWithOptions(const std::string& url, const std::string& options);
+
     static std::string genExtraUrlParam(int start, int end, const std::string& audio);
 
     static std::string genExtraUrlParam(int start, int end, const std::vector<std::string>& audios = {});

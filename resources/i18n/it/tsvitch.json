@@ -727,7 +727,9 @@
     "votes": "{} voti",
     "thousands": ".",
     "similar": "Titoli simili",
-    "read_more": "Leggi tutto"
+    "read_more": "Leggi tutto",
+    "trailer": "Trailer",
+    "trailer_error": "Il trailer non può essere riprodotto ora."
   },
   "cast": {
     "live_download_error": "Download non disponibile",

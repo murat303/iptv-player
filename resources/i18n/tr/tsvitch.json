@@ -715,7 +715,9 @@
     "votes": "{} oy",
     "thousands": ".",
     "similar": "Benzer yapımlar",
-    "read_more": "Devamını oku"
+    "read_more": "Devamını oku",
+    "trailer": "Fragman",
+    "trailer_error": "Fragman şu anda oynatılamıyor."
   },
   "cast": {
     "live_download_error": "İndirilemez",

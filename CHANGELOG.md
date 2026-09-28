@@ -1,9 +1,17 @@
 # Changelog
 
-## 1.2.1 - not released yet
+## 1.3.0 - not released yet
 
-- Detail screen: a plot that does not fit ends with "Read more". The plot, director and cast box then takes the
-  focus, and A (or a tap) shows all of it in a window; a long text scrolls with up and down.
+### Trailers
+- The detail screen of a movie or a series has a Trailer button when TMDB or the provider knows a trailer. It plays
+  from YouTube in the app's own player: TMDB's trailers in the app's language first, then in English, then the one
+  the provider lists. When YouTube refuses one (removed, private...), the next one plays.
+- 1080p on the TV, 720p in handheld mode or without hardware decoding. The player closes at the end of the trailer;
+  a trailer does not go to the history and changes no watched marks or playback positions.
+
+### Detail screen
+- A plot that does not fit ends with "Read more". The plot, director and cast box then takes the focus, and A (or a
+  tap) shows all of it in a window; a long text scrolls with up and down.
 
 ## 1.2.0 - 2026-09-28
 

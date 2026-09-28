@@ -21,6 +21,8 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
   books, mind twists...), studios and platforms, world cinema, award winners (Oscar, Cannes, Venice, Berlin, Emmy),
   decades and film series. It shows only what your provider's lists have; shelves can be hidden in the settings.
 - **Genres:** movies and series by genre (Action, Comedy, Drama...) in the Discover tab and in the lists.
+- **Trailers:** the Trailer button of a detail screen plays the trailer from YouTube in the app's player, in your
+  language when TMDB has one, otherwise in English.
 - **Series:** seasons and episodes with stills and progress, L and R to change the season, and the next episode offered at the closing credits.
 - **Player:** audio and subtitle tracks, subtitle size / color / background / position / delay, 10-second skips with the D-pad, and playback resumes where you left off.
 - **Watched:** movies and episodes count as watched after 90% of them was played, like in Plex, Jellyfin and Kodi.
@@ -43,6 +45,8 @@ turned off when the app is built (`DISABLE_ANALYTICS`, `DISABLE_UPDATE_CHECK` an
 The Discover tab and the genres ask [TMDB](https://www.themoviedb.org) about the titles of your lists by their TMDB
 ids, and for the recommendations about titles you watched. Your account, your lists and your history are never sent;
 the answers are kept on the SD card. Settings → Discover turns it off.
+
+Trailers come from YouTube only when you press Trailer: YouTube gets the id of the video, without an account.
 
 ## Screenshots
 
@@ -175,7 +179,8 @@ It is built with [borealis](https://github.com/xfangfang/borealis), [mpv](https:
 [nlohmann/json](https://github.com/nlohmann/json) and [lunasvg](https://github.com/sammycage/lunasvg).
 
 Movie and series data for the Discover tab: [TMDB](https://www.themoviedb.org). This product uses the TMDB API but is
-not endorsed or certified by TMDB. The award winners come from [Wikidata](https://www.wikidata.org) (CC0).
+not endorsed or certified by TMDB. Trailers are found on YouTube the way [YTB Player](https://github.com/murat303/ytb-player)
+does, a modified version of [Switch-NewPipe](https://github.com/mirusu400/switch-newpipe) by mirusu400. The award winners come from [Wikidata](https://www.wikidata.org) (CC0).
 
 The changes of IPTV Player (2026, muratgokce) are listed in the [changelog](CHANGELOG.md).
 
@@ -210,6 +215,9 @@ türler, koleksiyonlar (gişe rekortmenleri, klasikler, kitaptan uyarlamalar, ak
 platformlar, dünya sineması, ödüllü yapımlar, on yıllar ve film serileri. Yalnız sağlayıcının listelerinde olanlar
 görünür. Film ve Dizi listelerinde de "Türler" grubu var. Satırlar Ayarlar → Keşfet bölümünden gizlenebilir.
 
+**Fragmanlar:** Film ve dizi ayrıntılarındaki Fragman düğmesi fragmanı YouTube'dan uygulamanın kendi oynatıcısında
+açar: TMDB'de Türkçesi varsa onu, yoksa İngilizcesini.
+
 **Bağlantı testi:** Bir ekran yavaş açılıyorsa Ayarlar → IPTV → Bağlantı testi, sağlayıcının cevap sürelerini ve uygulamanın son isteklerini gösterir.
 
 **Listeler:** Sağlayıcının listeleri SD karta kaydedilir ve hemen açılır. Arka planda her gün yenilenir;
@@ -218,5 +226,6 @@ bunu Ayarlar → IPTV bölümünden haftada bire çekebilir ya da kapatabilirsin
 **Gizlilik:** Analytics, reklam ve üyelik yok. Sunucu adresin, kullanıcı adın ve şifren yalnız SD kartında saklanır
 ve yalnız kendi sağlayıcına gönderilir. Keşfet sekmesi TMDB'ye yalnız yapımların TMDB kimliklerini sorar (öneriler için
 izlediklerininkini de); hesabın, listelerin ve geçmişin gönderilmez. Ayarlar → Keşfet bölümünden kapatılabilir.
+Fragmanlar yalnız Fragman'a basınca YouTube'dan gelir; YouTube yalnız videonun kimliğini alır, hesap kullanılmaz.
 
 TsVitch'i kullandıysan ayarların, favorilerin ve geçmişin ilk açılışta kendiliğinden gelir.

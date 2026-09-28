@@ -616,6 +616,14 @@ void VideoView::setUrl(const std::string& url, int start, int end, const std::ve
     mpvCore->setUrl(lastUrl, lastUrlExtra);
 }
 
+void VideoView::setUrlWithOptions(const std::string& url, const std::string& options) {
+    brls::cancelDelay(openRetryIter);
+    openRetries  = 0;
+    lastUrl      = url;
+    lastUrlExtra = options;
+    mpvCore->setUrl(lastUrl, lastUrlExtra);
+}
+
 void VideoView::setUrl(const std::vector<EDLUrl>& edl_urls, int start, int end) {
     std::string url = "edl://";
     std::vector<std::string> urls;

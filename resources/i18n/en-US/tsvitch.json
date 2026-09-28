@@ -715,7 +715,9 @@
     "votes": "{} votes",
     "thousands": ",",
     "similar": "More like this",
-    "read_more": "Read more"
+    "read_more": "Read more",
+    "trailer": "Trailer",
+    "trailer_error": "The trailer cannot be played right now."
   },
   "cast": {
     "live_download_error": "Download unavailable",

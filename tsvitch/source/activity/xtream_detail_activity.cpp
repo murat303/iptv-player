@@ -246,6 +246,10 @@ void XtreamDetailActivity::onContentAvailable() {
         this->play(true);
         return true;
     });
+    trailerButton->registerClickAction([this](brls::View*) {
+        this->openTrailer();
+        return true;
+    });
     favoriteButton->registerClickAction([this](brls::View*) {
         this->toggleFavorite();
         return true;
@@ -255,7 +259,7 @@ void XtreamDetailActivity::onContentAvailable() {
         return true;
     });
     for (CustomButton* button :
-         std::initializer_list<CustomButton*>{playButton, restartButton, favoriteButton, downloadButton})
+         std::initializer_list<CustomButton*>{playButton, restartButton, trailerButton, favoriteButton, downloadButton})
         button->addGestureRecognizer(new brls::TapGestureRecognizer(button));
 
     // A cut plot ends with "Read more"; the box stops the focus only then, and A opens all of it
@@ -389,6 +393,21 @@ void XtreamDetailActivity::showAbout() {
     }
 }
 
+void XtreamDetailActivity::updateTrailerButton() {
+    bool any = !tmdbTrailers.empty() || !detail.trailer.empty();
+    trailerButton->setVisibility(any ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+}
+
+void XtreamDetailActivity::openTrailer() {
+    // TMDB's trailers (the app's language first), then the one the provider lists
+    std::vector<tsvitch::TmdbVideo> videos = tmdbTrailers;
+    bool listed = std::any_of(videos.begin(), videos.end(),
+                              [this](const tsvitch::TmdbVideo& video) { return video.key == detail.trailer; });
+    if (!detail.trailer.empty() && !listed) videos.push_back({detail.trailer, ""});
+    if (videos.empty()) return;
+    Intent::openTrailer(detail.title.empty() ? item.title : detail.title, videos);
+}
+
 void XtreamDetailActivity::requestTmdb() {
     auto& tmdb = tsvitch::TmdbService::instance();
     int type = 0, id = Catalog::instance().tmdbOf(item, type);
@@ -427,6 +446,8 @@ void XtreamDetailActivity::showTmdb(int id, const tsvitch::TmdbDetails& tmdb) {
     if (detail.director.empty() && !tmdbDirectors.empty())
         director->setText(brls::getStr("tsvitch/detail/director", tmdbDirectors));
     if (detail.cast.empty() && !tmdbCast.empty()) cast->setText(brls::getStr("tsvitch/detail/cast", tmdbCast));
+    tmdbTrailers = tmdb.trailers;
+    this->updateTrailerButton();
     // A series needs the room for its episodes
     if (isSeries) return;
 
@@ -492,6 +513,7 @@ void XtreamDetailActivity::showDetail(const tsvitch::XtreamDetail& update) {
     if (!update.title.empty()) detail.title = update.title;
     if (!update.cover.empty()) detail.cover = update.cover;
     if (!update.backdrop.empty()) detail.backdrop = update.backdrop;
+    if (!update.trailer.empty()) detail.trailer = update.trailer;
     if (update.rating > 0) detail.rating = update.rating;
     if (update.year > 0) detail.year = update.year;
     const std::pair<std::string*, const std::string*> textFields[] = {
@@ -527,6 +549,7 @@ void XtreamDetailActivity::showDetail(const tsvitch::XtreamDetail& update) {
     if (newBackdrop) ImageHelper::with(backdrop)->load(tmdbSize(detail.backdrop, "w780"));
 
     this->updatePlayButtons();
+    this->updateTrailerButton();
     if (isSeries && newSeasons) {
         size_t count = 0;
         for (const auto& season : detail.seasons) count += season.episodes.size();

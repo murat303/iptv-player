@@ -169,6 +169,24 @@
                             text="@i18n/tsvitch/detail/restart"/>
                 </CustomButton>
                 <CustomButton
+                        id="detail/trailer"
+                        focusable="true"
+                        height="48"
+                        paddingLeft="20"
+                        paddingRight="20"
+                        marginRight="14"
+                        cornerRadius="8"
+                        highlightCornerRadius="8"
+                        hideHighlightBackground="true"
+                        alignItems="center"
+                        backgroundColor="#FFFFFF26"
+                        visibility="gone">
+                    <brls:Label
+                            fontSize="18"
+                            textColor="#FFFFFF"
+                            text="@i18n/tsvitch/detail/trailer"/>
+                </CustomButton>
+                <CustomButton
                         id="detail/favorite"
                         focusable="true"
                         height="48"

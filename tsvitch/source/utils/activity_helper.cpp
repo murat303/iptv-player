@@ -7,6 +7,7 @@
 #include "activity/live_player_activity.hpp"
 
 #include "activity/settings_activity.hpp"
+#include "activity/trailer_activity.hpp"
 
 #include "activity/main_activity.hpp"
 #include "activity/hint_activity.hpp"
@@ -67,6 +68,13 @@ void Intent::openLive(const std::vector<tsvitch::LiveM3u8>& channelList, size_t 
 
     watchClosing();
     auto activity = new LiveActivity(channelList, index, onClose, seriesPlaylist);
+    brls::Application::pushActivity(activity, brls::TransitionAnimation::NONE);
+    registerFullscreen(activity);
+}
+
+void Intent::openTrailer(const std::string& title, const std::vector<tsvitch::TmdbVideo>& videos) {
+    watchClosing();
+    auto activity = new TrailerActivity(title, videos);
     brls::Application::pushActivity(activity, brls::TransitionAnimation::NONE);
     registerFullscreen(activity);
 }

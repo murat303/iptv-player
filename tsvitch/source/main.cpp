@@ -1,4 +1,5 @@
 #include "api/tmdb.hpp"
+#include "api/youtube.hpp"
 #include <borealis.hpp>
 #include <filesystem>
 
@@ -135,6 +136,7 @@ int main(int argc, char* argv[]) {
     // Closing waits for the network threads: requests to a server that does not answer stop now
     tsvitch::TsVitchClient::stopRequests();
     ImageHelper::stopRequests();
+    tsvitch::youtube::stopRequests();
     tsvitch::TmdbService::instance().stop();
     
     ProgramConfig::instance().exit(argv);

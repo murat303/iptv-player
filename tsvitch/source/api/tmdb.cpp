@@ -144,8 +144,9 @@ TmdbMeta parseMeta(int type, const nlohmann::json& j, TmdbStore::Names& names) {
     return meta;
 }
 
-/// The detail screen's part of /movie/{id} or /tv/{id} with append_to_response=credits,recommendations
-TmdbDetails parseDetails(int type, const nlohmann::json& j) {
+/// The detail screen's part of /movie/{id} or /tv/{id} with append_to_response=credits,recommendations,videos;
+/// videoLanguage: the app's language ("tr"), whose trailers come first
+TmdbDetails parseDetails(int type, const nlohmann::json& j, const std::string& videoLanguage) {
     TmdbDetails d;
     d.ok       = true;
     d.vote     = static_cast<float>(number(j, "vote_average"));
@@ -181,6 +182,30 @@ TmdbDetails parseDetails(int type, const nlohmann::json& j) {
                 int id            = static_cast<int>(number(result, "id"));
                 if (id > 0) d.recommendations.push_back({refType, id});
             }
+    // Trailers and teasers on YouTube: the app's language first, then English; trailers before teasers and the
+    // studio's own before the others, then TMDB's order (the newest first). A few, in case YouTube refuses one.
+    if (auto videos = j.find("videos"); videos != j.end() && videos->is_object())
+        if (auto results = videos->find("results"); results != videos->end() && results->is_array()) {
+            struct Candidate {
+                int rank;
+                TmdbVideo video;
+            };
+            std::vector<Candidate> found;
+            for (const auto& video : *results) {
+                if (!video.is_object() || text(video, "site") != "YouTube") continue;
+                std::string kind = text(video, "type"), key = text(video, "key");
+                if ((kind != "Trailer" && kind != "Teaser") || key.empty()) continue;
+                std::string language = text(video, "iso_639_1");
+                auto official        = video.find("official");
+                bool own             = official != video.end() && official->is_boolean() && official->get<bool>();
+                int rank = (language == videoLanguage ? 0 : language == "en" ? 4 : 8) + (kind == "Trailer" ? 0 : 2) +
+                           (own ? 0 : 1);
+                found.push_back({rank, {key, text(video, "name")}});
+            }
+            std::stable_sort(found.begin(), found.end(),
+                             [](const Candidate& a, const Candidate& b) { return a.rank < b.rank; });
+            for (size_t i = 0; i < found.size() && i < 4; i++) d.trailers.push_back(found[i].video);
+        }
     return d;
 }
 
@@ -587,12 +612,17 @@ void TmdbService::worker(int index) {
             TmdbDetails result;
             std::string path = std::string(detailJob.type == 1 ? "/movie/" : "/tv/") + std::to_string(detailJob.id);
             std::string lang = language();
+            // The trailers in the app's language and in English (and those without a language)
+            std::string videoLanguage  = lang.substr(0, 2);
+            std::string videoLanguages = videoLanguage == "en" ? "en,null" : videoLanguage + ",en,null";
             if (waitGap(gapMs())) {
-                auto r = get(path, cpr::Parameters{{"language", lang}, {"append_to_response", "credits,recommendations"}});
+                auto r = get(path, cpr::Parameters{{"language", lang},
+                                                   {"append_to_response", "credits,recommendations,videos"},
+                                                   {"include_video_language", videoLanguages}});
                 if (r.status_code == 401) rejected = true;
                 if (r.status_code == 200) {
                     auto json = nlohmann::json::parse(r.text, nullptr, false);
-                    if (json.is_object()) result = parseDetails(detailJob.type, json);
+                    if (json.is_object()) result = parseDetails(detailJob.type, json, videoLanguage);
                 }
             }
             // TMDB leaves the overview empty when it has none in the app's language: the English one then

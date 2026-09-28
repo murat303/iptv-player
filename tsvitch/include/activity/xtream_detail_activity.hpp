@@ -69,6 +69,10 @@ private:
     // The whole plot, director and cast in a dialog
     void showAbout();
 
+    // Shown once TMDB or the provider lists a trailer
+    void updateTrailerButton();
+    void openTrailer();
+
     // TMDB's rating, cast and similar titles, once they come
     void requestTmdb();
     void showTmdb(int id, const tsvitch::TmdbDetails& tmdb);
@@ -90,6 +94,7 @@ private:
     float tmdbVote = 0;
     int tmdbVotes  = 0;
     std::string tmdbOverview, tmdbDirectors, tmdbCast;
+    std::vector<tsvitch::TmdbVideo> tmdbTrailers;
 
     BRLS_BIND(brls::Image, backdrop, "detail/backdrop");
     BRLS_BIND(brls::Image, poster, "detail/poster");
@@ -106,6 +111,7 @@ private:
     BRLS_BIND(CustomButton, playButton, "detail/play");
     BRLS_BIND(brls::Label, playLabel, "detail/play/label");
     BRLS_BIND(CustomButton, restartButton, "detail/restart");
+    BRLS_BIND(CustomButton, trailerButton, "detail/trailer");
     BRLS_BIND(CustomButton, favoriteButton, "detail/favorite");
     BRLS_BIND(brls::Label, favoriteLabel, "detail/favorite/label");
     BRLS_BIND(CustomButton, downloadButton, "detail/download");

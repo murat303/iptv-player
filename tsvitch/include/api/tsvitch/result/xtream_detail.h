@@ -34,6 +34,7 @@ struct XtreamDetail {
     std::string duration;  // movies, e.g. "02:15:08"
     std::string cover;     // poster
     std::string backdrop;  // wide background picture
+    std::string trailer;   // YouTube id the provider lists
     int year     = 0;
     float rating = 0;      // 0-10, 0 = unknown
     std::vector<XtreamSeason> seasons;  // series only
