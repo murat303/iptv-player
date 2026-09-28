@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.2.0 - not released yet
+## 1.2.0 - 2026-09-28
 
 ### Discover
 - A new Discover tab: the title of the week, trending this week, recommendations after the watched titles, new
