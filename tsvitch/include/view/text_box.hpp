@@ -81,6 +81,11 @@ public:
     [[nodiscard]] bool isShowMoreText() const;
 
     /**
+     * More lines than maxRows lets it show (after a layout)
+     */
+    [[nodiscard]] bool isTruncated() const;
+
+    /**
      * 设置富文本内容
      */
     void setRichText(const RichTextData& value);

@@ -1,5 +1,6 @@
 #include "activity/xtream_detail_activity.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <tuple>
@@ -12,6 +13,8 @@
 #include <borealis/views/image.hpp>
 #include <borealis/views/dialog.hpp>
 #include <borealis/views/label.hpp>
+#include <borealis/views/scrolling_frame.hpp>
+#include <yoga/Yoga.h>
 
 #include "core/FavoriteManager.hpp"
 #include "core/HistoryManager.hpp"
@@ -22,6 +25,7 @@
 #include "utils/playback_position_manager.hpp"
 #include "utils/watched_manager.hpp"
 #include "view/custom_button.hpp"
+#include "view/expandable_box.hpp"
 #include "view/grid_dropdown.hpp"
 #include "view/progress_line.hpp"
 #include "view/recycling_grid.hpp"
@@ -253,6 +257,15 @@ void XtreamDetailActivity::onContentAvailable() {
     for (CustomButton* button :
          std::initializer_list<CustomButton*>{playButton, restartButton, favoriteButton, downloadButton})
         button->addGestureRecognizer(new brls::TapGestureRecognizer(button));
+
+    // A cut plot ends with "Read more"; the box stops the focus only then, and A opens all of it
+    plot->setShowMoreText(true);
+    aboutBox->expandable = [this]() { return plot->isTruncated() || director->isTruncated() || cast->isTruncated(); };
+    aboutBox->registerAction("tsvitch/detail/read_more"_i18n, brls::BUTTON_A, [this](brls::View*) {
+        this->showAbout();
+        return true;
+    });
+    aboutBox->addGestureRecognizer(new brls::TapGestureRecognizer(aboutBox));
     this->getContentView()->registerAction("hints/toggle_favorite"_i18n, brls::BUTTON_X, [this](brls::View*) {
         this->toggleFavorite();
         return true;
@@ -323,6 +336,57 @@ void XtreamDetailActivity::onContentAvailable() {
     brls::Application::giveFocus(playButton);
     this->loadDetail();
     this->requestTmdb();
+}
+
+void XtreamDetailActivity::showAbout() {
+    const float width = 720, maxHeight = 440;
+    auto* box         = new brls::Box(brls::Axis::COLUMN);
+    box->setWidth(width);
+    box->setPadding(28, 36, 28, 36);
+    auto add = [box](const std::string& text, float size, NVGcolor color, float top) {
+        if (text.empty()) return;
+        auto* label = new brls::Label();
+        label->setFontSize(size);
+        label->setTextColor(color);
+        label->setLineHeight(1.35f);
+        label->setMarginTop(top);
+        label->setText(text);
+        box->addView(label);
+    };
+    const std::string& directors = detail.director.empty() ? tmdbDirectors : detail.director;
+    const std::string& names     = detail.cast.empty() ? tmdbCast : detail.cast;
+    add(detail.title.empty() ? item.title : detail.title, 22, nvgRGB(255, 255, 255), 0);
+    add(detail.plot.empty() ? tmdbOverview : detail.plot, 17, nvgRGB(230, 232, 235), 14);
+    if (!directors.empty())
+        add(brls::getStr("tsvitch/detail/director", directors), 15, nvgRGB(180, 185, 194), 16);
+    if (!names.empty()) add(brls::getStr("tsvitch/detail/cast", names), 15, nvgRGB(180, 185, 194), 6);
+
+    // As tall as the text, at most what fits; a longer text scrolls with the D-pad
+    YGNodeCalculateLayout(box->getYGNode(), width, YGUndefined, YGDirectionLTR);
+    float height = YGNodeLayoutGetHeight(box->getYGNode());
+    auto* scroll = new brls::ScrollingFrame();
+    scroll->setWidth(width);
+    scroll->setHeight(std::min(height, maxHeight));
+    scroll->setContentView(box);
+    auto* dialog = new brls::Dialog((brls::Box*)scroll);
+    dialog->addButton("hints/ok"_i18n, []() {});
+    dialog->open();
+    if (height > maxHeight) {
+        // The text itself takes the focus: up and down move it a few lines, and at its end the focus goes on to
+        // the button (borealis' natural scrolling would hand the focus to the button at once)
+        scroll->setScrollingBehavior(brls::ScrollingBehavior::CENTERED);
+        scroll->setFocusable(true);
+        auto step = [scroll, box](float delta) {
+            float bottom = box->getHeight() - scroll->getHeight();
+            float offset = scroll->getContentOffsetY();
+            if ((delta > 0 && offset >= bottom - 1) || (delta < 0 && offset <= 1)) return false;
+            scroll->setContentOffsetY(std::clamp(offset + delta, 0.0f, bottom), true);
+            return true;
+        };
+        scroll->registerAction("", brls::BUTTON_NAV_DOWN, [step](brls::View*) { return step(90); }, true, true);
+        scroll->registerAction("", brls::BUTTON_NAV_UP, [step](brls::View*) { return step(-90); }, true, true);
+        brls::Application::giveFocus(scroll);
+    }
 }
 
 void XtreamDetailActivity::requestTmdb() {

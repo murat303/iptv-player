@@ -714,7 +714,8 @@
     "mark_unwatched": "İzlenmedi olarak işaretle",
     "votes": "{} oy",
     "thousands": ".",
-    "similar": "Benzer yapımlar"
+    "similar": "Benzer yapımlar",
+    "read_more": "Devamını oku"
   },
   "cast": {
     "live_download_error": "İndirilemez",

@@ -12,6 +12,7 @@
 #include "view/video_view.hpp"
 #include "view/user_info.hpp"
 #include "view/text_box.hpp"
+#include "view/expandable_box.hpp"
 #include "view/qr_image.hpp"
 #include "view/svg_image.hpp"
 #include "view/download_item_cell.hpp"
@@ -44,6 +45,7 @@ void Register::initCustomView() {
     brls::Application::registerXMLView("QRImage", QRImage::create);
     brls::Application::registerXMLView("SVGImage", SVGImage::create);
     brls::Application::registerXMLView("TextBox", TextBox::create);
+    brls::Application::registerXMLView("ExpandableBox", ExpandableBox::create);
     brls::Application::registerXMLView("VideoProgressSlider", VideoProgressSlider::create);
     brls::Application::registerXMLView("GalleryView", GalleryView::create);
     brls::Application::registerXMLView("CustomButton", CustomButton::create);

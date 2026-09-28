@@ -6,11 +6,10 @@
 #include <codecvt>
 #include <locale>
 #include <borealis/core/application.hpp>
+#include <borealis/core/i18n.hpp>
 #include <yoga/Yoga.h>
 
 #include "view/text_box.hpp"
-
-const char* TEXTBOX_MORE = "更多";
 
 inline float minf(float a, float b) { return a < b ? a : b; }
 inline float maxf(float a, float b) { return a > b ? a : b; }
@@ -291,7 +290,8 @@ void TextBox::draw(NVGcontext* vg, float x, float y, float width, float height, 
     static auto linkColor = ctx->theme.getColor("color/link");
     nvgFontSize(vg, this->fontSize);
     nvgFillColor(vg, a(linkColor));
-    nvgText(vg, x, y + getLineY(maxRows), TEXTBOX_MORE, nullptr);
+    static const std::string more = brls::getStr("tsvitch/detail/read_more");
+    nvgText(vg, x, y + getLineY(maxRows), more.c_str(), nullptr);
 }
 
 brls::View* TextBox::create() { return new TextBox(); }
@@ -311,6 +311,11 @@ void TextBox::setShowMoreText(bool value) {
 }
 
 bool TextBox::isShowMoreText() const { return this->showMoreText; }
+
+bool TextBox::isTruncated() const {
+    // with the "more" line the last row of text still fits when it is the only one left
+    return maxRows != SIZE_T_MAX && lineContent.size() > maxRows + (showMoreText ? 1 : 0);
+}
 
 RichTextImage::RichTextImage(std::string url, float width, float height, bool autoLoad)
     : RichTextComponent(RichTextType::Image), url(std::move(url)), width(width), height(height) {

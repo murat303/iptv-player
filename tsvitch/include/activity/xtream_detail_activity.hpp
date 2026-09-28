@@ -16,6 +16,7 @@ class Image;
 class Label;
 }  // namespace brls
 class CustomButton;
+class ExpandableBox;
 class ProgressLine;
 class RecyclingGrid;
 class TextBox;
@@ -65,6 +66,9 @@ private:
 
     void updateFavoriteLabel();
 
+    // The whole plot, director and cast in a dialog
+    void showAbout();
+
     // TMDB's rating, cast and similar titles, once they come
     void requestTmdb();
     void showTmdb(int id, const tsvitch::TmdbDetails& tmdb);
@@ -105,6 +109,7 @@ private:
     BRLS_BIND(CustomButton, favoriteButton, "detail/favorite");
     BRLS_BIND(brls::Label, favoriteLabel, "detail/favorite/label");
     BRLS_BIND(CustomButton, downloadButton, "detail/download");
+    BRLS_BIND(ExpandableBox, aboutBox, "detail/about");
     BRLS_BIND(TextBox, plot, "detail/plot");
     BRLS_BIND(TextBox, director, "detail/director");
     BRLS_BIND(TextBox, cast, "detail/cast");

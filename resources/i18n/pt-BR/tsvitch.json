@@ -714,7 +714,8 @@
     "mark_unwatched": "Marcar como não assistido",
     "votes": "{} votos",
     "thousands": ".",
-    "similar": "Títulos parecidos"
+    "similar": "Títulos parecidos",
+    "read_more": "Ler mais"
   },
   "cast": {
     "live_download_error": "Download indisponível",

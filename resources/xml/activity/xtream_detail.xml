@@ -203,28 +203,44 @@
                 </CustomButton>
             </brls:Box>
 
-            <TextBox
-                    id="detail/plot"
-                    fontSize="17"
-                    textColor="#E6E8EB"
-                    lineHeight="1.35"
-                    marginTop="22"
-                    maxRows="7"
-                    width="100%"/>
-            <TextBox
-                    id="detail/director"
-                    fontSize="15"
+            <!-- The plot, the director and the cast: when one of them is cut, the box takes the focus and A shows
+                 all of it -->
+            <ExpandableBox
+                    id="detail/about"
+                    axis="column"
                     marginTop="14"
-                    maxRows="1"
-                    width="100%"
-                    textColor="#B4B9C2"/>
-            <TextBox
-                    id="detail/cast"
-                    fontSize="15"
-                    marginTop="6"
-                    maxRows="2"
-                    width="100%"
-                    textColor="#B4B9C2"/>
+                    marginLeft="-10"
+                    marginRight="-10"
+                    marginBottom="-8"
+                    padding="8"
+                    paddingLeft="10"
+                    paddingRight="10"
+                    focusable="true"
+                    cornerRadius="8"
+                    highlightCornerRadius="8"
+                    hideHighlightBackground="true">
+                <TextBox
+                        id="detail/plot"
+                        fontSize="17"
+                        textColor="#E6E8EB"
+                        lineHeight="1.35"
+                        maxRows="7"
+                        width="100%"/>
+                <TextBox
+                        id="detail/director"
+                        fontSize="15"
+                        marginTop="14"
+                        maxRows="1"
+                        width="100%"
+                        textColor="#B4B9C2"/>
+                <TextBox
+                        id="detail/cast"
+                        fontSize="15"
+                        marginTop="6"
+                        maxRows="2"
+                        width="100%"
+                        textColor="#B4B9C2"/>
+            </ExpandableBox>
 
             <!-- From TMDB (movies): similar titles of the catalogue -->
             <brls:Box

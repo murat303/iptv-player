@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 - not released yet
+
+- Detail screen: a plot that does not fit ends with "Read more". The plot, director and cast box then takes the
+  focus, and A (or a tap) shows all of it in a window; a long text scrolls with up and down.
+
 ## 1.2.0 - 2026-09-28
 
 ### Discover

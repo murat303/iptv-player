@@ -714,7 +714,8 @@
     "mark_unwatched": "Mark as unwatched",
     "votes": "{} votes",
     "thousands": ",",
-    "similar": "More like this"
+    "similar": "More like this",
+    "read_more": "Read more"
   },
   "cast": {
     "live_download_error": "Download unavailable",
