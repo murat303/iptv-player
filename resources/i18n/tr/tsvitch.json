@@ -373,7 +373,11 @@
     "rights": "Yeniden paylaşılamaz",
     "fs": "Tam ekran",
     "quality": "Kalite",
-    "speed": "Hız",
+    "speed": {
+      "title": "Oynatma hızı",
+      "normal": "Normal",
+      "decimal": ","
+    },
     "replay": "Yeniden oynat",
     "current_speed": "Şu anki hız: {0}",
     "not_follow": "Takipten çıkılsın mı?",

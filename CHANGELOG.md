@@ -9,6 +9,10 @@
 - 1080p on the TV, 720p in handheld mode or without hardware decoding. The player closes at the end of the trailer;
   a trailer does not go to the history and changes no watched marks or playback positions.
 
+### Player
+- Playback speed in the player settings, like YouTube: 0.25x to 2x. It stays for the next episode while the player
+  is open; a movie or an episode opened again starts at normal speed. Live channels have no speed.
+
 ### Detail screen
 - A plot that does not fit ends with "Read more". The plot, director and cast box then takes the focus, and A (or a
   tap) shows all of it in a window; a long text scrolls with up and down.

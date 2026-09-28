@@ -24,7 +24,7 @@ IPTV Player plays the channels, movies and series of an IPTV service that you al
 - **Trailers:** the Trailer button of a detail screen plays the trailer from YouTube in the app's player, in your
   language when TMDB has one, otherwise in English.
 - **Series:** seasons and episodes with stills and progress, L and R to change the season, and the next episode offered at the closing credits.
-- **Player:** audio and subtitle tracks, subtitle size / color / background / position / delay, 10-second skips with the D-pad, and playback resumes where you left off.
+- **Player:** audio and subtitle tracks, subtitle size / color / background / position / delay, playback speed (0.25x to 2x), 10-second skips with the D-pad, and playback resumes where you left off.
 - **Watched:** movies and episodes count as watched after 90% of them was played, like in Plex, Jellyfin and Kodi.
   Y marks them by hand in the detail screens, and the play button of a series goes on with the first unwatched episode.
 - **Downloads:** save movies and episodes to the SD card, pause and continue them, and watch them without internet.

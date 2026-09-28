@@ -44,6 +44,16 @@
                     paddingBottom="@style/brls/tab_frame/content_padding_top_bottom"
                     alignItems="stretch">
 
+                <!-- Playback speed: movies and episodes only -->
+                <brls:Box
+                        id="setting/speed/box"
+                        width="100%"
+                        height="auto"
+                        axis="column"
+                        marginBottom="20px">
+                    <SelectorCell
+                            id="setting/speed"/>
+                </brls:Box>
                 <brls:Header
                         width="auto"
                         height="auto"

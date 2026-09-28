@@ -60,6 +60,7 @@ PlayerSetting::PlayerSetting() {
     this->inflateFromXMLRes("xml/fragment/player_setting.xml");
     brls::Logger::debug("Fragment PlayerSetting: create");
 
+    setupSpeedSetting();
     setupTrackSetting();
     setupCommonSetting();
 
@@ -87,6 +88,25 @@ brls::View* PlayerSetting::create() { return new PlayerSetting(); }
 bool PlayerSetting::isTranslucent() { return true; }
 
 brls::View* PlayerSetting::getDefaultFocus() { return this->settings->getDefaultFocus(); }
+
+void PlayerSetting::setupSpeedSetting() {
+    static const std::vector<double> speeds = {0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2};
+    std::string decimal                    = "tsvitch/player/speed/decimal"_i18n;
+    std::vector<std::string> names;
+    size_t current = 3;
+    double active  = MPVCore::instance().getSpeed();
+    for (size_t i = 0; i < speeds.size(); i++) {
+        std::string number = fmt::format("{:g}", speeds[i]);
+        size_t point       = number.find('.');
+        if (point != std::string::npos) number.replace(point, 1, decimal);
+        names.push_back(speeds[i] == 1 ? "tsvitch/player/speed/normal"_i18n : number + "x");
+        if (std::abs(speeds[i] - active) < std::abs(speeds[current] - active)) current = i;
+    }
+    btnSpeed->init("tsvitch/player/speed/title"_i18n, names, (int)current,
+                   [](int selected) { MPVCore::instance().setSpeed(speeds[selected]); });
+}
+
+void PlayerSetting::hideSpeedSetting() { speedBox->setVisibility(brls::Visibility::GONE); }
 
 void PlayerSetting::setupTrackSetting() {
     // type: "audio" / "sub"; the chosen language is remembered for the next videos

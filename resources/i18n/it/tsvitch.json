@@ -385,7 +385,11 @@
     "rights": "Ripubblicazione vietata",
     "fs": "Schermo intero",
     "quality": "Qualità",
-    "speed": "Velocità",
+    "speed": {
+      "title": "Velocità di riproduzione",
+      "normal": "Normale",
+      "decimal": ","
+    },
     "replay": "Ripeti",
     "current_speed": "Velocità corrente: {0}",
     "not_follow": "Annullare il seguito?",

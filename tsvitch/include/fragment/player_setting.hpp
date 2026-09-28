@@ -38,11 +38,19 @@ public:
     // Audio language and subtitle pickers, filled from the tracks of the playing file
     void setupTrackSetting();
 
+    // 0.25x to 2x like YouTube; the speed stays while the player is open (the next episode too)
+    void setupSpeedSetting();
+
+    // A live channel plays as fast as it comes
+    void hideSpeedSetting();
+
 private:
     BRLS_BIND(ButtonClose, closebtn, "button/close");
     BRLS_BIND(brls::ScrollingFrame, settings, "player/settings");
     BRLS_BIND(brls::Box, cancel, "player/cancel");
 
+    BRLS_BIND(brls::Box, speedBox, "setting/speed/box");
+    BRLS_BIND(TsVitchSelectorCell, btnSpeed, "setting/speed");
     BRLS_BIND(brls::DetailCell, btnAudioTrack, "setting/tracks/audio");
     BRLS_BIND(brls::DetailCell, btnSubtitleTrack, "setting/tracks/sub");
     BRLS_BIND(TsVitchSelectorCell, btnSubSize, "setting/tracks/sub/size");

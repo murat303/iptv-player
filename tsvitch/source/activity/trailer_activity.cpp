@@ -35,6 +35,7 @@ TrailerActivity::TrailerActivity(std::string title, std::vector<tsvitch::TmdbVid
     : title(std::move(title)), videos(std::move(videos)) {
     brls::Logger::debug("TrailerActivity: create: {}", this->title);
     ShaderHelper::instance().clearShader(false);
+    MPVCore::instance().setSpeed(1);
     // The catalogue's TMDB data waits while a video plays
     tsvitch::TmdbService::instance().setPaused(true);
 }

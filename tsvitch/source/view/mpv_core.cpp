@@ -357,7 +357,8 @@ void MPVCore::init() {
     mpvSetOptionString(mpv, "video-timing-offset", "0");
     mpvSetOptionString(mpv, "keep-open", "yes");
     mpvSetOptionString(mpv, "hr-seek", "yes");
-    mpvSetOptionString(mpv, "reset-on-next-file", "speed,pause");
+    // The speed chosen in the player stays for the next episode; a player that opens starts at normal speed
+    mpvSetOptionString(mpv, "reset-on-next-file", "pause");
     mpvSetOptionString(mpv, "vo", "libmpv");
     mpvSetOptionString(mpv, "pulse-latency-hacks", "no");
 

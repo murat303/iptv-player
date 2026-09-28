@@ -373,7 +373,11 @@
     "rights": "Repostagem proibida",
     "fs": "Tela cheia",
     "quality": "Qualidade",
-    "speed": "Velocidade",
+    "speed": {
+      "title": "Velocidade de reprodução",
+      "normal": "Normal",
+      "decimal": ","
+    },
     "replay": "Repetir",
     "current_speed": "Velocidade atual: {0}",
     "not_follow": "Deixar de seguir?",

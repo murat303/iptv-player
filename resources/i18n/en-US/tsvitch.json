@@ -373,7 +373,11 @@
     "rights": "Reposting prohibited",
     "fs": "Fullscreen",
     "quality": "Quality",
-    "speed": "Speed",
+    "speed": {
+      "title": "Playback speed",
+      "normal": "Normal",
+      "decimal": "."
+    },
     "replay": "Replay",
     "current_speed": "Current speed: {0}",
     "not_follow": "Unfollow?",

@@ -72,6 +72,7 @@ LiveActivity::LiveActivity(const std::vector<tsvitch::LiveM3u8>& channels, size_
     this->liveData = channelList[currentChannelIndex];
     brls::Logger::debug("LiveActivity: create: {}", liveData.title);
     ShaderHelper::instance().clearShader(false);
+    MPVCore::instance().setSpeed(1);
     // The catalogue's TMDB data waits while a video plays
     tsvitch::TmdbService::instance().setPaused(true);
 }

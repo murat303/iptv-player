@@ -279,8 +279,9 @@ VideoView::VideoView() {
     this->btnFavoriteIcon->getParent()->addGestureRecognizer(
         new brls::TapGestureRecognizer(this->btnFavoriteIcon->getParent()));
 
-    this->btnSettingIcon->getParent()->registerClickAction([](...) {
+    this->btnSettingIcon->getParent()->registerClickAction([this](...) {
         auto setting = new PlayerSetting();
+        if (this->isLiveMode) setting->hideSpeedSetting();
 
         brls::Application::pushActivity(new brls::Activity(setting));
         GA("open_player_setting")
