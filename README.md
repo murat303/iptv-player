@@ -76,7 +76,11 @@ Trailers come from YouTube only when you press Trailer: YouTube gets the id of t
     <td><img src="docs/screenshots/player.jpg" alt="Player"/><br/>Player</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/player-settings.jpg" alt="Audio and subtitles"/><br/>Audio and subtitles</td>
+    <td><img src="docs/screenshots/trailer-button.jpg" alt="The Trailer button"/><br/>The Trailer button</td>
+    <td><img src="docs/screenshots/trailer.jpg" alt="A trailer from YouTube in the player"/><br/>A trailer from YouTube in the player</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/player-settings.jpg" alt="Playback speed, audio and subtitles"/><br/>Playback speed, audio and subtitles</td>
     <td><img src="docs/screenshots/live-player.jpg" alt="Live TV with the programme guide"/><br/>Live TV with the programme guide</td>
   </tr>
   <tr>
@@ -101,7 +105,8 @@ The screenshots show the open movies of the Blender Foundation: *Big Buck Bunny*
 *Spring*, *Cosmos Laundromat*, *Sprite Fright*, *Elephants Dream*, *Charge* and *Caminandes*
 (© Blender Foundation / Blender Studio, [studio.blender.org](https://studio.blender.org), licensed
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) and [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/);
-posters from Wikimedia Commons, resized, and the Caminandes cover made from an episode picture).
+posters from Wikimedia Commons, resized, and the Caminandes cover made from an episode picture). The trailer pictures
+play *Sintel* from the Blender Foundation's YouTube channel.
 The channel names and logos are made up, and the ratings are sample values. The Discover pictures add the made-up
 titles of an earlier showcase, and their TMDB data (genres, votes, similar titles) is made up too. The top of the
 Discover tab shows a frame of *Sintel*.

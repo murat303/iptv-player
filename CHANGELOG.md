@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.3.0 - not released yet
+## 1.3.0 - 2026-09-29
 
 ### Trailers
 - The detail screen of a movie or a series has a Trailer button when TMDB or the provider knows a trailer. It plays
@@ -11,7 +11,8 @@
 
 ### Player
 - Playback speed in the player settings, like YouTube: 0.25x to 2x. It stays for the next episode while the player
-  is open; a movie or an episode opened again starts at normal speed. Live channels have no speed.
+  is open; a movie or an episode opened again starts at normal speed. Live channels have no speed. At 1.5x and 2x
+  a 1080p video can drop some frames: the Switch draws about 33 frames a second in this player.
 
 ### Detail screen
 - A plot that does not fit ends with "Read more". The plot, director and cast box then takes the focus, and A (or a
