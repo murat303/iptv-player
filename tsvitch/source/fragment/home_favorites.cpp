@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/core/thread.hpp>
@@ -37,6 +38,18 @@ int kindOf(const tsvitch::LiveM3u8& item) {
 
 bool isPoster(int kind) { return kind == 1 || kind == 2; }
 
+// Posters keep the 2:3 of the lists: the card's picture has a fixed height and fills the column's width, so here,
+// beside the sidebar and wider than the lists, the height follows the width (seven columns as in the collections)
+constexpr int POSTER_COLUMNS = 7;
+constexpr float POSTER_TEXT  = 68;  // the title and the year under the picture
+
+float posterHeight(RecyclingGrid* grid) {
+    float width = grid->getWidth();
+    if (width <= 0) width = 1180;  // the tab at 1280x720, before its first layout
+    float column = (width - grid->getPaddingLeft() - grid->getPaddingRight()) / POSTER_COLUMNS - grid->estimatedRowSpace;
+    return std::round(column * 1.5f);
+}
+
 }  // namespace
 
 /// The chip row: the focus comes to the chip of the kind shown
@@ -58,8 +71,9 @@ public:
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
         const auto& r = favoriteChannels[index];
         // Movies and series use the poster card of the lists
-        auto* item = (RecyclingGridItemLiveVideoCard*)recycler->dequeueReusableCell(isPoster(kindOf(r)) ? "Poster"
-                                                                                                          : "Cell");
+        bool poster = isPoster(kindOf(r));
+        auto* item  = (RecyclingGridItemLiveVideoCard*)recycler->dequeueReusableCell(poster ? "Poster" : "Cell");
+        if (poster) item->setPosterHeight(posterHeight(recycler));
         item->setChannel(r);
         return item;
     }
@@ -236,8 +250,8 @@ void HomeFavorites::updateKindChips() {
 void HomeFavorites::showKind(int kind, size_t focus) {
     lastKind    = kind;
     bool poster = isPoster(kind);
-    recyclingGrid->spanCount          = poster ? 5 : 4;
-    recyclingGrid->estimatedRowHeight = poster ? 305 : 200;
+    recyclingGrid->spanCount          = poster ? POSTER_COLUMNS : 4;
+    recyclingGrid->estimatedRowHeight = poster ? posterHeight(recyclingGrid) + POSTER_TEXT : 200;
     // The focus stays in the grid when it was there
     recyclingGrid->reloadWithFocus(focus, new DataSourceFavoriteChannels(this->favoritesOf(kind)));
     this->updateKindChips();
